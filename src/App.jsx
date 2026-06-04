@@ -1405,6 +1405,13 @@ function App() {
     } catch(e){ console.error(e); }
   };
 
+  const handleSaveLeap = async (assetId, leap) => {
+    try {
+      await addLeap(assetId, leap);
+      setAssets(p=>p.map(a=>a.id===assetId?{...a,leaps:[...a.leaps,leap]}:a));
+    } catch(e){ console.error(e); }
+  };
+
   const handleSaveTrade = async (assetId, trade) => {
     try {
       const saved = await addTrade(assetId, trade);
@@ -1479,13 +1486,13 @@ function App() {
       {active==="closed"&&<ClosedStrategies closedAssets={closedAssets}/>}
       {showAdd&&<AddAssetModal onAdd={addAsset} onClose={()=>setShowAdd(false)} usedColors={assets.map(a=>a.color)}/>}
       {showPositions&&<AllPositionsModal assets={assets} onClose={()=>setShowPositions(false)}/>}
-      <ClaudeChat assets={assets} onSaveTrade={handleSaveTrade} onUpdateTrade={handleUpdateTrade}/>
+      <ClaudeChat assets={assets} onSaveTrade={handleSaveTrade} onUpdateTrade={handleUpdateTrade} onSaveLeap={handleSaveLeap}/>
     </div>
   );
 }
 
 // ── Claude Chat ───────────────────────────────────────────────────────────────
-function ClaudeChat({ assets, onSaveTrade, onUpdateTrade }) {
+function ClaudeChat({ assets, onSaveTrade, onUpdateTrade, onSaveLeap }) {
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState([{role:"assistant",content:"Hey! Send me a trade confirmation or describe your trade and I'll register it automatically. You can also upload a photo of your Robinhood confirmation! 📸"}]);
   const [input, setInput] = useState("");
@@ -1493,6 +1500,8 @@ function ClaudeChat({ assets, onSaveTrade, onUpdateTrade }) {
   const [pendingTrades, setPendingTrades] = useState([]);
   const [missingField, setMissingField] = useState(null);
   const [missingInput, setMissingInput] = useState("");
+  const fileRef = useRef(null);
+  const bottomRef = useRef(null);
 
   useEffect(()=>{ if(open&&bottomRef.current) bottomRef.current.scrollIntoView({behavior:"smooth"}); },[messages,open]);
 
@@ -1634,6 +1643,24 @@ function ClaudeChat({ assets, onSaveTrade, onUpdateTrade }) {
       const fixedExp = (t.expiration && expYear < currentYear && expDate < new Date())
         ? t.expiration.replace(String(expYear), String(currentYear))
         : t.expiration;
+
+      // Check if this is a LEAP — BTO with expiration > 180 days
+      const isLeap = t.action==="BUY" && t.status==="open" &&
+        fixedExp && (new Date(fixedExp) - new Date()) > 180*24*60*60*1000;
+
+      if(isLeap){
+        // Save as LEAP instead of trade
+        await onSaveLeap(assetId, {
+          id: `${assetId}_${Date.now()}`,
+          date: fixedDate,
+          strike: parseFloat(t.strike),
+          expiration: fixedExp,
+          cost: normalizedPremium,
+          contracts: parseInt(t.contracts||1),
+        });
+        saved++;
+        continue;
+      }
 
       // Save the new trade — use status from Claude response, not assumed
       await onSaveTrade(assetId, {
