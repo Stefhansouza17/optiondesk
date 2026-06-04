@@ -1627,10 +1627,11 @@ function ClaudeChat({ assets, onSaveTrade, onUpdateTrade, onSaveLeap, onAddAsset
     let saved = 0;
     let notFound = [];
     let closed = 0;
+    const createdAssets = {}; // track assets created during this loop
 
     for(const t of pendingTrades){
       const assetId = (t.asset_id||"").toUpperCase();
-      let asset = assets.find(a=>a.id===assetId);
+      let asset = assets.find(a=>a.id===assetId) || createdAssets[assetId];
 
       if(!asset){
         // Auto-create the asset
@@ -1648,8 +1649,8 @@ function ClaudeChat({ assets, onSaveTrade, onUpdateTrade, onSaveLeap, onAddAsset
           trades: []
         };
         await onAddAsset(newAsset);
-        asset = {...newAsset};
-        setMessages(p=>[...p,{role:"assistant",content:`✅ Created new asset: ${assetId}`}]);
+        createdAssets[assetId] = {...newAsset};
+        asset = createdAssets[assetId];
       }
 
       // If BUY — check if it's closing an open SELL with same strike
@@ -1724,6 +1725,8 @@ function ClaudeChat({ assets, onSaveTrade, onUpdateTrade, onSaveLeap, onAddAsset
     setPendingTrades([]);
     let msg = `✅ ${saved} trade${saved>1?"s":""} saved!`;
     if(closed>0) msg += ` ${closed} open position${closed>1?"s":""} closed.`;
+    const newAssetNames = Object.keys(createdAssets);
+    if(newAssetNames.length>0) msg += ` Created: ${newAssetNames.join(", ")}.`;
     if(notFound.length>0) msg += ` ⚠️ Asset not found: ${notFound.join(", ")}`;
     setMessages(p=>[...p,{role:"assistant",content:msg}]);
   };
