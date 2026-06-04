@@ -1418,6 +1418,19 @@ function App() {
     } catch(e){ console.error(e); }
   };
 
+  const addAssetSilent = async (a) => {
+    try {
+      await dbAddAsset(a);
+      setAssets(p=>[...p,{...a, leaps:[], trades:[]}]);
+      return true;
+    } catch(e){
+      // If duplicate key, asset already exists — still ok
+      if(e.code==="23505"||e.message?.includes("duplicate")) return true;
+      console.error("addAssetSilent error:", e);
+      return false;
+    }
+  };
+
   const handleDeleteAsset = async (id) => {
     try {
       await dbCloseAsset(id);
@@ -1518,7 +1531,7 @@ function App() {
       {active==="closed"&&<ClosedStrategies closedAssets={closedAssets}/>}
       {showAdd&&<AddAssetModal onAdd={addAsset} onClose={()=>setShowAdd(false)} usedColors={assets.map(a=>a.color)}/>}
       {showPositions&&<AllPositionsModal assets={assets} onClose={()=>setShowPositions(false)}/>}
-      <ClaudeChat assets={assets} onSaveTrade={handleSaveTrade} onUpdateTrade={handleUpdateTrade} onSaveLeap={handleSaveLeap} onAddAsset={addAsset}/>
+      <ClaudeChat assets={assets} onSaveTrade={handleSaveTrade} onUpdateTrade={handleUpdateTrade} onSaveLeap={handleSaveLeap} onAddAsset={addAssetSilent}/>
     </div>
   );
 }
