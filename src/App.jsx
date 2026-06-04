@@ -829,9 +829,10 @@ function Home({ assets, onSelectAsset, onShowPositions }) {
   const breakeven=optType==="call"?(side==="buy"?strike+premium:strike-premium):(side==="buy"?strike-premium:strike+premium);
   const maxLoss=side==="buy"?("$"+(premium*100).toFixed(0)):optType==="call"?"Unlimited":("$"+((strike-premium)*100).toFixed(0));
   const maxProfit=side==="buy"?(optType==="call"?"Unlimited":("$"+((strike-premium)*100).toFixed(0))):("$"+(premium*100).toFixed(0));
-  const priceRows=[];
-  if(etfPrice>0){for(let p=etfPrice*1.15;p>=etfPrice*0.85;p-=etfPrice*0.025){priceRows.push(parseFloat(p.toFixed(2)));}}
-
+  const priceRows=filteredChain
+  .filter(o=>etfPrice>0?o.strike>=etfPrice*0.85&&o.strike<=etfPrice*1.15:true)
+  .map(o=>o.strike)
+  .sort((a,b)=>b-a);
   return (
     <div className="main fade-in">
       {/* KPI Cards */}
