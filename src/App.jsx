@@ -384,7 +384,7 @@ function Calculator({ asset, totalCollected, etfPrice }) {
 }
 
 // ── Asset Dashboard ───────────────────────────────────────────────────────────
-function AssetDashboard({ asset, onClose, onSaveTrade, onUpdateTrade, onDeleteTrade, onDeleteLeap }) {
+function AssetDashboard({ asset, onClose, onSaveTrade, onUpdateTrade, onDeleteTrade, onDeleteLeap, onDeleteAsset }) {
   const [trades, setTrades] = useState(asset.trades);
   const [etfPrice, setEtfPrice] = useState(asset.initialPrice||0);
   const [liveData, setLiveData] = useState(null);
@@ -396,6 +396,7 @@ function AssetDashboard({ asset, onClose, onSaveTrade, onUpdateTrade, onDeleteTr
   const [editId, setEditId] = useState(null);
   const [showCR, setShowCR] = useState(null);
   const [showClose, setShowClose] = useState(false);
+  const [showDelete, setShowDelete] = useState(false);
   const [closeLeap, setCloseLeap] = useState(null);
   const [closeLeapPrem, setCloseLeapPrem] = useState("");
   const [crForm, setCrForm] = useState({mode:"close",closePrem:"",newStrike:"",newExp:"",newPrem:"",contracts:1});
@@ -517,6 +518,7 @@ function AssetDashboard({ asset, onClose, onSaveTrade, onUpdateTrade, onDeleteTr
         {isPremium&&<><div className="dvdr"/><div className="sml">LEAP <span>${asset.leapStrike}</span></div><div className="dvdr"/><div className="sml">distance <span className={etfPrice>=asset.leapStrike?"green":"red"}>{etfPrice>=asset.leapStrike?"+":""}{fmt(etfPrice-asset.leapStrike)}</span></div><div className="dvdr"/><div className="sml">avg cost <span style={{color}}>${fmt(leapAvg)}</span></div></>}
         <div style={{marginLeft:"auto",display:"flex",gap:8}}>
           <button className="btn bsm" onClick={fetchLive} disabled={loadingLive} style={{color,borderColor:color+"44",background:color+"15"}}>{loadingLive?"...":"↻"}</button>
+          <button className="btn bsm bneutral" onClick={()=>setShowDelete(true)}>✕ Delete</button>
           <button className="btn bsm bdanger" onClick={()=>setShowClose(true)}>Close strategy</button>
         </div>
         {liveErr&&<div style={{fontSize:11,color:"#ff4d6a"}}>{liveErr}</div>}
@@ -778,6 +780,27 @@ function AssetDashboard({ asset, onClose, onSaveTrade, onUpdateTrade, onDeleteTr
             <div className="factions">
               <button className="btn bneutral bfull" onClick={()=>setCloseLeap(null)}>Cancel</button>
               <button className="btn bfull bdanger" onClick={confirmCloseLeap}>Confirm close LEAP</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Asset Modal */}
+      {showDelete&&(
+        <div className="overlay" onClick={e=>e.target===e.currentTarget&&setShowDelete(false)}>
+          <div className="fbox">
+            <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:14}}>
+              <div style={{width:36,height:36,borderRadius:"50%",background:"#ff4d6a15",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+                <span style={{color:"#ff4d6a",fontSize:18}}>⚠</span>
+              </div>
+              <div className="ftitle" style={{margin:0}}>Remove {asset.ticker} from dashboard?</div>
+            </div>
+            <p style={{fontSize:14,color:"#8aaac8",lineHeight:1.6,marginBottom:20}}>
+              This will permanently remove <span style={{color:"#fff",fontWeight:500}}>{asset.ticker}</span> and everything associated with it — all trades, LEAPs, and history. There's no way to undo this.
+            </p>
+            <div className="factions">
+              <button className="btn bneutral bfull" onClick={()=>setShowDelete(false)}>Cancel</button>
+              <button className="btn bfull bdanger" onClick={()=>{onDeleteAsset(asset.id);setShowDelete(false);}}>Yes, remove it</button>
             </div>
           </div>
         </div>
@@ -1395,6 +1418,14 @@ function App() {
     } catch(e){ console.error(e); }
   };
 
+  const handleDeleteAsset = async (id) => {
+    try {
+      await dbCloseAsset(id);
+      setAssets(p=>p.filter(x=>x.id!==id));
+      setActive("home");
+    } catch(e){ console.error(e); }
+  };
+
   const closeAsset = async (id, finalTrades) => {
     try {
       await dbCloseAsset(id);
@@ -1481,18 +1512,19 @@ function App() {
           onUpdateTrade={(id,c)=>handleUpdateTrade(a.id,id,c)}
           onDeleteTrade={(id)=>handleDeleteTrade(a.id,id)}
           onDeleteLeap={(id)=>handleDeleteLeap(a.id,id)}
+          onDeleteAsset={handleDeleteAsset}
         />
       ))}
       {active==="closed"&&<ClosedStrategies closedAssets={closedAssets}/>}
       {showAdd&&<AddAssetModal onAdd={addAsset} onClose={()=>setShowAdd(false)} usedColors={assets.map(a=>a.color)}/>}
       {showPositions&&<AllPositionsModal assets={assets} onClose={()=>setShowPositions(false)}/>}
-      <ClaudeChat assets={assets} onSaveTrade={handleSaveTrade} onUpdateTrade={handleUpdateTrade} onSaveLeap={handleSaveLeap}/>
+      <ClaudeChat assets={assets} onSaveTrade={handleSaveTrade} onUpdateTrade={handleUpdateTrade} onSaveLeap={handleSaveLeap} onAddAsset={addAsset}/>
     </div>
   );
 }
 
 // ── Claude Chat ───────────────────────────────────────────────────────────────
-function ClaudeChat({ assets, onSaveTrade, onUpdateTrade, onSaveLeap }) {
+function ClaudeChat({ assets, onSaveTrade, onUpdateTrade, onSaveLeap, onAddAsset }) {
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState([{role:"assistant",content:"Hey! Send me a trade confirmation or describe your trade and I'll register it automatically. You can also upload a photo of your Robinhood confirmation! 📸"}]);
   const [input, setInput] = useState("");
@@ -1598,9 +1630,27 @@ function ClaudeChat({ assets, onSaveTrade, onUpdateTrade, onSaveLeap }) {
 
     for(const t of pendingTrades){
       const assetId = (t.asset_id||"").toUpperCase();
-      const asset = assets.find(a=>a.id===assetId);
+      let asset = assets.find(a=>a.id===assetId);
 
-      if(!asset){ notFound.push(assetId); continue; }
+      if(!asset){
+        // Auto-create the asset
+        const newAsset = {
+          id: assetId,
+          ticker: assetId,
+          strategy: "PMCC",
+          color: "#00d4aa",
+          leapStrike: null,
+          leapExpiration: null,
+          leapDelta: null,
+          initialPrice: 0,
+          active: true,
+          leaps: [],
+          trades: []
+        };
+        await onAddAsset(newAsset);
+        asset = {...newAsset};
+        setMessages(p=>[...p,{role:"assistant",content:`✅ Created new asset: ${assetId}`}]);
+      }
 
       // If BUY — check if it's closing an open SELL with same strike
       if(t.action==="BUY"){
