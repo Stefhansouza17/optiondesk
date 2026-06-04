@@ -46,7 +46,7 @@ export async function fetchAssets() {
 }
 
 export async function addAsset(asset) {
-  const { data, error } = await supabase.from('assets').insert({
+  const { data, error } = await supabase.from('assets').upsert({
     id: asset.id,
     ticker: asset.ticker,
     strategy: asset.strategy,
@@ -56,7 +56,7 @@ export async function addAsset(asset) {
     leap_delta: asset.leapDelta,
     initial_price: asset.initialPrice || 0,
     active: true,
-  }).select().single();
+  }, {onConflict: 'id'}).select().single();
   if (error) throw error;
   return data;
 }
