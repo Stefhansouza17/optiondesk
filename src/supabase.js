@@ -100,6 +100,11 @@ export async function deleteTrade(id) {
   if (error) throw error;
 }
 
+export async function deleteLeap(id) {
+  const { error } = await supabase.from('leaps').delete().eq('id', id);
+  if (error) throw error;
+}
+
 export async function closeAsset(id) {
   const { error } = await supabase.from('assets').update({ active: false }).eq('id', id);
   if (error) throw error;
