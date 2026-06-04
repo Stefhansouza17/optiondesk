@@ -1426,6 +1426,8 @@ function App() {
       setAssets(p=>p.map(a=>a.id===assetId?{...a,leaps:a.leaps.filter(l=>l.id!==leapId)}:a));
     } catch(e){ console.error(e); }
   };
+
+  const handleDeleteTrade = async (assetId, tradeId) => {
     try {
       await deleteTrade(tradeId);
       setAssets(p=>p.map(a=>a.id===assetId?{...a,trades:a.trades.filter(t=>t.id!==tradeId)}:a));
