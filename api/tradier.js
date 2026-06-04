@@ -1,4 +1,4 @@
-export default async function handler(req, res) {
+export default async function handler(req, res) { 
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
   if (req.method === 'OPTIONS') return res.status(200).end();
@@ -7,7 +7,7 @@ export default async function handler(req, res) {
   const url = `https://api.tradier.com/v1/${endpoint}?${queryString}`;
   try {
     const response = await fetch(url, {
-      headers: { Authorization: `Bearer qu6t0hdEyGUAQ3ddjG0xrmYfT2vs`, Accept: 'application/json' },
+      headers: { Authorization: `Bearer ${process.env.TRADIER_TOKEN}`, Accept: 'application/json' },
     });
     const data = await response.json();
     res.status(200).json(data);
