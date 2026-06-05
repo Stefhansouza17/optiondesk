@@ -105,6 +105,16 @@ export async function deleteLeap(id) {
   if (error) throw error;
 }
 
+export async function fetchOpenTrades(assetId) {
+  const { data, error } = await supabase
+    .from('trades')
+    .select('*')
+    .eq('asset_id', assetId)
+    .eq('status', 'open');
+  if (error) throw error;
+  return data;
+}
+
 export async function closeAsset(id) {
   const { error } = await supabase.from('assets').update({ active: false }).eq('id', id);
   if (error) throw error;
