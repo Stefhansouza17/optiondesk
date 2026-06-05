@@ -1757,22 +1757,14 @@ function ClaudeChat({ assets, onSaveTrade, onUpdateTrade, onSaveLeap, onAddAsset
         fixedExp && (new Date(fixedExp) - new Date()) > 180*24*60*60*1000;
 
       if(isLeap){
-        // Skip if a LEAP with same strike + expiration already exists (avoids duplicates)
-        const existingLeaps = asset?.leaps || [];
-        const leapExists = existingLeaps.some(l=>
-          parseFloat(l.strike)===parseFloat(t.strike) &&
-          l.expiration===fixedExp
-        );
-        if(!leapExists){
-          await onSaveLeap(assetId, {
-            id: `${assetId}_${Date.now()}`,
-            date: fixedDate,
-            strike: parseFloat(t.strike),
-            expiration: fixedExp,
-            cost: normalizedPremium,
-            contracts: parseInt(t.contracts||1),
-          });
-        }
+        await onSaveLeap(assetId, {
+          id: `${assetId}_${Date.now()}`,
+          date: fixedDate,
+          strike: parseFloat(t.strike),
+          expiration: fixedExp,
+          cost: normalizedPremium,
+          contracts: parseInt(t.contracts||1),
+        });
         saved++;
         continue;
       }
