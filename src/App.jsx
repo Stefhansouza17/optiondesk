@@ -180,6 +180,7 @@ tr:last-child td{border-bottom:none}
 tr:hover td{background:#101e2c}
 .stopen{display:inline-block;padding:2px 8px;border-radius:3px;font-size:10px;letter-spacing:1px;text-transform:uppercase}
 .stclosed{display:inline-block;padding:2px 8px;background:#1a2a3a;border:1px solid #2a3a4a;color:#5a7a9a;border-radius:3px;font-size:10px;letter-spacing:1px;text-transform:uppercase}
+.stexpired{display:inline-block;padding:2px 8px;background:#BA751715;border:1px solid #BA751744;color:#BA7517;border-radius:3px;font-size:10px;letter-spacing:1px;text-transform:uppercase}
 .overlay{position:fixed;inset:0;background:rgba(0,0,0,0.75);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;z-index:200}
 .fbox{background:#0d1821;border:1px solid #1a2a3a;border-radius:12px;padding:24px;width:480px;max-width:95vw;box-shadow:0 40px 80px rgba(0,0,0,0.6);max-height:90vh;overflow-y:auto}
 .ftitle{font-family:'Syne',sans-serif;font-size:16px;font-weight:700;color:#fff;margin-bottom:16px}
@@ -422,7 +423,8 @@ function AssetDashboard({ asset, onClose, onSaveTrade, onUpdateTrade, onDeleteTr
   const recovPct = Math.min(totalLeapCost>0?totalCollected/totalLeapCost:0,1);
   const openTrades = trades.filter(t=>t.status==="open").sort((a,b)=>new Date(a.expiration)-new Date(b.expiration));
   const closedTrades = trades.filter(t=>t.status==="closed").sort((a,b)=>new Date(b.date)-new Date(a.date));
-  const filteredTrades = (statusFilter==="open"?openTrades:statusFilter==="closed"?closedTrades:trades).sort((a,b)=>new Date(b.date)-new Date(a.date));
+  const expiredTrades = trades.filter(t=>t.status==="expired").sort((a,b)=>new Date(b.date)-new Date(a.date));
+  const filteredTrades = (statusFilter==="open"?openTrades:statusFilter==="closed"?closedTrades:statusFilter==="expired"?expiredTrades:trades).sort((a,b)=>new Date(b.date)-new Date(a.date));
 
   function openAdd(){setEditId(null);setForm(ef);setShowForm(true);}
   function openEdit(t){setEditId(t.id);setForm({...t,contracts:t.contracts||1});setShowForm(true);}
@@ -434,7 +436,14 @@ function AssetDashboard({ asset, onClose, onSaveTrade, onUpdateTrade, onDeleteTr
       setTrades(p=>p.map(t=>t.id===editId?{...t,...tradeData}:t));
     } else {
       const saved=await onSaveTrade(tradeData);
-      if(saved) setTrades(p=>[...p,saved]);
+      if(saved){
+        if(tradeData.action==="BUY"){
+          const toClose=trades.filter(t=>t.status==="open"&&t.action==="SELL"&&parseFloat(t.strike)===parseFloat(tradeData.strike));
+          setTrades(p=>[...p.map(t=>toClose.some(c=>c.id===t.id)?{...t,status:"closed"}:t),saved]);
+        } else {
+          setTrades(p=>[...p,saved]);
+        }
+      }
     }
     setShowForm(false);
   }
@@ -616,7 +625,7 @@ function AssetDashboard({ asset, onClose, onSaveTrade, onUpdateTrade, onDeleteTr
               <div className="sectitle">Trade history</div>
               <div style={{display:"flex",gap:8,alignItems:"center"}}>
                 <div style={{display:"flex",background:"#1a2a3a",borderRadius:6,padding:3,gap:2}}>
-                  {[["all","All"],["open","Open"],["closed","Closed"]].map(([v,l])=>(
+                  {[["all","All"],["open","Open"],["closed","Closed"],["expired","Expired"]].map(([v,l])=>(
                     <button key={v} onClick={()=>setStatusFilter(v)} style={{padding:"4px 10px",borderRadius:4,border:"none",cursor:"pointer",fontFamily:"DM Mono,monospace",fontSize:10,background:statusFilter===v?color:"transparent",color:statusFilter===v?"#080c10":"#5a7a9a"}}>{l}</button>
                   ))}
                 </div>
@@ -637,7 +646,7 @@ function AssetDashboard({ asset, onClose, onSaveTrade, onUpdateTrade, onDeleteTr
                       <td style={{color:t.action==="SELL"?color:"#ff4d6a"}}>{t.action==="SELL"?"+":"-"}${fmt(t.premium)}</td>
                       <td style={{color:"#8aaac8"}}>{t.contracts||1}</td>
                       <td style={{color:t.action==="SELL"?color:"#ff4d6a"}}>{t.action==="SELL"?"+":"-"}${fmt(t.premium*(t.contracts||1)*100)}</td>
-                      <td>{t.status==="open"?<span className="stopen" style={{color,borderColor:color+"44",background:color+"15"}}>Open</span>:<span className="stclosed">Closed</span>}</td>
+                      <td>{t.status==="open"?<span className="stopen" style={{color,borderColor:color+"44",background:color+"15"}}>Open</span>:t.status==="expired"?<span className="stexpired">Expired</span>:<span className="stclosed">Closed</span>}</td>
                       <td><div style={{display:"flex",gap:5}}>
                         <button className="btn bsm bneutral" onClick={()=>openEdit(t)}>Edit</button>
                         <button className="btn bsm bdanger" onClick={()=>removeTrade(t.id)}>✕</button>
@@ -1298,8 +1307,15 @@ function App() {
   const [loading, setLoading] = useState(true);
 
   useEffect(()=>{
+    const today=new Date().toISOString().slice(0,10);
     fetchAssets()
-      .then(data=>{ setAssets(data); setLoading(false); })
+      .then(async data=>{
+        const expireIds=data.flatMap(a=>a.trades.filter(t=>t.status==="open"&&t.expiration<today).map(t=>t.id));
+        if(expireIds.length) await Promise.all(expireIds.map(id=>updateTrade(id,{status:"expired"})));
+        const updated=data.map(a=>({...a,trades:a.trades.map(t=>expireIds.includes(t.id)?{...t,status:"expired"}:t)}));
+        setAssets(updated);
+        setLoading(false);
+      })
       .catch(err=>{ console.error(err); setLoading(false); });
   },[]);
 
@@ -1326,7 +1342,15 @@ function App() {
   const handleSaveTrade = async (assetId, trade) => {
     try {
       const saved = await addTrade(assetId, trade);
-      setAssets(p=>p.map(a=>a.id===assetId?{...a,trades:[...a.trades,saved]}:a));
+      if(trade.action==="BUY"){
+        const asset = assets.find(a=>a.id===assetId);
+        const toClose = (asset?.trades||[]).filter(t=>t.status==="open"&&t.action==="SELL"&&parseFloat(t.strike)===parseFloat(trade.strike));
+        if(toClose.length) await Promise.all(toClose.map(t=>updateTrade(t.id,{status:"closed"})));
+        setAssets(p=>p.map(a=>a.id===assetId?{...a,trades:[...a.trades.map(t=>toClose.some(c=>c.id===t.id)?{...t,status:"closed"}:t),saved]}:a));
+      } else {
+        setAssets(p=>p.map(a=>a.id===assetId?{...a,trades:[...a.trades,saved]}:a));
+      }
+      return saved;
     } catch(e){ console.error(e); }
   };
 
@@ -1388,7 +1412,177 @@ function App() {
       {active==="closed"&&<ClosedStrategies closedAssets={closedAssets}/>}
       {showAdd&&<AddAssetModal onAdd={addAsset} onClose={()=>setShowAdd(false)} usedColors={assets.map(a=>a.color)}/>}
       {showPositions&&<AllPositionsModal assets={assets} onClose={()=>setShowPositions(false)}/>}
+      <ClaudeChat assets={assets} onSaveTrade={handleSaveTrade}/>
     </div>
+  );
+}
+
+// ── Claude Chat ───────────────────────────────────────────────────────────────
+function ClaudeChat({ assets, onSaveTrade }) {
+  const [open, setOpen] = useState(false);
+  const [messages, setMessages] = useState([{role:"assistant",content:"Hey! Send me a trade confirmation or describe your trade and I'll register it automatically. You can also upload a photo of your Robinhood confirmation! 📸"}]);
+  const [input, setInput] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [pendingTrades, setPendingTrades] = useState([]);
+  const fileRef = React.useRef(null);
+  const bottomRef = React.useRef(null);
+
+  useEffect(()=>{ if(open&&bottomRef.current) bottomRef.current.scrollIntoView({behavior:"smooth"}); },[messages,open]);
+
+  const sendMessage = async (text, imageData) => {
+    if(!text&&!imageData)return;
+    const userMsg = {role:"user", content: imageData
+      ? [{type:"image",source:{type:"base64",media_type:"image/jpeg",data:imageData}},{type:"text",text:text||"What trades are in this confirmation?"}]
+      : text
+    };
+    const newMsgs = [...messages, userMsg];
+    setMessages(newMsgs);
+    setInput("");
+    setLoading(true);
+
+    try {
+      const apiMessages = newMsgs.filter(m=>m.role!=="assistant"||m!==messages[0]).map(m=>({
+        role:m.role,
+        content:typeof m.content==="string"?m.content:m.content
+      }));
+
+      const res = await fetch("/api/claude", {
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({messages:apiMessages})
+      });
+      const data = await res.json();
+      const text = data.content?.[0]?.text||"";
+
+      try {
+        const parsed = JSON.parse(text);
+        if(parsed.trades&&parsed.trades.length>0){
+          setPendingTrades(parsed.trades);
+          setMessages(p=>[...p,{role:"assistant",content:parsed.message+"\n\nConfirm to save these trades?"}]);
+        } else {
+          setMessages(p=>[...p,{role:"assistant",content:parsed.message||text}]);
+        }
+      } catch {
+        setMessages(p=>[...p,{role:"assistant",content:text}]);
+      }
+    } catch(e){
+      setMessages(p=>[...p,{role:"assistant",content:"Error connecting. Please try again."}]);
+    }
+    setLoading(false);
+  };
+
+  const confirmTrades = async () => {
+    for(const t of pendingTrades){
+      const assetId = t.asset_id;
+      if(assets.find(a=>a.id===assetId)){
+        await onSaveTrade(assetId, {
+          date:t.date, action:t.action, strike:t.strike,
+          expiration:t.expiration, premium:t.premium,
+          contracts:t.contracts||1, status:t.status||"open"
+        });
+      }
+    }
+    setPendingTrades([]);
+    setMessages(p=>[...p,{role:"assistant",content:`✅ ${pendingTrades.length} trade${pendingTrades.length>1?"s":""} saved successfully!`}]);
+  };
+
+  const handleFile = (e) => {
+    const file = e.target.files[0];
+    if(!file)return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const base64 = ev.target.result.split(",")[1];
+      sendMessage("", base64);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  return (
+    <>
+      {/* Floating button */}
+      <button onClick={()=>setOpen(p=>!p)} style={{
+        position:"fixed",bottom:24,right:24,width:52,height:52,
+        borderRadius:"50%",background:"linear-gradient(135deg,#00d4aa,#3a8fff)",
+        border:"none",cursor:"pointer",zIndex:300,
+        boxShadow:"0 4px 20px rgba(0,212,170,0.4)",
+        display:"flex",alignItems:"center",justifyContent:"center",
+        fontSize:22,transition:"transform 0.2s",
+      }}
+        onMouseEnter={e=>e.target.style.transform="scale(1.1)"}
+        onMouseLeave={e=>e.target.style.transform="scale(1)"}
+      >{open?"✕":"🤖"}</button>
+
+      {/* Chat window */}
+      {open&&(
+        <div style={{
+          position:"fixed",bottom:88,right:24,width:340,height:480,
+          background:"#0d1821",border:"1px solid #1a2a3a",borderRadius:12,
+          boxShadow:"0 20px 60px rgba(0,0,0,0.6)",zIndex:300,
+          display:"flex",flexDirection:"column",overflow:"hidden",
+        }}>
+          {/* Header */}
+          <div style={{padding:"12px 16px",borderBottom:"1px solid #1a2a3a",display:"flex",alignItems:"center",gap:10}}>
+            <div style={{width:8,height:8,borderRadius:"50%",background:"#00d4aa",animation:"pulse 1.8s infinite"}}/>
+            <div style={{fontFamily:"Syne,sans-serif",fontWeight:700,fontSize:14,color:"#fff"}}>Claude</div>
+            <div style={{fontSize:11,color:"#3a5a7a"}}>trade assistant</div>
+          </div>
+
+          {/* Messages */}
+          <div style={{flex:1,overflowY:"auto",padding:12,display:"flex",flexDirection:"column",gap:8}}>
+            {messages.map((m,i)=>(
+              <div key={i} style={{
+                display:"flex",justifyContent:m.role==="user"?"flex-end":"flex-start",
+              }}>
+                <div style={{
+                  maxWidth:"85%",padding:"8px 12px",borderRadius:10,fontSize:12,lineHeight:1.5,
+                  background:m.role==="user"?"#00d4aa20":"#1a2a3a",
+                  color:m.role==="user"?"#00d4aa":"#c8d8e8",
+                  border:`1px solid ${m.role==="user"?"#00d4aa44":"#2a3a4a"}`,
+                  whiteSpace:"pre-wrap",
+                }}>{typeof m.content==="string"?m.content:"📸 Image sent"}</div>
+              </div>
+            ))}
+            {loading&&(
+              <div style={{display:"flex",justifyContent:"flex-start"}}>
+                <div style={{padding:"8px 12px",borderRadius:10,background:"#1a2a3a",border:"1px solid #2a3a4a",fontSize:12,color:"#5a7a9a"}}>
+                  thinking...
+                </div>
+              </div>
+            )}
+            {pendingTrades.length>0&&(
+              <div style={{background:"#00d4aa10",border:"1px solid #00d4aa33",borderRadius:8,padding:10}}>
+                {pendingTrades.map((t,i)=>(
+                  <div key={i} style={{fontSize:11,color:"#c8d8e8",marginBottom:4}}>
+                    <span style={{color:t.action==="SELL"?"#00d4aa":"#ff4d6a"}}>{t.action}</span>{" "}
+                    <span style={{color:"#fff",fontWeight:600}}>{t.asset_id}</span>{" "}
+                    <span style={{color:"#f5c842"}}>${t.strike}</span>{" "}
+                    exp {t.expiration} @ <span style={{color:"#00d4aa"}}>${t.premium}</span>
+                  </div>
+                ))}
+                <div style={{display:"flex",gap:8,marginTop:8}}>
+                  <button className="btn bsm" onClick={confirmTrades} style={{flex:1}}>✅ Confirm</button>
+                  <button className="btn bsm bdanger" onClick={()=>setPendingTrades([])} style={{flex:1}}>✕ Cancel</button>
+                </div>
+              </div>
+            )}
+            <div ref={bottomRef}/>
+          </div>
+
+          {/* Input */}
+          <div style={{padding:"10px 12px",borderTop:"1px solid #1a2a3a",display:"flex",gap:8,alignItems:"center"}}>
+            <button className="btn bsm bneutral" onClick={()=>fileRef.current?.click()} title="Upload photo">📸</button>
+            <input ref={fileRef} type="file" accept="image/*" style={{display:"none"}} onChange={handleFile}/>
+            <input
+              style={{flex:1,background:"#080c10",border:"1px solid #1a2a3a",color:"#c8d8e8",fontFamily:"DM Mono,monospace",fontSize:12,padding:"6px 10px",borderRadius:6,outline:"none"}}
+              placeholder="Describe a trade..."
+              value={input} onChange={e=>setInput(e.target.value)}
+              onKeyDown={e=>e.key==="Enter"&&!loading&&sendMessage(input)}
+            />
+            <button className="btn bsm" onClick={()=>sendMessage(input)} disabled={loading||!input}>→</button>
+          </div>
+        </div>
+      )}
+    </>
   );
 }
 
