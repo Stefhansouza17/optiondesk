@@ -180,6 +180,7 @@ tr:last-child td{border-bottom:none}
 tr:hover td{background:#101e2c}
 .stopen{display:inline-block;padding:2px 8px;border-radius:3px;font-size:10px;letter-spacing:1px;text-transform:uppercase}
 .stclosed{display:inline-block;padding:2px 8px;background:#1a2a3a;border:1px solid #2a3a4a;color:#5a7a9a;border-radius:3px;font-size:10px;letter-spacing:1px;text-transform:uppercase}
+.stexpired{display:inline-block;padding:2px 8px;background:#a78bfa15;border:1px solid #a78bfa44;color:#a78bfa;border-radius:3px;font-size:10px;letter-spacing:1px;text-transform:uppercase}
 .overlay{position:fixed;inset:0;background:rgba(0,0,0,0.75);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;z-index:200}
 .fbox{background:#0d1821;border:1px solid #1a2a3a;border-radius:12px;padding:24px;width:480px;max-width:95vw;box-shadow:0 40px 80px rgba(0,0,0,0.6);max-height:90vh;overflow-y:auto}
 .ftitle{font-family:'Syne',sans-serif;font-size:16px;font-weight:700;color:#fff;margin-bottom:16px}
@@ -428,8 +429,9 @@ function AssetDashboard({ asset, onClose, onSaveTrade, onUpdateTrade, onDeleteTr
   const costBasis = leapAvg - totalDollar;
   const recovPct = Math.min(totalLeapCost>0?totalDollar/totalLeapCost:0,1);
   const openTrades = trades.filter(t=>t.status==="open").sort((a,b)=>new Date(a.expiration)-new Date(b.expiration));
-  const closedTrades = trades.filter(t=>t.status==="closed"||t.status==="expired").sort((a,b)=>new Date(b.date)-new Date(a.date));
-  const filteredTrades = (statusFilter==="open"?openTrades:statusFilter==="closed"?closedTrades:trades).sort((a,b)=>new Date(b.date)-new Date(a.date));
+  const closedTrades = trades.filter(t=>t.status==="closed").sort((a,b)=>new Date(b.date)-new Date(a.date));
+  const expiredTrades = trades.filter(t=>t.status==="expired").sort((a,b)=>new Date(b.date)-new Date(a.date));
+  const filteredTrades = (statusFilter==="open"?openTrades:statusFilter==="closed"?closedTrades:statusFilter==="expired"?expiredTrades:trades).sort((a,b)=>new Date(b.date)-new Date(a.date));
 
   function openAdd(){setEditId(null);setForm(ef);setShowForm(true);}
   function openEdit(t){setEditId(t.id);setForm({...t,contracts:t.contracts||1});setShowForm(true);}
@@ -441,7 +443,14 @@ function AssetDashboard({ asset, onClose, onSaveTrade, onUpdateTrade, onDeleteTr
       setTrades(p=>p.map(t=>t.id===editId?{...t,...tradeData}:t));
     } else {
       const saved=await onSaveTrade(tradeData);
-      if(saved) setTrades(p=>[...p,saved]);
+      if(saved){
+        if(tradeData.action==="BUY"){
+          const toClose=trades.filter(t=>t.status==="open"&&t.action==="SELL"&&parseFloat(t.strike)===parseFloat(tradeData.strike));
+          setTrades(p=>[...p.map(t=>toClose.some(c=>c.id===t.id)?{...t,status:"closed"}:t),saved]);
+        } else {
+          setTrades(p=>[...p,saved]);
+        }
+      }
     }
     setShowForm(false);
   }
@@ -647,7 +656,7 @@ function AssetDashboard({ asset, onClose, onSaveTrade, onUpdateTrade, onDeleteTr
               <div className="sectitle">Trade history</div>
               <div style={{display:"flex",gap:8,alignItems:"center"}}>
                 <div style={{display:"flex",background:"#1a2a3a",borderRadius:6,padding:3,gap:2}}>
-                  {[["all","All"],["open","Open"],["closed","Closed"]].map(([v,l])=>(
+                  {[["all","All"],["open","Open"],["closed","Closed"],["expired","Expired"]].map(([v,l])=>(
                     <button key={v} onClick={()=>setStatusFilter(v)} style={{padding:"4px 10px",borderRadius:4,border:"none",cursor:"pointer",fontFamily:"DM Mono,monospace",fontSize:10,background:statusFilter===v?color:"transparent",color:statusFilter===v?"#080c10":"#5a7a9a"}}>{l}</button>
                   ))}
                 </div>
@@ -668,7 +677,7 @@ function AssetDashboard({ asset, onClose, onSaveTrade, onUpdateTrade, onDeleteTr
                       <td style={{color:t.action==="SELL"?color:"#ff4d6a"}}>{t.action==="SELL"?"+":"-"}${fmt(t.premium)}</td>
                       <td style={{color:"#8aaac8"}}>{t.contracts||1}</td>
                       <td style={{color:t.action==="SELL"?color:"#ff4d6a"}}>{t.action==="SELL"?"+":"-"}${fmt(t.premium*(t.contracts||1)*100)}</td>
-                      <td>{t.status==="open"?<span className="stopen" style={{color,borderColor:color+"44",background:color+"15"}}>Open</span>:t.status==="expired"?<span style={{display:"inline-block",padding:"2px 8px",background:"#a78bfa15",border:"1px solid #a78bfa44",color:"#a78bfa",borderRadius:3,fontSize:10,letterSpacing:1,textTransform:"uppercase"}}>Expired</span>:<span className="stclosed">Closed</span>}</td>
+                      <td>{t.status==="open"?<span className="stopen" style={{color,borderColor:color+"44",background:color+"15"}}>Open</span>:t.status==="expired"?<span className="stexpired">Expired</span>:<span className="stclosed">Closed</span>}</td>
                       <td><div style={{display:"flex",gap:5}}>
                         <button className="btn bsm bneutral" onClick={()=>openEdit(t)}>Edit</button>
                         <button className="btn bsm bdanger" onClick={()=>removeTrade(t.id)}>✕</button>
@@ -1404,8 +1413,15 @@ function App() {
   const [loading, setLoading] = useState(true);
 
   useEffect(()=>{
+    const today=new Date().toISOString().slice(0,10);
     fetchAssets()
-      .then(data=>{ setAssets(data); setLoading(false); })
+      .then(async data=>{
+        const expireIds=data.flatMap(a=>a.trades.filter(t=>t.status==="open"&&t.expiration<today).map(t=>t.id));
+        if(expireIds.length) await Promise.all(expireIds.map(id=>updateTrade(id,{status:"expired"})));
+        const updated=data.map(a=>({...a,trades:a.trades.map(t=>expireIds.includes(t.id)?{...t,status:"expired"}:t)}));
+        setAssets(updated);
+        setLoading(false);
+      })
       .catch(err=>{ console.error(err); setLoading(false); });
   },[]);
 
@@ -1472,7 +1488,14 @@ function App() {
   const handleSaveTrade = async (assetId, trade) => {
     try {
       const saved = await addTrade(assetId, trade);
-      setAssets(p=>p.map(a=>a.id===assetId?{...a,trades:[...a.trades,saved]}:a));
+      if(trade.action==="BUY"){
+        const asset = assets.find(a=>a.id===assetId);
+        const toClose = (asset?.trades||[]).filter(t=>t.status==="open"&&t.action==="SELL"&&parseFloat(t.strike)===parseFloat(trade.strike));
+        if(toClose.length) await Promise.all(toClose.map(t=>updateTrade(t.id,{status:"closed"})));
+        setAssets(p=>p.map(a=>a.id===assetId?{...a,trades:[...a.trades.map(t=>toClose.some(c=>c.id===t.id)?{...t,status:"closed"}:t),saved]}:a));
+      } else {
+        setAssets(p=>p.map(a=>a.id===assetId?{...a,trades:[...a.trades,saved]}:a));
+      }
       return saved;
     } catch(e){ console.error(e); }
   };
