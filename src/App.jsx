@@ -364,6 +364,7 @@ function AssetDashboard({ asset, onClose, onSaveTrade, onUpdateTrade, onDeleteTr
   const [closeLeap, setCloseLeap] = useState(null);
   const [closeLeapPrem, setCloseLeapPrem] = useState("");
   const [crForm, setCrForm] = useState({mode:"close",closePrem:"",newStrike:"",newExp:"",newPrem:"",contracts:1});
+  const [crGroup, setCrGroup] = useState([]);
   const [closeForm, setCloseForm] = useState({mode:"close",closePrem:"",newStrike:"",newExp:"",newPrem:""});
   const ef = {date:new Date().toISOString().slice(0,10),action:"SELL",strike:"",expiration:"",premium:"",contracts:"1",status:"open"};
   const [form, setForm] = useState(ef);
@@ -423,32 +424,55 @@ function AssetDashboard({ asset, onClose, onSaveTrade, onUpdateTrade, onDeleteTr
     await onDeleteTrade(id);
     setTrades(p=>p.filter(t=>t.id!==id));
   }
-  function openCR(t){setShowCR(t);setCrForm({mode:"close",closePrem:"",newStrike:t.strike,newExp:"",newPrem:"",contracts:t.contracts||1});}
+  function openCR(t){
+    const group=openTrades.filter(o=>parseFloat(o.strike)===parseFloat(t.strike)&&o.expiration===t.expiration);
+    const total=group.reduce((s,o)=>s+parseInt(o.contracts||1),0);
+    setCrGroup(group);
+    setShowCR(t);
+    setCrForm({mode:"close",closePrem:"",newStrike:t.strike,newExp:"",newPrem:"",contracts:total});
+  }
   async function confirmCR(){
     if(crForm.mode!=="expired"&&!crForm.closePrem)return;
     const today=new Date().toISOString().slice(0,10);
-    const c=parseInt(showCR.contracts||1);
+    const groupTotal=crGroup.reduce((s,o)=>s+parseInt(o.contracts||1),0);
+    let rem=Math.max(1,Math.min(parseInt(crForm.contracts)||1,groupTotal));
+    const closingTotal=rem;
 
-    if(crForm.mode==="expired"){
-      // Mark as expired — no BUY needed, full premium kept
-      await onUpdateTrade(showCR.id,{status:"expired"});
-      setTrades(p=>p.map(t=>t.id===showCR.id?{...t,status:"expired"}:t));
-      setShowCR(null);
-      return;
+    for(const trade of crGroup){
+      if(rem<=0)break;
+      const tc=parseInt(trade.contracts||1);
+      const closing=Math.min(rem,tc);
+      const keeping=tc-closing;
+      rem-=closing;
+      if(crForm.mode==="expired"){
+        if(keeping>0){
+          await onUpdateTrade(trade.id,{contracts:keeping});
+          setTrades(p=>p.map(t=>t.id===trade.id?{...t,contracts:keeping}:t));
+          const saved=await onSaveTrade({date:trade.date||today,action:"SELL",strike:trade.strike,expiration:trade.expiration,premium:trade.premium,contracts:closing,status:"expired"});
+          if(saved)setTrades(p=>[...p,saved]);
+        }else{
+          await onUpdateTrade(trade.id,{status:"expired"});
+          setTrades(p=>p.map(t=>t.id===trade.id?{...t,status:"expired"}:t));
+        }
+      }else{
+        if(keeping>0){
+          await onUpdateTrade(trade.id,{contracts:keeping});
+          setTrades(p=>p.map(t=>t.id===trade.id?{...t,contracts:keeping}:t));
+          const saved=await onSaveTrade({date:trade.date||today,action:"SELL",strike:trade.strike,expiration:trade.expiration,premium:trade.premium,contracts:closing,status:"closed"});
+          if(saved)setTrades(p=>[...p,saved]);
+        }else{
+          await onUpdateTrade(trade.id,{status:"closed"});
+          setTrades(p=>p.map(t=>t.id===trade.id?{...t,status:"closed"}:t));
+        }
+      }
     }
-
-    // Close existing
-    await onUpdateTrade(showCR.id,{status:"closed"});
-    setTrades(p=>p.map(t=>t.id===showCR.id?{...t,status:"closed"}:t));
-    // Add buy to close
-    const buyClose={date:today,action:"BUY",strike:showCR.strike,expiration:showCR.expiration,premium:parseFloat(crForm.closePrem),contracts:c,status:"closed"};
-    const savedBuy=await onSaveTrade(buyClose);
-    if(savedBuy) setTrades(p=>[...p,savedBuy]);
-    // Add roll if needed
-    if(crForm.mode==="roll"&&crForm.newExp&&crForm.newPrem){
-      const newTrade={date:today,action:"SELL",strike:parseFloat(crForm.newStrike||showCR.strike),expiration:crForm.newExp,premium:parseFloat(crForm.newPrem),contracts:c,status:"open"};
-      const savedRoll=await onSaveTrade(newTrade);
-      if(savedRoll) setTrades(p=>[...p,savedRoll]);
+    if(crForm.mode!=="expired"){
+      const savedBuy=await onSaveTrade({date:today,action:"BUY",strike:showCR.strike,expiration:showCR.expiration,premium:parseFloat(crForm.closePrem),contracts:closingTotal,status:"closed"});
+      if(savedBuy)setTrades(p=>[...p,savedBuy]);
+      if(crForm.mode==="roll"&&crForm.newExp&&crForm.newPrem){
+        const savedRoll=await onSaveTrade({date:today,action:"SELL",strike:parseFloat(crForm.newStrike||showCR.strike),expiration:crForm.newExp,premium:parseFloat(crForm.newPrem),contracts:closingTotal,status:"open"});
+        if(savedRoll)setTrades(p=>[...p,savedRoll]);
+      }
     }
     setShowCR(null);
   }
@@ -670,13 +694,27 @@ function AssetDashboard({ asset, onClose, onSaveTrade, onUpdateTrade, onDeleteTr
           <div className="fbox">
             <div className="ftitle">Close or Roll position</div>
             <div style={{background:"#080c10",border:"1px solid #1a2a3a",borderRadius:6,padding:"9px 13px",marginBottom:14,fontSize:12,color:"#8aaac8"}}>
-              <span style={{color:"#f5c842"}}>${showCR.strike}</span> · premium <span style={{color}}>${fmt(showCR.premium)}</span> · exp. {showCR.expiration}
+              {(()=>{const tot=crGroup.reduce((s,o)=>s+parseInt(o.contracts||1),0);return(<><span style={{color:"#f5c842"}}>${showCR.strike}</span> · exp. {showCR.expiration} · <span style={{color:"#c8d8e8"}}>{tot} contract{tot>1?"s":""}</span>{crGroup.length>1&&<span style={{color:"#5a7a9a",marginLeft:4}}>({crGroup.length} orders)</span>}</>);})()}
             </div>
             <div className="toggle-group" style={{marginBottom:14}}>
               {[["close","Close only"],["roll","Roll"],["expired","Expired worthless"]].map(([m,l])=>(
                 <button key={m} className="tgl" onClick={()=>setCrForm({...crForm,mode:m})} style={{flex:1,background:crForm.mode===m?color:"transparent",color:crForm.mode===m?"#080c10":"#5a7a9a"}}>{l}</button>
               ))}
             </div>
+            {crGroup.reduce((s,o)=>s+parseInt(o.contracts||1),0)>1&&(
+            <div className="fgrp" style={{marginBottom:12}}>
+              {(()=>{const tot=crGroup.reduce((s,o)=>s+parseInt(o.contracts||1),0);return(<>
+              <label className="flbl">
+                Contracts to {crForm.mode==="roll"?"roll":crForm.mode==="expired"?"expire":"close"}
+                <span style={{color:"#3a5a7a",marginLeft:6,fontSize:11}}>(max {tot}{crGroup.length>1?`, ${crGroup.length} orders`:""})</span>
+              </label>
+              <input className="finput" type="number" min="1" max={tot} step="1"
+                placeholder={tot}
+                value={crForm.contracts}
+                onChange={e=>setCrForm({...crForm,contracts:Math.max(1,Math.min(parseInt(e.target.value)||1,tot))})}/>
+              </>);})()}
+            </div>
+            )}
             {crForm.mode!=="expired"&&(
             <div className="fgrp" style={{marginBottom:12}}>
               <label className="flbl">Price paid to close ($)</label>
