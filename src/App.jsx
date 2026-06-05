@@ -403,7 +403,7 @@ function AssetDashboard({ asset, onClose, onSaveTrade, onUpdateTrade, onDeleteTr
   async function saveTrade(){
     if(!form.strike||!form.expiration||!form.premium)return;
     const tradeData={...form,strike:parseFloat(form.strike),premium:parseFloat(form.premium),contracts:parseInt(form.contracts||1)};
-    const isLeap = !editId && tradeData.action==="BUY" && tradeData.status==="open" &&
+    const isLeap = !editId && tradeData.action==="BUY" &&
       tradeData.expiration && (new Date(tradeData.expiration)-new Date())>180*24*60*60*1000;
     if(isLeap && onSaveLeap){
       await onSaveLeap({
@@ -1806,7 +1806,7 @@ function ClaudeChat({ assets, onSaveTrade, onUpdateTrade, onSaveLeap, onAddAsset
         : t.expiration;
 
       // Check if this is a LEAP — BTO with expiration > 180 days
-      const isLeap = t.action==="BUY" && t.status==="open" &&
+      const isLeap = t.action==="BUY" &&
         fixedExp && (new Date(fixedExp) - new Date()) > 180*24*60*60*1000;
 
       if(isLeap){
