@@ -404,7 +404,8 @@ function AssetDashboard({ asset, onClose, onSaveTrade, onUpdateTrade, onDeleteTr
     if(!form.strike||!form.expiration||!form.premium)return;
     const tradeData={...form,strike:parseFloat(form.strike),premium:parseFloat(form.premium),contracts:parseInt(form.contracts||1)};
     const isLeap = !editId && tradeData.action==="BUY" &&
-      tradeData.expiration && (new Date(tradeData.expiration)-new Date())>180*24*60*60*1000;
+      tradeData.expiration && tradeData.date &&
+      (new Date(tradeData.expiration)-new Date(tradeData.date))>180*24*60*60*1000;
     if(isLeap && onSaveLeap){
       await onSaveLeap({
         id:`${asset.id}_${Date.now()}`,
@@ -1472,9 +1473,21 @@ function App() {
   useEffect(()=>{
     const today=new Date().toISOString().slice(0,10);
     fetchAssets()
-      .then(data=>{
-        setAssets(data);
-        const expired=data.flatMap(a=>
+      .then(async data=>{
+        let migrated=false;
+        for(const a of data){
+          for(const t of a.trades){
+            if(t.action==="BUY"&&t.status==="open"&&t.expiration&&t.date&&
+              (new Date(t.expiration)-new Date(t.date))>180*24*60*60*1000){
+              await addLeap(a.id,{id:`${a.id}_${Date.now()}`,date:t.date,strike:parseFloat(t.strike),expiration:t.expiration,cost:parseFloat(t.premium),contracts:parseInt(t.contracts||1)});
+              await deleteTrade(t.id);
+              migrated=true;
+            }
+          }
+        }
+        const fresh=migrated?await fetchAssets():data;
+        setAssets(fresh);
+        const expired=fresh.flatMap(a=>
           a.trades
             .filter(t=>t.status==="open"&&t.expiration<today)
             .map(t=>({...t,ticker:a.ticker,assetId:a.id,color:a.color}))
@@ -1807,7 +1820,8 @@ function ClaudeChat({ assets, onSaveTrade, onUpdateTrade, onSaveLeap, onAddAsset
 
       // Check if this is a LEAP — BTO with expiration > 180 days
       const isLeap = t.action==="BUY" &&
-        fixedExp && (new Date(fixedExp) - new Date()) > 180*24*60*60*1000;
+        fixedExp && fixedDate &&
+        (new Date(fixedExp)-new Date(fixedDate))>180*24*60*60*1000;
 
       if(isLeap){
         await onSaveLeap(assetId, {
