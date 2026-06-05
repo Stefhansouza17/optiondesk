@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
-import { fetchAssets, addAsset as dbAddAsset, addLeap, addTrade, updateTrade, deleteTrade, deleteLeap, closeAsset as dbCloseAsset } from "./supabase";
+import { fetchAssets, addAsset as dbAddAsset, addLeap, addTrade, updateTrade, deleteTrade, deleteLeap, fetchOpenTrades, closeAsset as dbCloseAsset } from "./supabase";
 
 // ── API ───────────────────────────────────────────────────────────────────────
 async function fetchQuote(symbol) {
@@ -1680,24 +1680,25 @@ function ClaudeChat({ assets, onSaveTrade, onUpdateTrade, onSaveLeap, onAddAsset
       }
 
       // If BUY — check if it's closing an open SELL with same strike
-      if(t.action==="BUY"){
-        const openSell = asset.trades.find(tr=>
-          tr.action==="SELL" &&
-          tr.status==="open" &&
-          Math.abs(parseFloat(tr.strike)-parseFloat(t.strike))<0.01
-        );
-        if(openSell){
-          const sellContracts = parseInt(openSell.contracts||1);
-          const buyContracts = parseInt(t.contracts||1);
-          if(buyContracts>=sellContracts){
-            // Full close
-            await onUpdateTrade(assetId, openSell.id, {status:"closed"});
-          } else {
-            // Partial close — update contracts remaining
-            await onUpdateTrade(assetId, openSell.id, {contracts: sellContracts-buyContracts});
+      if(t.action==="BUY" && t.status==="closed"){
+        try {
+          const openTrades = await fetchOpenTrades(assetId);
+          const openSell = openTrades.find(tr=>
+            tr.action==="SELL" &&
+            tr.status==="open" &&
+            Math.abs(parseFloat(tr.strike)-parseFloat(t.strike))<0.01
+          );
+          if(openSell){
+            const sellContracts = parseInt(openSell.contracts||1);
+            const buyContracts = parseInt(t.contracts||1);
+            if(buyContracts>=sellContracts){
+              await onUpdateTrade(assetId, openSell.id, {status:"closed"});
+            } else {
+              await onUpdateTrade(assetId, openSell.id, {contracts: sellContracts-buyContracts});
+            }
+            closed++;
           }
-          closed++;
-        }
+        } catch(e){ console.error("Error matching open sell:", e); }
       }
 
       // Normalize premium — Robinhood shows per-share price AND total in parentheses
