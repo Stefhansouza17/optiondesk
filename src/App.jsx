@@ -1702,28 +1702,6 @@ function ClaudeChat({ assets, onSaveTrade, onUpdateTrade, onSaveLeap, onAddAsset
         asset = createdAssets[assetId];
       }
 
-      // If BUY — check if it's closing an open SELL with same strike
-      if(t.action==="BUY" && t.status==="closed"){
-        try {
-          const openTrades = await fetchOpenTrades(assetId);
-          const openSell = openTrades.find(tr=>
-            tr.action==="SELL" &&
-            tr.status==="open" &&
-            Math.abs(parseFloat(tr.strike)-parseFloat(t.strike))<0.01
-          );
-          if(openSell){
-            const sellContracts = parseInt(openSell.contracts||1);
-            const buyContracts = parseInt(t.contracts||1);
-            if(buyContracts>=sellContracts){
-              await onUpdateTrade(assetId, openSell.id, {status:"closed"});
-            } else {
-              await onUpdateTrade(assetId, openSell.id, {contracts: sellContracts-buyContracts});
-            }
-            closed++;
-          }
-        } catch(e){ console.error("Error matching open sell:", e); }
-      }
-
       // Normalize premium — Robinhood shows per-share price AND total in parentheses
       // The Claude API sometimes returns the total instead of per-share
       // Anything over 50 is definitely a total cost, not per-share premium
@@ -1762,6 +1740,28 @@ function ClaudeChat({ assets, onSaveTrade, onUpdateTrade, onSaveLeap, onAddAsset
         });
         saved++;
         continue;
+      }
+
+      // If BUY (and not a LEAP) — close matching open SELL with same strike
+      if(t.action==="BUY"){
+        try {
+          const openTrades = await fetchOpenTrades(assetId);
+          const openSell = openTrades.find(tr=>
+            tr.action==="SELL" &&
+            tr.status==="open" &&
+            Math.abs(parseFloat(tr.strike)-parseFloat(t.strike))<0.01
+          );
+          if(openSell){
+            const sellContracts = parseInt(openSell.contracts||1);
+            const buyContracts = parseInt(t.contracts||1);
+            if(buyContracts>=sellContracts){
+              await onUpdateTrade(assetId, openSell.id, {status:"closed"});
+            } else {
+              await onUpdateTrade(assetId, openSell.id, {contracts: sellContracts-buyContracts});
+            }
+            closed++;
+          }
+        } catch(e){ console.error("Error matching open sell:", e); }
       }
 
       // Save the new trade — use status from Claude response, not assumed
