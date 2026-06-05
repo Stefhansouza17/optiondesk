@@ -303,24 +303,24 @@ function MarketTab({ defaultSymbol, color }) {
 
 // ── Calculator ────────────────────────────────────────────────────────────────
 function Calculator({ asset, totalCollected, etfPrice }) {
-  const [sellStrike, setSellStrike] = useState(asset.leapStrike+5);
-  const [sellPrem, setSellPrem] = useState(0.50);
-  const [buyPrem, setBuyPrem] = useState(0);
-  const [weeks, setWeeks] = useState(16);
+  const [sellStrike, setSellStrike] = useState(String(asset.leapStrike+5));
+  const [sellPrem, setSellPrem] = useState("0.50");
+  const [buyPrem, setBuyPrem] = useState("0");
+  const [weeks, setWeeks] = useState("16");
   const color = asset.color;
-  const net = sellPrem-buyPrem;
+  const net = (parseFloat(sellPrem)||0)-(parseFloat(buyPrem)||0);
   const basis = asset.leapCost-totalCollected;
-  const spread = sellStrike-asset.leapStrike;
+  const spread = (parseFloat(sellStrike)||0)-asset.leapStrike;
   const projW = basis/Math.max(net,0.01);
   const wpct = net/basis;
-  const proj = totalCollected+net*weeks;
+  const proj = totalCollected+net*(parseFloat(weeks)||0);
   return (
     <div>
       <div className="sec" style={{marginBottom:16}}>
         <div className="sechdr"><div className="sectitle">Roll Calculator</div></div>
         <div style={{padding:"16px",display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
           {[["Short strike ($)",sellStrike,setSellStrike,0.5],["Premium received ($)",sellPrem,setSellPrem,0.01],["Premium paid to close ($)",buyPrem,setBuyPrem,0.01],["Weeks projected",weeks,setWeeks,1]].map(([l,v,s,st])=>(
-            <div className="fgrp" key={l}><label className="flbl">{l}</label><input className="finput" type="number" step={st} value={v} onChange={e=>s(parseFloat(e.target.value)||0)}/></div>
+            <div className="fgrp" key={l}><label className="flbl">{l}</label><input className="finput" type="number" step={st} value={v} onChange={e=>s(e.target.value)}/></div>
           ))}
         </div>
         <div style={{padding:"0 16px 16px",display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:10}}>
@@ -337,7 +337,7 @@ function Calculator({ asset, totalCollected, etfPrice }) {
         <table>
           <thead><tr><th>Scenario</th><th>{asset.ticker} price</th><th>Result</th><th>Est. P&L</th></tr></thead>
           <tbody>
-            {[["Strong drop",etfPrice*0.7,"Expires worthless ✓",(asset.leapCost-totalCollected)*-100],["Moderate drop",etfPrice*0.85,"Expires worthless ✓",(basis-sellPrem)*-50],["Sideways",etfPrice,"Near ATM",net*100],["Moderate rally",etfPrice*1.1,"ITM — roll",(spread+net)*100],["Strong rally",etfPrice*1.25,"Deep ITM",(spread+net)*100]].map(([l,p,o,pnl])=>(
+            {[["Strong drop",etfPrice*0.7,"Expires worthless ✓",(asset.leapCost-totalCollected)*-100],["Moderate drop",etfPrice*0.85,"Expires worthless ✓",(basis-(parseFloat(sellPrem)||0))*-50],["Sideways",etfPrice,"Near ATM",net*100],["Moderate rally",etfPrice*1.1,"ITM — roll",(spread+net)*100],["Strong rally",etfPrice*1.25,"Deep ITM",(spread+net)*100]].map(([l,p,o,pnl])=>(
               <tr key={l}><td style={{color:"#c8d8e8"}}>{l}</td><td style={{color:"#f5c842"}}>${fmt(p)}</td><td style={{color:"#8aaac8",fontSize:11}}>{o}</td><td style={{color:pnl>=0?color:"#ff4d6a"}}>{pnl>=0?"+":""}${fmt(pnl)}</td></tr>
             ))}
           </tbody>
@@ -718,7 +718,7 @@ function AssetDashboard({ asset, onClose, onSaveTrade, onUpdateTrade, onDeleteTr
             {crForm.mode!=="expired"&&(
             <div className="fgrp" style={{marginBottom:12}}>
               <label className="flbl">Price paid to close ($)</label>
-              <input className="finput" type="number" min="0" step="0.01" placeholder="0.05" value={crForm.closePrem} onChange={e=>setCrForm({...crForm,closePrem:Math.abs(parseFloat(e.target.value)||0)||""})} />
+              <input className="finput" type="number" min="0" step="0.01" placeholder="0.05" value={crForm.closePrem} onChange={e=>setCrForm({...crForm,closePrem:e.target.value})} />
             </div>
             )}
             {crForm.mode==="expired"&&(
@@ -731,7 +731,7 @@ function AssetDashboard({ asset, onClose, onSaveTrade, onUpdateTrade, onDeleteTr
                 <div style={{borderTop:"1px solid #1a2a3a",paddingTop:12,marginBottom:10,fontSize:10,letterSpacing:2,textTransform:"uppercase",color:"#3a5a7a"}}>New position</div>
                 <div className="frow">
                   <div className="fgrp"><label className="flbl">New strike ($)</label><input className="finput" type="number" step="0.5" value={crForm.newStrike} onChange={e=>setCrForm({...crForm,newStrike:e.target.value})}/></div>
-                  <div className="fgrp"><label className="flbl">Premium received ($)</label><input className="finput" type="number" min="0" step="0.01" placeholder="0.55" value={crForm.newPrem} onChange={e=>setCrForm({...crForm,newPrem:Math.abs(parseFloat(e.target.value)||0)||""})}/></div>
+                  <div className="fgrp"><label className="flbl">Premium received ($)</label><input className="finput" type="number" min="0" step="0.01" placeholder="0.55" value={crForm.newPrem} onChange={e=>setCrForm({...crForm,newPrem:e.target.value})}/></div>
                 </div>
                 <div className="fgrp" style={{marginBottom:12}}>
                   <label className="flbl">New expiration</label>
