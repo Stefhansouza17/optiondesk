@@ -348,7 +348,7 @@ function Calculator({ asset, totalCollected, etfPrice }) {
 }
 
 // ── Asset Dashboard ───────────────────────────────────────────────────────────
-function AssetDashboard({ asset, onClose, onSaveTrade, onUpdateTrade, onDeleteTrade, onDeleteLeap, onDeleteAsset }) {
+function AssetDashboard({ asset, onClose, onSaveTrade, onUpdateTrade, onDeleteTrade, onDeleteLeap, onDeleteAsset, onSaveLeap }) {
   const [trades, setTrades] = useState(asset.trades);
   const [etfPrice, setEtfPrice] = useState(asset.initialPrice||0);
   const [liveData, setLiveData] = useState(null);
@@ -403,6 +403,20 @@ function AssetDashboard({ asset, onClose, onSaveTrade, onUpdateTrade, onDeleteTr
   async function saveTrade(){
     if(!form.strike||!form.expiration||!form.premium)return;
     const tradeData={...form,strike:parseFloat(form.strike),premium:parseFloat(form.premium),contracts:parseInt(form.contracts||1)};
+    const isLeap = !editId && tradeData.action==="BUY" && tradeData.status==="open" &&
+      tradeData.expiration && (new Date(tradeData.expiration)-new Date())>180*24*60*60*1000;
+    if(isLeap && onSaveLeap){
+      await onSaveLeap({
+        id:`${asset.id}_${Date.now()}`,
+        date:tradeData.date,
+        strike:tradeData.strike,
+        expiration:tradeData.expiration,
+        cost:tradeData.premium,
+        contracts:tradeData.contracts,
+      });
+      setShowForm(false);
+      return;
+    }
     if(editId){
       await onUpdateTrade(editId,tradeData);
       setTrades(p=>p.map(t=>t.id===editId?{...t,...tradeData}:t));
@@ -1620,6 +1634,7 @@ function App() {
           onUpdateTrade={(id,c)=>handleUpdateTrade(a.id,id,c)}
           onDeleteTrade={(id)=>handleDeleteTrade(a.id,id)}
           onDeleteLeap={(id)=>handleDeleteLeap(a.id,id)}
+          onSaveLeap={(l)=>handleSaveLeap(a.id,l)}
           onDeleteAsset={handleDeleteAsset}
         />
       ))}
