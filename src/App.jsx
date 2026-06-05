@@ -415,17 +415,18 @@ function AssetDashboard({ asset, onClose, onSaveTrade, onUpdateTrade, onDeleteTr
   useEffect(()=>{fetchLive();},[fetchLive]);
 
   const leaps = asset.leaps||[];
-  const totalLeapCost = leaps.reduce((s,l)=>s+l.cost*l.contracts,0);
+  const totalLeapCost = leaps.reduce((s,l)=>s+l.cost*l.contracts*100,0);
   const leapContracts = leaps.reduce((s,l)=>s+l.contracts,0);
-  const leapAvg = leapContracts>0 ? totalLeapCost/leapContracts : 0;
+  const leapAvg = leapContracts>0 ? totalLeapCost/leapContracts : 0; // dollars per contract
+  const leapAvgPerShare = leapContracts>0 ? leaps.reduce((s,l)=>s+l.cost*l.contracts,0)/leapContracts : 0;
 
   const totalCollected = trades.reduce((a,t)=>{
     if(t.status==="expired") return a; // expired worthless — no cost, keep full premium
     return t.action==="SELL"?a+parseFloat(t.premium||0)*parseInt(t.contracts||1):a-parseFloat(t.premium||0)*parseInt(t.contracts||1);
   },0);
   const totalDollar = totalCollected*100;
-  const costBasis = leapAvg-totalCollected;
-  const recovPct = Math.min(totalLeapCost>0?totalCollected/totalLeapCost:0,1);
+  const costBasis = leapAvg - totalDollar;
+  const recovPct = Math.min(totalLeapCost>0?totalDollar/totalLeapCost:0,1);
   const openTrades = trades.filter(t=>t.status==="open").sort((a,b)=>new Date(a.expiration)-new Date(b.expiration));
   const closedTrades = trades.filter(t=>t.status==="closed"||t.status==="expired").sort((a,b)=>new Date(b.date)-new Date(a.date));
   const filteredTrades = (statusFilter==="open"?openTrades:statusFilter==="closed"?closedTrades:trades).sort((a,b)=>new Date(b.date)-new Date(a.date));
@@ -563,10 +564,10 @@ function AssetDashboard({ asset, onClose, onSaveTrade, onUpdateTrade, onDeleteTr
                     <div style={{display:"flex",justifyContent:"space-between",fontSize:11,color:"#5a7a9a",marginBottom:8}}>
                       <span>$0</span>
                       <span style={{color}}>${fmt(totalDollar)} collected</span>
-                      <span>${fmt(totalLeapCost*100)}</span>
+                      <span>${fmt(totalLeapCost)} target</span>
                     </div>
                     <div className="ptrack"><div className="pfill" style={{width:`${recovPct*100}%`,background:`linear-gradient(90deg,${color},#3a8fff)`}}/></div>
-                    <div style={{fontSize:11,color:"#5a7a9a",marginTop:6}}>$<span style={{color:"#f5c842"}}>{fmt(Math.max(totalLeapCost*100-totalDollar,0))}</span> remaining to free LEAP</div>
+                    <div style={{fontSize:11,color:"#5a7a9a",marginTop:6}}>$<span style={{color:"#f5c842"}}>{fmt(Math.max(totalLeapCost-totalDollar,0))}</span> remaining to free LEAP</div>
                   </div>
                 </div>
                 <div className="sec">
@@ -594,7 +595,7 @@ function AssetDashboard({ asset, onClose, onSaveTrade, onUpdateTrade, onDeleteTr
                     </tbody>
                   </table>
                   <div style={{padding:"10px 16px",borderTop:"1px solid #1a2a3a",display:"flex",justifyContent:"space-between",fontSize:11,color:"#5a7a9a"}}>
-                    <span>Total cost: <span style={{color:"#c8d8e8"}}>${fmt(totalLeapCost*100)}</span></span>
+                    <span>Total cost: <span style={{color:"#c8d8e8"}}>${fmt(totalLeapCost)}</span></span>
                     <span>Avg cost/contract: <span style={{color}}>${fmt(leapAvg)}</span></span>
                   </div>
                 </div>
@@ -875,9 +876,9 @@ function Home({ assets, onSelectAsset, onShowPositions }) {
 
   const totals = useMemo(()=>assets.filter(a=>a.active).map(a=>{
     const leaps = a.leaps||[];
-    const leapCost = leaps.reduce((s,l)=>s+l.cost*l.contracts,0); // total cost
+    const leapCost = leaps.reduce((s,l)=>s+l.cost*l.contracts*100,0); // total cost in dollars
     const leapContracts = leaps.reduce((s,l)=>s+l.contracts,0);
-    const leapAvg = leapContracts>0 ? leapCost/leapContracts : 0;
+    const leapAvg = leapContracts>0 ? leapCost/leapContracts : 0; // dollars per contract
     const col=a.trades.reduce((acc,t)=>{
       if(t.status==="expired") return acc;
       return t.action==="SELL"?acc+parseFloat(t.premium||0)*parseInt(t.contracts||1):acc-parseFloat(t.premium||0)*parseInt(t.contracts||1);
@@ -887,10 +888,10 @@ function Home({ assets, onSelectAsset, onShowPositions }) {
     const openPremium=openSells.reduce((acc,t)=>acc+parseFloat(t.premium||0)*parseInt(t.contracts||1),0);
     const nearestExp=[...openSells].sort((a,b)=>new Date(a.expiration)-new Date(b.expiration))[0];
     const daysLeft=nearestExp?Math.ceil((new Date(nearestExp.expiration)-new Date())/(1000*60*60*24)):null;
-    return {...a,leaps,leapCost,leapContracts,leapAvg,col,colDollar:col*100,basis:leapAvg-col,openTrades,openSells,openPremium,nearestExp,daysLeft};
+    return {...a,leaps,leapCost,leapContracts,leapAvg,col,colDollar:col*100,basis:leapAvg-col*100,openTrades,openSells,openPremium,nearestExp,daysLeft};
   }),[assets]);
   const grandCol=useMemo(()=>totals.reduce((a,t)=>a+t.colDollar,0),[totals]);
-  const grandCost=useMemo(()=>totals.reduce((a,t)=>a+t.leapCost*100,0),[totals]);
+  const grandCost=useMemo(()=>totals.reduce((a,t)=>a+t.leapCost,0),[totals]);
   const openPositions=useMemo(()=>totals.reduce((a,t)=>a+t.openTrades.length,0)+totals.reduce((a,t)=>a+t.leapContracts,0),[totals]);
   const currentCycle=useMemo(()=>totals.reduce((a,t)=>a+t.openPremium*100,0),[totals]);
   const avgRecovery=useMemo(()=>grandCost>0?(grandCol/grandCost)*100:0,[grandCol,grandCost]);
@@ -1299,7 +1300,7 @@ function AddAssetModal({ onAdd, onClose, usedColors }) {
             <div style={{borderTop:"1px solid #1a2a3a",paddingTop:12,marginBottom:10,fontSize:10,letterSpacing:2,textTransform:"uppercase",color:"#3a5a7a"}}>LEAP details</div>
             <div className="frow">
               <div className="fgrp"><label className="flbl">Strike ($)</label><input className="finput" type="number" step="0.5" value={leapStrike} onChange={e=>setLeapStrike(e.target.value)}/></div>
-              <div className="fgrp"><label className="flbl">Cost ($)</label><input className="finput" type="number" step="0.01" value={leapCost} onChange={e=>setLeapCost(e.target.value)}/></div>
+              <div className="fgrp"><label className="flbl">Cost per share ($)</label><input className="finput" type="number" step="0.01" placeholder="e.g. 10.12" value={leapCost} onChange={e=>setLeapCost(e.target.value)}/></div>
             </div>
             <div className="frow">
               <div className="fgrp"><label className="flbl">Expiration</label><input className="finput" placeholder="Jan 2027" value={leapExp} onChange={e=>setLeapExp(e.target.value)}/></div>
@@ -1411,6 +1412,18 @@ function App() {
   const addAsset = async (a) => {
     try {
       await dbAddAsset(a);
+      // If LEAP data provided in old format, create a leaps entry
+      if(a.leapCost && a.leapCost>0 && a.leapStrike){
+        const leap = {
+          id: `${a.id}_L${Date.now()}`,
+          date: new Date().toISOString().slice(0,10),
+          strike: a.leapStrike,
+          expiration: a.leapExpiration||"",
+          cost: a.leapCost,
+          contracts: 1,
+        };
+        await addLeap(a.id, leap);
+      }
       if(a.leaps) for(const l of a.leaps) await addLeap(a.id, l);
       const fresh = await fetchAssets();
       setAssets(fresh);
@@ -1687,10 +1700,11 @@ function ClaudeChat({ assets, onSaveTrade, onUpdateTrade, onSaveLeap, onAddAsset
         }
       }
 
-      // Normalize premium — if > 5 it's likely dollar amount per contract, divide by 100
-      const normalizedPremium = parseFloat(t.premium||0) > 5
-        ? parseFloat(t.premium)/100
-        : parseFloat(t.premium||0);
+      // Normalize premium — Robinhood shows per-share price AND total in parentheses
+      // The Claude API sometimes returns the total instead of per-share
+      // Anything over 50 is definitely a total cost, not per-share premium
+      const rawPremium = parseFloat(t.premium||0);
+      const normalizedPremium = rawPremium > 50 ? rawPremium/100 : rawPremium;
 
       // Validate trade date only — if year is in the past, fix to current year
       const tradeDate = t.date||new Date().toISOString().slice(0,10);
@@ -1835,16 +1849,51 @@ function ClaudeChat({ assets, onSaveTrade, onUpdateTrade, onSaveLeap, onAddAsset
               </div>
             )}
             {pendingTrades.length>0&&!missingField&&(
-              <div style={{background:"#00d4aa10",border:"1px solid #00d4aa33",borderRadius:8,padding:10}}>
+              <div style={{background:"#080c10",border:"1px solid #00d4aa33",borderRadius:8,padding:10}}>
+                <div style={{fontSize:10,letterSpacing:2,color:"#5a7a9a",textTransform:"uppercase",marginBottom:8}}>Review & edit before saving</div>
                 {pendingTrades.map((t,i)=>(
-                  <div key={i} style={{fontSize:11,color:"#c8d8e8",marginBottom:4}}>
-                    <span style={{color:t.action==="SELL"?"#00d4aa":"#ff4d6a"}}>{t.action}</span>{" "}
-                    <span style={{color:"#fff",fontWeight:600}}>{t.asset_id}</span>{" "}
-                    <span style={{color:"#f5c842"}}>${t.strike}</span>{" "}
-                    exp {t.expiration} @ <span style={{color:"#00d4aa"}}>${t.premium}</span>
+                  <div key={i} style={{background:"#0a1520",border:"1px solid #1a2a3a",borderRadius:6,padding:8,marginBottom:8}}>
+                    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6,marginBottom:6}}>
+                      <div>
+                        <div style={{fontSize:9,color:"#5a7a9a",marginBottom:2}}>ASSET</div>
+                        <input style={{width:"100%",background:"#080c10",border:"1px solid #1a2a3a",color:"#fff",fontFamily:"DM Mono,monospace",fontSize:11,padding:"4px 8px",borderRadius:4,outline:"none",boxSizing:"border-box"}}
+                          value={t.asset_id||""} onChange={e=>{const v=[...pendingTrades];v[i]={...v[i],asset_id:e.target.value.toUpperCase()};setPendingTrades(v);}}/>
+                      </div>
+                      <div>
+                        <div style={{fontSize:9,color:"#5a7a9a",marginBottom:2}}>ACTION</div>
+                        <select style={{width:"100%",background:"#080c10",border:"1px solid #1a2a3a",color:t.action==="SELL"?"#00d4aa":"#ff4d6a",fontFamily:"DM Mono,monospace",fontSize:11,padding:"4px 8px",borderRadius:4,outline:"none"}}
+                          value={t.action||"SELL"} onChange={e=>{const v=[...pendingTrades];v[i]={...v[i],action:e.target.value};setPendingTrades(v);}}>
+                          <option value="SELL">SELL</option>
+                          <option value="BUY">BUY</option>
+                        </select>
+                      </div>
+                      <div>
+                        <div style={{fontSize:9,color:"#5a7a9a",marginBottom:2}}>STRIKE</div>
+                        <input type="number" style={{width:"100%",background:"#080c10",border:"1px solid #1a2a3a",color:"#f5c842",fontFamily:"DM Mono,monospace",fontSize:11,padding:"4px 8px",borderRadius:4,outline:"none",boxSizing:"border-box"}}
+                          value={t.strike||""} onChange={e=>{const v=[...pendingTrades];v[i]={...v[i],strike:e.target.value};setPendingTrades(v);}}/>
+                      </div>
+                      <div>
+                        <div style={{fontSize:9,color:"#5a7a9a",marginBottom:2}}>EXPIRATION</div>
+                        <input style={{width:"100%",background:"#080c10",border:"1px solid #1a2a3a",color:"#c8d8e8",fontFamily:"DM Mono,monospace",fontSize:11,padding:"4px 8px",borderRadius:4,outline:"none",boxSizing:"border-box"}}
+                          placeholder="YYYY-MM-DD" value={t.expiration||""} onChange={e=>{const v=[...pendingTrades];v[i]={...v[i],expiration:e.target.value};setPendingTrades(v);}}/>
+                      </div>
+                      <div>
+                        <div style={{fontSize:9,color:"#5a7a9a",marginBottom:2}}>PRICE/SHARE ($)</div>
+                        <input type="number" style={{width:"100%",background:"#080c10",border:"1px solid #1a2a3a",color:"#00d4aa",fontFamily:"DM Mono,monospace",fontSize:11,padding:"4px 8px",borderRadius:4,outline:"none",boxSizing:"border-box"}}
+                          value={t.premium||""} onChange={e=>{const v=[...pendingTrades];v[i]={...v[i],premium:e.target.value};setPendingTrades(v);}}/>
+                      </div>
+                      <div>
+                        <div style={{fontSize:9,color:"#5a7a9a",marginBottom:2}}>CONTRACTS</div>
+                        <input type="number" style={{width:"100%",background:"#080c10",border:"1px solid #1a2a3a",color:"#8aaac8",fontFamily:"DM Mono,monospace",fontSize:11,padding:"4px 8px",borderRadius:4,outline:"none",boxSizing:"border-box"}}
+                          value={t.contracts||1} onChange={e=>{const v=[...pendingTrades];v[i]={...v[i],contracts:e.target.value};setPendingTrades(v);}}/>
+                      </div>
+                    </div>
+                    <div style={{fontSize:10,color:"#5a7a9a",textAlign:"right"}}>
+                      Total: <span style={{color:"#fff",fontWeight:600}}>${((parseFloat(t.premium)||0)*(parseInt(t.contracts)||1)*100).toFixed(2)}</span>
+                    </div>
                   </div>
                 ))}
-                <div style={{display:"flex",gap:8,marginTop:8}}>
+                <div style={{display:"flex",gap:8,marginTop:4}}>
                   <button className="btn bsm" onClick={confirmTrades} style={{flex:1}}>✅ Confirm</button>
                   <button className="btn bsm bdanger" onClick={()=>{setPendingTrades([]);setMissingField(null);}} style={{flex:1}}>✕ Cancel</button>
                 </div>
