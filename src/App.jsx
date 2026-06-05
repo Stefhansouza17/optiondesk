@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
-import { fetchAssets, addAsset as dbAddAsset, addLeap, addTrade, updateTrade, deleteTrade, closeAsset as dbCloseAsset } from "./supabase";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { fetchAssets, addAsset as dbAddAsset, addLeap, addTrade, updateTrade, deleteTrade, deleteLeap, fetchOpenTrades, closeAsset as dbCloseAsset } from "./supabase";
 
 // ── API ───────────────────────────────────────────────────────────────────────
 async function fetchQuote(symbol) {
@@ -180,7 +180,6 @@ tr:last-child td{border-bottom:none}
 tr:hover td{background:#101e2c}
 .stopen{display:inline-block;padding:2px 8px;border-radius:3px;font-size:10px;letter-spacing:1px;text-transform:uppercase}
 .stclosed{display:inline-block;padding:2px 8px;background:#1a2a3a;border:1px solid #2a3a4a;color:#5a7a9a;border-radius:3px;font-size:10px;letter-spacing:1px;text-transform:uppercase}
-.stexpired{display:inline-block;padding:2px 8px;background:#BA751715;border:1px solid #BA751744;color:#BA7517;border-radius:3px;font-size:10px;letter-spacing:1px;text-transform:uppercase}
 .overlay{position:fixed;inset:0;background:rgba(0,0,0,0.75);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;z-index:200}
 .fbox{background:#0d1821;border:1px solid #1a2a3a;border-radius:12px;padding:24px;width:480px;max-width:95vw;box-shadow:0 40px 80px rgba(0,0,0,0.6);max-height:90vh;overflow-y:auto}
 .ftitle{font-family:'Syne',sans-serif;font-size:16px;font-weight:700;color:#fff;margin-bottom:16px}
@@ -385,7 +384,7 @@ function Calculator({ asset, totalCollected, etfPrice }) {
 }
 
 // ── Asset Dashboard ───────────────────────────────────────────────────────────
-function AssetDashboard({ asset, onClose, onSaveTrade, onUpdateTrade, onDeleteTrade }) {
+function AssetDashboard({ asset, onClose, onSaveTrade, onUpdateTrade, onDeleteTrade, onDeleteLeap, onDeleteAsset }) {
   const [trades, setTrades] = useState(asset.trades);
   const [etfPrice, setEtfPrice] = useState(asset.initialPrice||0);
   const [liveData, setLiveData] = useState(null);
@@ -397,6 +396,9 @@ function AssetDashboard({ asset, onClose, onSaveTrade, onUpdateTrade, onDeleteTr
   const [editId, setEditId] = useState(null);
   const [showCR, setShowCR] = useState(null);
   const [showClose, setShowClose] = useState(false);
+  const [showDelete, setShowDelete] = useState(false);
+  const [closeLeap, setCloseLeap] = useState(null);
+  const [closeLeapPrem, setCloseLeapPrem] = useState("");
   const [crForm, setCrForm] = useState({mode:"close",closePrem:"",newStrike:"",newExp:"",newPrem:"",contracts:1});
   const [closeForm, setCloseForm] = useState({mode:"close",closePrem:"",newStrike:"",newExp:"",newPrem:""});
   const ef = {date:new Date().toISOString().slice(0,10),action:"SELL",strike:"",expiration:"",premium:"",contracts:"1",status:"open"};
@@ -413,18 +415,21 @@ function AssetDashboard({ asset, onClose, onSaveTrade, onUpdateTrade, onDeleteTr
   useEffect(()=>{fetchLive();},[fetchLive]);
 
   const leaps = asset.leaps||[];
-  const totalLeapCost = leaps.reduce((s,l)=>s+l.cost*l.contracts,0);
+  const totalLeapCost = leaps.reduce((s,l)=>s+l.cost*l.contracts*100,0);
   const leapContracts = leaps.reduce((s,l)=>s+l.contracts,0);
-  const leapAvg = leapContracts>0 ? totalLeapCost/leapContracts : 0;
+  const leapAvg = leapContracts>0 ? totalLeapCost/leapContracts : 0; // dollars per contract
+  const leapAvgPerShare = leapContracts>0 ? leaps.reduce((s,l)=>s+l.cost*l.contracts,0)/leapContracts : 0;
 
-  const totalCollected = trades.reduce((a,t)=>t.action==="SELL"?a+parseFloat(t.premium||0)*parseInt(t.contracts||1):a-parseFloat(t.premium||0)*parseInt(t.contracts||1),0);
+  const totalCollected = trades.reduce((a,t)=>{
+    if(t.status==="expired") return a; // expired worthless — no cost, keep full premium
+    return t.action==="SELL"?a+parseFloat(t.premium||0)*parseInt(t.contracts||1):a-parseFloat(t.premium||0)*parseInt(t.contracts||1);
+  },0);
   const totalDollar = totalCollected*100;
-  const costBasis = leapAvg-totalCollected;
-  const recovPct = Math.min(totalLeapCost>0?totalCollected/totalLeapCost:0,1);
+  const costBasis = leapAvg - totalDollar;
+  const recovPct = Math.min(totalLeapCost>0?totalDollar/totalLeapCost:0,1);
   const openTrades = trades.filter(t=>t.status==="open").sort((a,b)=>new Date(a.expiration)-new Date(b.expiration));
-  const closedTrades = trades.filter(t=>t.status==="closed").sort((a,b)=>new Date(b.date)-new Date(a.date));
-  const expiredTrades = trades.filter(t=>t.status==="expired").sort((a,b)=>new Date(b.date)-new Date(a.date));
-  const filteredTrades = (statusFilter==="open"?openTrades:statusFilter==="closed"?closedTrades:statusFilter==="expired"?expiredTrades:trades).sort((a,b)=>new Date(b.date)-new Date(a.date));
+  const closedTrades = trades.filter(t=>t.status==="closed"||t.status==="expired").sort((a,b)=>new Date(b.date)-new Date(a.date));
+  const filteredTrades = (statusFilter==="open"?openTrades:statusFilter==="closed"?closedTrades:trades).sort((a,b)=>new Date(b.date)-new Date(a.date));
 
   function openAdd(){setEditId(null);setForm(ef);setShowForm(true);}
   function openEdit(t){setEditId(t.id);setForm({...t,contracts:t.contracts||1});setShowForm(true);}
@@ -436,14 +441,7 @@ function AssetDashboard({ asset, onClose, onSaveTrade, onUpdateTrade, onDeleteTr
       setTrades(p=>p.map(t=>t.id===editId?{...t,...tradeData}:t));
     } else {
       const saved=await onSaveTrade(tradeData);
-      if(saved){
-        if(tradeData.action==="BUY"){
-          const toClose=trades.filter(t=>t.status==="open"&&t.action==="SELL"&&parseFloat(t.strike)===parseFloat(tradeData.strike));
-          setTrades(p=>[...p.map(t=>toClose.some(c=>c.id===t.id)?{...t,status:"closed"}:t),saved]);
-        } else {
-          setTrades(p=>[...p,saved]);
-        }
-      }
+      if(saved) setTrades(p=>[...p,saved]);
     }
     setShowForm(false);
   }
@@ -453,9 +451,18 @@ function AssetDashboard({ asset, onClose, onSaveTrade, onUpdateTrade, onDeleteTr
   }
   function openCR(t){setShowCR(t);setCrForm({mode:"close",closePrem:"",newStrike:t.strike,newExp:"",newPrem:"",contracts:t.contracts||1});}
   async function confirmCR(){
-    if(!crForm.closePrem)return;
+    if(crForm.mode!=="expired"&&!crForm.closePrem)return;
     const today=new Date().toISOString().slice(0,10);
     const c=parseInt(showCR.contracts||1);
+
+    if(crForm.mode==="expired"){
+      // Mark as expired — no BUY needed, full premium kept
+      await onUpdateTrade(showCR.id,{status:"expired"});
+      setTrades(p=>p.map(t=>t.id===showCR.id?{...t,status:"expired"}:t));
+      setShowCR(null);
+      return;
+    }
+
     // Close existing
     await onUpdateTrade(showCR.id,{status:"closed"});
     setTrades(p=>p.map(t=>t.id===showCR.id?{...t,status:"closed"}:t));
@@ -470,6 +477,19 @@ function AssetDashboard({ asset, onClose, onSaveTrade, onUpdateTrade, onDeleteTr
       if(savedRoll) setTrades(p=>[...p,savedRoll]);
     }
     setShowCR(null);
+  }
+  async function confirmCloseLeap(){
+    if(!closeLeapPrem||!closeLeap) return;
+    const today = new Date().toISOString().slice(0,10);
+    const saved = await onSaveTrade({
+      date:today, action:"SELL", strike:closeLeap.strike,
+      expiration:closeLeap.expiration, premium:parseFloat(closeLeapPrem),
+      contracts:closeLeap.contracts||1, status:"closed"
+    });
+    if(saved) setTrades(p=>[...p,saved]);
+    await onDeleteLeap(closeLeap.id);
+    setCloseLeap(null);
+    setCloseLeapPrem("");
   }
   async function confirmClose(){
     if(!closeForm.closePrem)return;
@@ -499,6 +519,7 @@ function AssetDashboard({ asset, onClose, onSaveTrade, onUpdateTrade, onDeleteTr
         {isPremium&&<><div className="dvdr"/><div className="sml">LEAP <span>${asset.leapStrike}</span></div><div className="dvdr"/><div className="sml">distance <span className={etfPrice>=asset.leapStrike?"green":"red"}>{etfPrice>=asset.leapStrike?"+":""}{fmt(etfPrice-asset.leapStrike)}</span></div><div className="dvdr"/><div className="sml">avg cost <span style={{color}}>${fmt(leapAvg)}</span></div></>}
         <div style={{marginLeft:"auto",display:"flex",gap:8}}>
           <button className="btn bsm" onClick={fetchLive} disabled={loadingLive} style={{color,borderColor:color+"44",background:color+"15"}}>{loadingLive?"...":"↻"}</button>
+          <button className="btn bsm bneutral" onClick={()=>setShowDelete(true)}>✕ Delete</button>
           <button className="btn bsm bdanger" onClick={()=>setShowClose(true)}>Close strategy</button>
         </div>
         {liveErr&&<div style={{fontSize:11,color:"#ff4d6a"}}>{liveErr}</div>}
@@ -543,10 +564,10 @@ function AssetDashboard({ asset, onClose, onSaveTrade, onUpdateTrade, onDeleteTr
                     <div style={{display:"flex",justifyContent:"space-between",fontSize:11,color:"#5a7a9a",marginBottom:8}}>
                       <span>$0</span>
                       <span style={{color}}>${fmt(totalDollar)} collected</span>
-                      <span>${fmt(totalLeapCost*100)}</span>
+                      <span>${fmt(totalLeapCost)} target</span>
                     </div>
                     <div className="ptrack"><div className="pfill" style={{width:`${recovPct*100}%`,background:`linear-gradient(90deg,${color},#3a8fff)`}}/></div>
-                    <div style={{fontSize:11,color:"#5a7a9a",marginTop:6}}>$<span style={{color:"#f5c842"}}>{fmt(Math.max(totalLeapCost*100-totalDollar,0))}</span> remaining to free LEAP</div>
+                    <div style={{fontSize:11,color:"#5a7a9a",marginTop:6}}>$<span style={{color:"#f5c842"}}>{fmt(Math.max(totalLeapCost-totalDollar,0))}</span> remaining to free LEAP</div>
                   </div>
                 </div>
                 <div className="sec">
@@ -558,7 +579,7 @@ function AssetDashboard({ asset, onClose, onSaveTrade, onUpdateTrade, onDeleteTr
                     </div>
                   </div>
                   <table>
-                    <thead><tr><th>Date</th><th>Strike</th><th>Expiration</th><th>Cost</th><th>Contracts</th><th>Total</th></tr></thead>
+                    <thead><tr><th>Date</th><th>Strike</th><th>Expiration</th><th>Cost</th><th>Contracts</th><th>Total</th><th></th></tr></thead>
                     <tbody>
                       {leaps.map((l,i)=>(
                         <tr key={l.id||i}>
@@ -568,12 +589,13 @@ function AssetDashboard({ asset, onClose, onSaveTrade, onUpdateTrade, onDeleteTr
                           <td style={{color}}>${fmt(l.cost)}</td>
                           <td style={{color:"#8aaac8"}}>{l.contracts}</td>
                           <td style={{color}}>${fmt(l.cost*l.contracts*100)}</td>
+                          <td><button className="btn bsm bdanger" onClick={()=>{setCloseLeap(l);setCloseLeapPrem("");}}>Close</button></td>
                         </tr>
                       ))}
                     </tbody>
                   </table>
                   <div style={{padding:"10px 16px",borderTop:"1px solid #1a2a3a",display:"flex",justifyContent:"space-between",fontSize:11,color:"#5a7a9a"}}>
-                    <span>Total cost: <span style={{color:"#c8d8e8"}}>${fmt(totalLeapCost*100)}</span></span>
+                    <span>Total cost: <span style={{color:"#c8d8e8"}}>${fmt(totalLeapCost)}</span></span>
                     <span>Avg cost/contract: <span style={{color}}>${fmt(leapAvg)}</span></span>
                   </div>
                 </div>
@@ -625,7 +647,7 @@ function AssetDashboard({ asset, onClose, onSaveTrade, onUpdateTrade, onDeleteTr
               <div className="sectitle">Trade history</div>
               <div style={{display:"flex",gap:8,alignItems:"center"}}>
                 <div style={{display:"flex",background:"#1a2a3a",borderRadius:6,padding:3,gap:2}}>
-                  {[["all","All"],["open","Open"],["closed","Closed"],["expired","Expired"]].map(([v,l])=>(
+                  {[["all","All"],["open","Open"],["closed","Closed"]].map(([v,l])=>(
                     <button key={v} onClick={()=>setStatusFilter(v)} style={{padding:"4px 10px",borderRadius:4,border:"none",cursor:"pointer",fontFamily:"DM Mono,monospace",fontSize:10,background:statusFilter===v?color:"transparent",color:statusFilter===v?"#080c10":"#5a7a9a"}}>{l}</button>
                   ))}
                 </div>
@@ -646,7 +668,7 @@ function AssetDashboard({ asset, onClose, onSaveTrade, onUpdateTrade, onDeleteTr
                       <td style={{color:t.action==="SELL"?color:"#ff4d6a"}}>{t.action==="SELL"?"+":"-"}${fmt(t.premium)}</td>
                       <td style={{color:"#8aaac8"}}>{t.contracts||1}</td>
                       <td style={{color:t.action==="SELL"?color:"#ff4d6a"}}>{t.action==="SELL"?"+":"-"}${fmt(t.premium*(t.contracts||1)*100)}</td>
-                      <td>{t.status==="open"?<span className="stopen" style={{color,borderColor:color+"44",background:color+"15"}}>Open</span>:t.status==="expired"?<span className="stexpired">Expired</span>:<span className="stclosed">Closed</span>}</td>
+                      <td>{t.status==="open"?<span className="stopen" style={{color,borderColor:color+"44",background:color+"15"}}>Open</span>:t.status==="expired"?<span style={{display:"inline-block",padding:"2px 8px",background:"#a78bfa15",border:"1px solid #a78bfa44",color:"#a78bfa",borderRadius:3,fontSize:10,letterSpacing:1,textTransform:"uppercase"}}>Expired</span>:<span className="stclosed">Closed</span>}</td>
                       <td><div style={{display:"flex",gap:5}}>
                         <button className="btn bsm bneutral" onClick={()=>openEdit(t)}>Edit</button>
                         <button className="btn bsm bdanger" onClick={()=>removeTrade(t.id)}>✕</button>
@@ -677,14 +699,21 @@ function AssetDashboard({ asset, onClose, onSaveTrade, onUpdateTrade, onDeleteTr
               <span style={{color:"#f5c842"}}>${showCR.strike}</span> · premium <span style={{color}}>${fmt(showCR.premium)}</span> · exp. {showCR.expiration}
             </div>
             <div className="toggle-group" style={{marginBottom:14}}>
-              {[["close","Close only"],["roll","Roll"]].map(([m,l])=>(
+              {[["close","Close only"],["roll","Roll"],["expired","Expired worthless"]].map(([m,l])=>(
                 <button key={m} className="tgl" onClick={()=>setCrForm({...crForm,mode:m})} style={{flex:1,background:crForm.mode===m?color:"transparent",color:crForm.mode===m?"#080c10":"#5a7a9a"}}>{l}</button>
               ))}
             </div>
+            {crForm.mode!=="expired"&&(
             <div className="fgrp" style={{marginBottom:12}}>
               <label className="flbl">Price paid to close ($)</label>
               <input className="finput" type="number" step="0.01" placeholder="0.05" value={crForm.closePrem} onChange={e=>setCrForm({...crForm,closePrem:e.target.value})}/>
             </div>
+            )}
+            {crForm.mode==="expired"&&(
+              <div style={{background:"#a78bfa10",border:"1px solid #a78bfa33",borderRadius:6,padding:"10px 14px",marginBottom:12,fontSize:12,color:"#a78bfa"}}>
+                Option expired worthless — full premium kept, no cost to close. ✅
+              </div>
+            )}
             {crForm.mode==="roll"&&(
               <>
                 <div style={{borderTop:"1px solid #1a2a3a",paddingTop:12,marginBottom:10,fontSize:10,letterSpacing:2,textTransform:"uppercase",color:"#3a5a7a"}}>New position</div>
@@ -713,6 +742,66 @@ function AssetDashboard({ asset, onClose, onSaveTrade, onUpdateTrade, onDeleteTr
             <div className="factions">
               <button className="btn bneutral bfull" onClick={()=>setShowCR(null)}>Cancel</button>
               <button className="btn bfull" onClick={confirmCR} style={{color,borderColor:color+"44",background:color+"15"}}>{crForm.mode==="roll"?"Confirm Roll":"Confirm Close"}</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Close LEAP Modal */}
+      {closeLeap&&(
+        <div className="overlay" onClick={e=>e.target===e.currentTarget&&setCloseLeap(null)}>
+          <div className="fbox">
+            <div className="ftitle">Close LEAP — {asset.ticker}</div>
+            <div style={{background:"#080c10",border:"1px solid #1a2a3a",borderRadius:6,padding:"9px 13px",marginBottom:14,fontSize:12,color:"#8aaac8"}}>
+              <span style={{color:"#f5c842"}}>${closeLeap.strike}</span> · exp {closeLeap.expiration} · cost <span style={{color}}>${fmt(closeLeap.cost)}</span> · {closeLeap.contracts} contract{closeLeap.contracts>1?"s":""}
+            </div>
+            <div className="fgrp" style={{marginBottom:12}}>
+              <label className="flbl">Price received to sell LEAP ($)</label>
+              <input className="finput" type="number" step="0.01" placeholder="e.g. 5.50" value={closeLeapPrem}
+                onChange={e=>setCloseLeapPrem(e.target.value)} autoFocus/>
+            </div>
+            {closeLeapPrem&&(
+              <div style={{background:"#080c10",border:"1px solid #1a2a3a",borderRadius:6,padding:"9px 13px",marginBottom:12,fontSize:12}}>
+                <div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}>
+                  <span style={{color:"#5a7a9a"}}>Original cost:</span>
+                  <span style={{color:"#ff4d6a"}}>-${fmt(closeLeap.cost*closeLeap.contracts*100)}</span>
+                </div>
+                <div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}>
+                  <span style={{color:"#5a7a9a"}}>Sale price:</span>
+                  <span style={{color:"#00d4aa"}}>+${fmt(parseFloat(closeLeapPrem)*closeLeap.contracts*100)}</span>
+                </div>
+                <div style={{display:"flex",justifyContent:"space-between",borderTop:"1px solid #1a2a3a",paddingTop:6,marginTop:4}}>
+                  <span style={{color:"#5a7a9a"}}>Net P&L on LEAP:</span>
+                  <span style={{fontWeight:700,color:(parseFloat(closeLeapPrem)-closeLeap.cost)>=0?"#00d4aa":"#ff4d6a"}}>
+                    {(parseFloat(closeLeapPrem)-closeLeap.cost)>=0?"+":""}${fmt((parseFloat(closeLeapPrem)-closeLeap.cost)*closeLeap.contracts*100)}
+                  </span>
+                </div>
+              </div>
+            )}
+            <div className="factions">
+              <button className="btn bneutral bfull" onClick={()=>setCloseLeap(null)}>Cancel</button>
+              <button className="btn bfull bdanger" onClick={confirmCloseLeap}>Confirm close LEAP</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Asset Modal */}
+      {showDelete&&(
+        <div className="overlay" onClick={e=>e.target===e.currentTarget&&setShowDelete(false)}>
+          <div className="fbox">
+            <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:14}}>
+              <div style={{width:36,height:36,borderRadius:"50%",background:"#ff4d6a15",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+                <span style={{color:"#ff4d6a",fontSize:18}}>⚠</span>
+              </div>
+              <div className="ftitle" style={{margin:0}}>Remove {asset.ticker} from dashboard?</div>
+            </div>
+            <p style={{fontSize:14,color:"#8aaac8",lineHeight:1.6,marginBottom:20}}>
+              This will permanently remove <span style={{color:"#fff",fontWeight:500}}>{asset.ticker}</span> and everything associated with it — all trades, LEAPs, and history. There's no way to undo this.
+            </p>
+            <div className="factions">
+              <button className="btn bneutral bfull" onClick={()=>setShowDelete(false)}>Cancel</button>
+              <button className="btn bfull bdanger" onClick={()=>{onDeleteAsset(asset.id);setShowDelete(false);}}>Yes, remove it</button>
             </div>
           </div>
         </div>
@@ -756,7 +845,7 @@ function AssetDashboard({ asset, onClose, onSaveTrade, onUpdateTrade, onDeleteTr
               <div className="fgrp"><label className="flbl">Contracts</label><input className="finput" type="number" step="1" min="1" value={form.contracts} onChange={e=>setForm({...form,contracts:e.target.value})}/></div>
             </div>
             <div className="frow">
-              <div className="fgrp"><label className="flbl">Status</label><select className="fsel" value={form.status} onChange={e=>setForm({...form,status:e.target.value})}><option value="open">Open</option><option value="closed">Closed</option></select></div>
+              <div className="fgrp"><label className="flbl">Status</label><select className="fsel" value={form.status} onChange={e=>setForm({...form,status:e.target.value})}><option value="open">Open</option><option value="closed">Closed</option><option value="expired">Expired (worthless)</option></select></div>
             </div>
             <div className="factions">
               <button className="btn bneutral bfull" onClick={()=>setShowForm(false)}>Cancel</button>
@@ -787,19 +876,22 @@ function Home({ assets, onSelectAsset, onShowPositions }) {
 
   const totals = useMemo(()=>assets.filter(a=>a.active).map(a=>{
     const leaps = a.leaps||[];
-    const leapCost = leaps.reduce((s,l)=>s+l.cost*l.contracts,0); // total cost
+    const leapCost = leaps.reduce((s,l)=>s+l.cost*l.contracts*100,0); // total cost in dollars
     const leapContracts = leaps.reduce((s,l)=>s+l.contracts,0);
-    const leapAvg = leapContracts>0 ? leapCost/leapContracts : 0;
-    const col=a.trades.reduce((acc,t)=>t.action==="SELL"?acc+parseFloat(t.premium||0)*parseInt(t.contracts||1):acc-parseFloat(t.premium||0)*parseInt(t.contracts||1),0);
+    const leapAvg = leapContracts>0 ? leapCost/leapContracts : 0; // dollars per contract
+    const col=a.trades.reduce((acc,t)=>{
+      if(t.status==="expired") return acc;
+      return t.action==="SELL"?acc+parseFloat(t.premium||0)*parseInt(t.contracts||1):acc-parseFloat(t.premium||0)*parseInt(t.contracts||1);
+    },0);
     const openTrades=a.trades.filter(t=>t.status==="open");
     const openSells=openTrades.filter(t=>t.action==="SELL");
     const openPremium=openSells.reduce((acc,t)=>acc+parseFloat(t.premium||0)*parseInt(t.contracts||1),0);
     const nearestExp=[...openSells].sort((a,b)=>new Date(a.expiration)-new Date(b.expiration))[0];
     const daysLeft=nearestExp?Math.ceil((new Date(nearestExp.expiration)-new Date())/(1000*60*60*24)):null;
-    return {...a,leaps,leapCost,leapContracts,leapAvg,col,colDollar:col*100,basis:leapAvg-col,openTrades,openSells,openPremium,nearestExp,daysLeft};
+    return {...a,leaps,leapCost,leapContracts,leapAvg,col,colDollar:col*100,basis:leapAvg-col*100,openTrades,openSells,openPremium,nearestExp,daysLeft};
   }),[assets]);
   const grandCol=useMemo(()=>totals.reduce((a,t)=>a+t.colDollar,0),[totals]);
-  const grandCost=useMemo(()=>totals.reduce((a,t)=>a+t.leapCost*100,0),[totals]);
+  const grandCost=useMemo(()=>totals.reduce((a,t)=>a+t.leapCost,0),[totals]);
   const openPositions=useMemo(()=>totals.reduce((a,t)=>a+t.openTrades.length,0)+totals.reduce((a,t)=>a+t.leapContracts,0),[totals]);
   const currentCycle=useMemo(()=>totals.reduce((a,t)=>a+t.openPremium*100,0),[totals]);
   const avgRecovery=useMemo(()=>grandCost>0?(grandCol/grandCost)*100:0,[grandCol,grandCost]);
@@ -838,9 +930,10 @@ function Home({ assets, onSelectAsset, onShowPositions }) {
   const breakeven=optType==="call"?(side==="buy"?strike+premium:strike-premium):(side==="buy"?strike-premium:strike+premium);
   const maxLoss=side==="buy"?("$"+(premium*100).toFixed(0)):optType==="call"?"Unlimited":("$"+((strike-premium)*100).toFixed(0));
   const maxProfit=side==="buy"?(optType==="call"?"Unlimited":("$"+((strike-premium)*100).toFixed(0))):("$"+(premium*100).toFixed(0));
-  const priceRows=[];
-  if(etfPrice>0){for(let p=etfPrice*1.15;p>=etfPrice*0.85;p-=etfPrice*0.025){priceRows.push(parseFloat(p.toFixed(2)));}}
-
+  const priceRows=filteredChain
+    .filter(o=>etfPrice>0?o.strike>=etfPrice*0.85&&o.strike<=etfPrice*1.15:true)
+    .map(o=>o.strike)
+    .sort((a,b)=>b-a);
   return (
     <div className="main fade-in">
       {/* KPI Cards */}
@@ -1048,18 +1141,19 @@ function Home({ assets, onSelectAsset, onShowPositions }) {
                   <tbody>
                     {priceRows.map(price=>{
                       const ppct=((price-etfPrice)/etfPrice*100).toFixed(1);
-                      const isCur=Math.abs(price-etfPrice)<etfPrice*0.013;
+                      const isCur=price===filteredChain.reduce((a,b)=>Math.abs(b.strike-etfPrice)<Math.abs(a.strike-etfPrice)?b:a,filteredChain[0]||{strike:0}).strike;
+                      // Get real option data for this strike
+                      const rowOpt=chain.filter(o=>o.option_type===optType).find(o=>o.strike===price);
+                      const rowPrem=rowOpt?.ask||rowOpt?.last||0;
                       return (
                         <tr key={price} style={{background:isCur?"#ffffff08":undefined}}>
-                          <td style={{color:isCur?"#fff":"#c8d8e8",fontWeight:isCur?700:400}}>${price.toFixed(2)}{isCur&&<span style={{marginLeft:5,fontSize:9,color:"#00d4aa"}}>▲</span>}</td>
+                          <td style={{color:isCur?"#fff":"#c8d8e8",fontWeight:isCur?700:400}}>${price.toFixed(2)}{isCur&&<span style={{marginLeft:5,fontSize:9,color:"#00d4aa"}}>◀ ATM</span>}</td>
                           <td style={{color:parseFloat(ppct)>=0?"#00d4aa":"#ff4d6a",fontSize:11}}>{parseFloat(ppct)>=0?"+":""}{ppct}%</td>
                           {exps.slice(0,6).map((e,ei)=>{
-                            const opt=chain.filter(o=>o.option_type===optType).find(o=>Math.abs(o.strike-strike)<0.26);
-                            const prem=opt?.ask||premium;
-                            const intrinsic=optType==="call"?Math.max(price-strike,0):Math.max(strike-price,0);
-                            const tv=Math.max(prem*(1-ei/7),0);
+                            const intrinsic=optType==="call"?Math.max(price-price,0):Math.max(price-price,0);
+                            const tv=Math.max(rowPrem*(1-ei/7),0);
                             const optVal=Math.max(intrinsic,tv*0.2);
-                            const pnl=side==="buy"?Math.round((optVal-prem)*100):Math.round((prem-optVal)*100);
+                            const pnl=side==="buy"?Math.round((optVal-rowPrem)*100):Math.round((rowPrem-optVal)*100);
                             const intensity=Math.min(Math.abs(pnl)/300,1);
                             const bg=pnl>0?`rgba(0,212,170,${intensity*0.35})`:pnl<0?`rgba(226,75,74,${intensity*0.35})`:"transparent";
                             return <td key={e} style={{textAlign:"center",background:bg,color:pnl>0?"#00d4aa":pnl<0?"#ff6b6b":"#5a7a9a",fontWeight:Math.abs(pnl)>100?600:400}}>{pnl>0?"+":""}{pnl}</td>;
@@ -1087,7 +1181,10 @@ function ClosedStrategies({ closedAssets }) {
         <div style={{textAlign:"center",padding:"60px 0",color:"#3a5a7a",fontSize:12}}>No closed strategies yet</div>
       ):(
         closedAssets.map(a=>{
-          const total=a.trades.reduce((acc,t)=>t.action==="SELL"?acc+parseFloat(t.premium||0)*parseInt(t.contracts||1):acc-parseFloat(t.premium||0)*parseInt(t.contracts||1),0);
+          const total=a.trades.reduce((acc,t)=>{
+            if(t.status==="expired") return acc;
+            return t.action==="SELL"?acc+parseFloat(t.premium||0)*parseInt(t.contracts||1):acc-parseFloat(t.premium||0)*parseInt(t.contracts||1);
+          },0);
           return (
             <div key={a.id} className="sec" style={{marginBottom:16}}>
               <div className="sechdr">
@@ -1203,7 +1300,7 @@ function AddAssetModal({ onAdd, onClose, usedColors }) {
             <div style={{borderTop:"1px solid #1a2a3a",paddingTop:12,marginBottom:10,fontSize:10,letterSpacing:2,textTransform:"uppercase",color:"#3a5a7a"}}>LEAP details</div>
             <div className="frow">
               <div className="fgrp"><label className="flbl">Strike ($)</label><input className="finput" type="number" step="0.5" value={leapStrike} onChange={e=>setLeapStrike(e.target.value)}/></div>
-              <div className="fgrp"><label className="flbl">Cost ($)</label><input className="finput" type="number" step="0.01" value={leapCost} onChange={e=>setLeapCost(e.target.value)}/></div>
+              <div className="fgrp"><label className="flbl">Cost per share ($)</label><input className="finput" type="number" step="0.01" placeholder="e.g. 10.12" value={leapCost} onChange={e=>setLeapCost(e.target.value)}/></div>
             </div>
             <div className="frow">
               <div className="fgrp"><label className="flbl">Expiration</label><input className="finput" placeholder="Jan 2027" value={leapExp} onChange={e=>setLeapExp(e.target.value)}/></div>
@@ -1307,25 +1404,51 @@ function App() {
   const [loading, setLoading] = useState(true);
 
   useEffect(()=>{
-    const today=new Date().toISOString().slice(0,10);
     fetchAssets()
-      .then(async data=>{
-        const expireIds=data.flatMap(a=>a.trades.filter(t=>t.status==="open"&&t.expiration<today).map(t=>t.id));
-        if(expireIds.length) await Promise.all(expireIds.map(id=>updateTrade(id,{status:"expired"})));
-        const updated=data.map(a=>({...a,trades:a.trades.map(t=>expireIds.includes(t.id)?{...t,status:"expired"}:t)}));
-        setAssets(updated);
-        setLoading(false);
-      })
+      .then(data=>{ setAssets(data); setLoading(false); })
       .catch(err=>{ console.error(err); setLoading(false); });
   },[]);
 
   const addAsset = async (a) => {
     try {
       await dbAddAsset(a);
+      // If LEAP data provided in old format, create a leaps entry
+      if(a.leapCost && a.leapCost>0 && a.leapStrike){
+        const leap = {
+          id: `${a.id}_L${Date.now()}`,
+          date: new Date().toISOString().slice(0,10),
+          strike: a.leapStrike,
+          expiration: a.leapExpiration||"",
+          cost: a.leapCost,
+          contracts: 1,
+        };
+        await addLeap(a.id, leap);
+      }
       if(a.leaps) for(const l of a.leaps) await addLeap(a.id, l);
       const fresh = await fetchAssets();
       setAssets(fresh);
       setActive(a.id);
+    } catch(e){ console.error(e); }
+  };
+
+  const addAssetSilent = async (a) => {
+    try {
+      await dbAddAsset(a);
+      setAssets(p=>[...p,{...a, leaps:[], trades:[]}]);
+      return true;
+    } catch(e){
+      // If duplicate key, asset already exists — still ok
+      if(e.code==="23505"||e.message?.includes("duplicate")) return true;
+      console.error("addAssetSilent error:", e);
+      return false;
+    }
+  };
+
+  const handleDeleteAsset = async (id) => {
+    try {
+      await dbCloseAsset(id);
+      setAssets(p=>p.filter(x=>x.id!==id));
+      setActive("home");
     } catch(e){ console.error(e); }
   };
 
@@ -1339,17 +1462,17 @@ function App() {
     } catch(e){ console.error(e); }
   };
 
+  const handleSaveLeap = async (assetId, leap) => {
+    try {
+      await addLeap(assetId, leap);
+      setAssets(p=>p.map(a=>a.id===assetId?{...a,leaps:[...a.leaps,leap]}:a));
+    } catch(e){ console.error(e); }
+  };
+
   const handleSaveTrade = async (assetId, trade) => {
     try {
       const saved = await addTrade(assetId, trade);
-      if(trade.action==="BUY"){
-        const asset = assets.find(a=>a.id===assetId);
-        const toClose = (asset?.trades||[]).filter(t=>t.status==="open"&&t.action==="SELL"&&parseFloat(t.strike)===parseFloat(trade.strike));
-        if(toClose.length) await Promise.all(toClose.map(t=>updateTrade(t.id,{status:"closed"})));
-        setAssets(p=>p.map(a=>a.id===assetId?{...a,trades:[...a.trades.map(t=>toClose.some(c=>c.id===t.id)?{...t,status:"closed"}:t),saved]}:a));
-      } else {
-        setAssets(p=>p.map(a=>a.id===assetId?{...a,trades:[...a.trades,saved]}:a));
-      }
+      setAssets(p=>p.map(a=>a.id===assetId?{...a,trades:[...a.trades,saved]}:a));
       return saved;
     } catch(e){ console.error(e); }
   };
@@ -1358,6 +1481,13 @@ function App() {
     try {
       await updateTrade(tradeId, changes);
       setAssets(p=>p.map(a=>a.id===assetId?{...a,trades:a.trades.map(t=>t.id===tradeId?{...t,...changes}:t)}:a));
+    } catch(e){ console.error(e); }
+  };
+
+  const handleDeleteLeap = async (assetId, leapId) => {
+    try {
+      await deleteLeap(leapId);
+      setAssets(p=>p.map(a=>a.id===assetId?{...a,leaps:a.leaps.filter(l=>l.id!==leapId)}:a));
     } catch(e){ console.error(e); }
   };
 
@@ -1407,32 +1537,36 @@ function App() {
           onSaveTrade={(t)=>handleSaveTrade(a.id,t)}
           onUpdateTrade={(id,c)=>handleUpdateTrade(a.id,id,c)}
           onDeleteTrade={(id)=>handleDeleteTrade(a.id,id)}
+          onDeleteLeap={(id)=>handleDeleteLeap(a.id,id)}
+          onDeleteAsset={handleDeleteAsset}
         />
       ))}
       {active==="closed"&&<ClosedStrategies closedAssets={closedAssets}/>}
       {showAdd&&<AddAssetModal onAdd={addAsset} onClose={()=>setShowAdd(false)} usedColors={assets.map(a=>a.color)}/>}
       {showPositions&&<AllPositionsModal assets={assets} onClose={()=>setShowPositions(false)}/>}
-      <ClaudeChat assets={assets} onSaveTrade={handleSaveTrade}/>
+      <ClaudeChat assets={assets} onSaveTrade={handleSaveTrade} onUpdateTrade={handleUpdateTrade} onSaveLeap={handleSaveLeap} onAddAsset={addAssetSilent}/>
     </div>
   );
 }
 
 // ── Claude Chat ───────────────────────────────────────────────────────────────
-function ClaudeChat({ assets, onSaveTrade }) {
+function ClaudeChat({ assets, onSaveTrade, onUpdateTrade, onSaveLeap, onAddAsset }) {
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState([{role:"assistant",content:"Hey! Send me a trade confirmation or describe your trade and I'll register it automatically. You can also upload a photo of your Robinhood confirmation! 📸"}]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [pendingTrades, setPendingTrades] = useState([]);
-  const fileRef = React.useRef(null);
-  const bottomRef = React.useRef(null);
+  const [missingField, setMissingField] = useState(null);
+  const [missingInput, setMissingInput] = useState("");
+  const fileRef = useRef(null);
+  const bottomRef = useRef(null);
 
   useEffect(()=>{ if(open&&bottomRef.current) bottomRef.current.scrollIntoView({behavior:"smooth"}); },[messages,open]);
 
-  const sendMessage = async (text, imageData) => {
+  const sendMessage = async (text, imageData, mediaType="image/jpeg") => {
     if(!text&&!imageData)return;
     const userMsg = {role:"user", content: imageData
-      ? [{type:"image",source:{type:"base64",media_type:"image/jpeg",data:imageData}},{type:"text",text:text||"What trades are in this confirmation?"}]
+      ? [{type:"image",source:{type:"base64",media_type:mediaType,data:imageData}},{type:"text",text:text||"What trades are in this confirmation?"}]
       : text
     };
     const newMsgs = [...messages, userMsg];
@@ -1441,10 +1575,15 @@ function ClaudeChat({ assets, onSaveTrade }) {
     setLoading(true);
 
     try {
-      const apiMessages = newMsgs.filter(m=>m.role!=="assistant"||m!==messages[0]).map(m=>({
-        role:m.role,
-        content:typeof m.content==="string"?m.content:m.content
-      }));
+      // Only send last image in context — don't accumulate images
+      const apiMessages = newMsgs
+        .filter(m=>!(m.role==="assistant"&&m===messages[0]))
+        .map((m,i,arr)=>({
+          role:m.role,
+          content: Array.isArray(m.content)
+            ? (i===arr.length-1 ? m.content : [{type:"text",text:"[image sent]"}])
+            : m.content
+        }));
 
       const res = await fetch("/api/claude", {
         method:"POST",
@@ -1452,13 +1591,28 @@ function ClaudeChat({ assets, onSaveTrade }) {
         body:JSON.stringify({messages:apiMessages})
       });
       const data = await res.json();
-      const text = data.content?.[0]?.text||"";
+      if(data.error){
+        setMessages(p=>[...p,{role:"assistant",content:"API Error: "+data.error}]);
+        setLoading(false);
+        return;
+      }
+      const text = data.content?.[0]?.text||"No response";
 
       try {
-        const parsed = JSON.parse(text);
+        const clean = text.replace(/```json|```/g,"").trim();
+        const parsed = JSON.parse(clean);
         if(parsed.trades&&parsed.trades.length>0){
-          setPendingTrades(parsed.trades);
-          setMessages(p=>[...p,{role:"assistant",content:parsed.message+"\n\nConfirm to save these trades?"}]);
+          // Check for missing required fields
+          const missing = parsed.trades.find(t=>!t.expiration||t.expiration==="unknown"||t.expiration==="");
+          if(missing){
+            setPendingTrades(parsed.trades);
+            setMissingField("expiration");
+            setMessages(p=>[...p,{role:"assistant",content:`${parsed.message}\n\n⚠️ I couldn't find the expiration date. What's the expiration for this trade?`}]);
+          } else {
+            setPendingTrades(parsed.trades);
+            setMissingField(null);
+            setMessages(p=>[...p,{role:"assistant",content:parsed.message+"\n\nConfirm to save these trades?"}]);
+          }
         } else {
           setMessages(p=>[...p,{role:"assistant",content:parsed.message||text}]);
         }
@@ -1471,30 +1625,176 @@ function ClaudeChat({ assets, onSaveTrade }) {
     setLoading(false);
   };
 
-  const confirmTrades = async () => {
-    for(const t of pendingTrades){
-      const assetId = t.asset_id;
-      if(assets.find(a=>a.id===assetId)){
-        await onSaveTrade(assetId, {
-          date:t.date, action:t.action, strike:t.strike,
-          expiration:t.expiration, premium:t.premium,
-          contracts:t.contracts||1, status:t.status||"open"
-        });
+  const applyMissingField = () => {
+    if(!missingInput.trim()) return;
+    let value = missingInput.trim();
+    // Normalize date format
+    if(missingField==="expiration"){
+      // Accept YYYY-MM-DD, MM/DD/YYYY, MM/DD/YY, MM-DD-YYYY
+      if(/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(value)){
+        const [m,d,y]=value.split("/");
+        value=`${y}-${m.padStart(2,"0")}-${d.padStart(2,"0")}`;
+      } else if(/^\d{1,2}\/\d{1,2}\/\d{2}$/.test(value)){
+        const [m,d,y]=value.split("/");
+        value=`20${y}-${m.padStart(2,"0")}-${d.padStart(2,"0")}`;
+      } else if(/^\d{1,2}-\d{1,2}-\d{4}$/.test(value)){
+        const [m,d,y]=value.split("-");
+        value=`${y}-${m.padStart(2,"0")}-${d.padStart(2,"0")}`;
       }
     }
+    const updated = pendingTrades.map(t=>({...t,[missingField]:value}));
+    setPendingTrades(updated);
+    setMissingField(null);
+    setMissingInput("");
+    setMessages(p=>[...p,{role:"assistant",content:`Got it! Expiration set to ${value}. Confirm to save?`}]);
+  };
+
+  const confirmTrades = async () => {
+    let saved = 0;
+    let notFound = [];
+    let closed = 0;
+    const createdAssets = {}; // track assets created during this loop
+
+    for(const t of pendingTrades){
+      const assetId = (t.asset_id||"").toUpperCase();
+      let asset = assets.find(a=>a.id===assetId) || createdAssets[assetId];
+
+      if(!asset){
+        // Auto-create the asset
+        const newAsset = {
+          id: assetId,
+          ticker: assetId,
+          strategy: "PMCC",
+          color: "#00d4aa",
+          leapStrike: null,
+          leapExpiration: null,
+          leapDelta: null,
+          initialPrice: 0,
+          active: true,
+          leaps: [],
+          trades: []
+        };
+        await onAddAsset(newAsset);
+        createdAssets[assetId] = {...newAsset};
+        asset = createdAssets[assetId];
+      }
+
+      // If BUY — check if it's closing an open SELL with same strike
+      if(t.action==="BUY" && t.status==="closed"){
+        try {
+          const openTrades = await fetchOpenTrades(assetId);
+          const openSell = openTrades.find(tr=>
+            tr.action==="SELL" &&
+            tr.status==="open" &&
+            Math.abs(parseFloat(tr.strike)-parseFloat(t.strike))<0.01
+          );
+          if(openSell){
+            const sellContracts = parseInt(openSell.contracts||1);
+            const buyContracts = parseInt(t.contracts||1);
+            if(buyContracts>=sellContracts){
+              await onUpdateTrade(assetId, openSell.id, {status:"closed"});
+            } else {
+              await onUpdateTrade(assetId, openSell.id, {contracts: sellContracts-buyContracts});
+            }
+            closed++;
+          }
+        } catch(e){ console.error("Error matching open sell:", e); }
+      }
+
+      // Normalize premium — Robinhood shows per-share price AND total in parentheses
+      // The Claude API sometimes returns the total instead of per-share
+      // Anything over 50 is definitely a total cost, not per-share premium
+      const rawPremium = parseFloat(t.premium||0);
+      const normalizedPremium = rawPremium > 50 ? rawPremium/100 : rawPremium;
+
+      // Validate trade date only — if year is in the past, fix to current year
+      const tradeDate = t.date||new Date().toISOString().slice(0,10);
+      const tradeYear = parseInt(tradeDate.slice(0,4));
+      const currentYear = new Date().getFullYear();
+      const fixedDate = tradeYear < currentYear
+        ? tradeDate.replace(String(tradeYear), String(currentYear))
+        : tradeDate;
+
+      // Expiration — only fix if clearly wrong (past year for short-term options)
+      // Don't fix if expiration is more than 1 year out (could be a LEAP)
+      const expYear = parseInt((t.expiration||"").slice(0,4));
+      const expDate = new Date(t.expiration);
+      const fixedExp = (t.expiration && expYear < currentYear && expDate < new Date())
+        ? t.expiration.replace(String(expYear), String(currentYear))
+        : t.expiration;
+
+      // Check if this is a LEAP — BTO with expiration > 180 days
+      const isLeap = t.action==="BUY" && t.status==="open" &&
+        fixedExp && (new Date(fixedExp) - new Date()) > 180*24*60*60*1000;
+
+      if(isLeap){
+        // Save as LEAP instead of trade
+        await onSaveLeap(assetId, {
+          id: `${assetId}_${Date.now()}`,
+          date: fixedDate,
+          strike: parseFloat(t.strike),
+          expiration: fixedExp,
+          cost: normalizedPremium,
+          contracts: parseInt(t.contracts||1),
+        });
+        saved++;
+        continue;
+      }
+
+      // Save the new trade — use status from Claude response, not assumed
+      await onSaveTrade(assetId, {
+        date:fixedDate, action:t.action, strike:t.strike,
+        expiration:fixedExp, premium:normalizedPremium,
+        contracts:t.contracts||1, status: t.status||"open"
+      });
+      saved++;
+    }
+
     setPendingTrades([]);
-    setMessages(p=>[...p,{role:"assistant",content:`✅ ${pendingTrades.length} trade${pendingTrades.length>1?"s":""} saved successfully!`}]);
+    let msg = `✅ ${saved} trade${saved>1?"s":""} saved!`;
+    if(closed>0) msg += ` ${closed} open position${closed>1?"s":""} closed.`;
+    const newAssetNames = Object.keys(createdAssets);
+    if(newAssetNames.length>0) msg += ` Created: ${newAssetNames.join(", ")}.`;
+    if(notFound.length>0) msg += ` ⚠️ Asset not found: ${notFound.join(", ")}`;
+    setMessages(p=>[...p,{role:"assistant",content:msg}]);
   };
 
   const handleFile = (e) => {
     const file = e.target.files[0];
     if(!file)return;
+
+    // PDF not supported
+    if(file.type==="application/pdf"){
+      setMessages(p=>[...p,{role:"assistant",content:"PDFs não são suportados ainda. Por favor envie uma foto (PNG ou JPEG) da confirmação! 📸"}]);
+      return;
+    }
+
     const reader = new FileReader();
     reader.onload = (ev) => {
-      const base64 = ev.target.result.split(",")[1];
-      sendMessage("", base64);
+      // Resize image before sending to avoid token limits
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        const maxSize = 1000;
+        let w = img.width, h = img.height;
+        if(w>maxSize||h>maxSize){
+          if(w>h){ h=Math.round(h*maxSize/w); w=maxSize; }
+          else { w=Math.round(w*maxSize/h); h=maxSize; }
+        }
+        canvas.width=w; canvas.height=h;
+        canvas.getContext("2d").drawImage(img,0,0,w,h);
+        const base64 = canvas.toDataURL("image/jpeg",0.85).split(",")[1];
+        sendMessage("", base64, "image/jpeg");
+      };
+      img.src = ev.target.result;
     };
     reader.readAsDataURL(file);
+  };
+
+  // Reset file input after each use
+  const handleFileClick = () => {
+    if(fileRef.current) fileRef.current.value = "";
+    fileRef.current?.click();
   };
 
   return (
@@ -1549,19 +1849,70 @@ function ClaudeChat({ assets, onSaveTrade }) {
                 </div>
               </div>
             )}
-            {pendingTrades.length>0&&(
-              <div style={{background:"#00d4aa10",border:"1px solid #00d4aa33",borderRadius:8,padding:10}}>
+            {pendingTrades.length>0&&!missingField&&(
+              <div style={{background:"#080c10",border:"1px solid #00d4aa33",borderRadius:8,padding:10}}>
+                <div style={{fontSize:10,letterSpacing:2,color:"#5a7a9a",textTransform:"uppercase",marginBottom:8}}>Review & edit before saving</div>
                 {pendingTrades.map((t,i)=>(
-                  <div key={i} style={{fontSize:11,color:"#c8d8e8",marginBottom:4}}>
-                    <span style={{color:t.action==="SELL"?"#00d4aa":"#ff4d6a"}}>{t.action}</span>{" "}
-                    <span style={{color:"#fff",fontWeight:600}}>{t.asset_id}</span>{" "}
-                    <span style={{color:"#f5c842"}}>${t.strike}</span>{" "}
-                    exp {t.expiration} @ <span style={{color:"#00d4aa"}}>${t.premium}</span>
+                  <div key={i} style={{background:"#0a1520",border:"1px solid #1a2a3a",borderRadius:6,padding:8,marginBottom:8}}>
+                    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6,marginBottom:6}}>
+                      <div>
+                        <div style={{fontSize:9,color:"#5a7a9a",marginBottom:2}}>ASSET</div>
+                        <input style={{width:"100%",background:"#080c10",border:"1px solid #1a2a3a",color:"#fff",fontFamily:"DM Mono,monospace",fontSize:11,padding:"4px 8px",borderRadius:4,outline:"none",boxSizing:"border-box"}}
+                          value={t.asset_id||""} onChange={e=>{const v=[...pendingTrades];v[i]={...v[i],asset_id:e.target.value.toUpperCase()};setPendingTrades(v);}}/>
+                      </div>
+                      <div>
+                        <div style={{fontSize:9,color:"#5a7a9a",marginBottom:2}}>ACTION</div>
+                        <select style={{width:"100%",background:"#080c10",border:"1px solid #1a2a3a",color:t.action==="SELL"?"#00d4aa":"#ff4d6a",fontFamily:"DM Mono,monospace",fontSize:11,padding:"4px 8px",borderRadius:4,outline:"none"}}
+                          value={t.action||"SELL"} onChange={e=>{const v=[...pendingTrades];v[i]={...v[i],action:e.target.value};setPendingTrades(v);}}>
+                          <option value="SELL">SELL</option>
+                          <option value="BUY">BUY</option>
+                        </select>
+                      </div>
+                      <div>
+                        <div style={{fontSize:9,color:"#5a7a9a",marginBottom:2}}>STRIKE</div>
+                        <input type="number" style={{width:"100%",background:"#080c10",border:"1px solid #1a2a3a",color:"#f5c842",fontFamily:"DM Mono,monospace",fontSize:11,padding:"4px 8px",borderRadius:4,outline:"none",boxSizing:"border-box"}}
+                          value={t.strike||""} onChange={e=>{const v=[...pendingTrades];v[i]={...v[i],strike:e.target.value};setPendingTrades(v);}}/>
+                      </div>
+                      <div>
+                        <div style={{fontSize:9,color:"#5a7a9a",marginBottom:2}}>EXPIRATION</div>
+                        <input style={{width:"100%",background:"#080c10",border:"1px solid #1a2a3a",color:"#c8d8e8",fontFamily:"DM Mono,monospace",fontSize:11,padding:"4px 8px",borderRadius:4,outline:"none",boxSizing:"border-box"}}
+                          placeholder="YYYY-MM-DD" value={t.expiration||""} onChange={e=>{const v=[...pendingTrades];v[i]={...v[i],expiration:e.target.value};setPendingTrades(v);}}/>
+                      </div>
+                      <div>
+                        <div style={{fontSize:9,color:"#5a7a9a",marginBottom:2}}>PRICE/SHARE ($)</div>
+                        <input type="number" style={{width:"100%",background:"#080c10",border:"1px solid #1a2a3a",color:"#00d4aa",fontFamily:"DM Mono,monospace",fontSize:11,padding:"4px 8px",borderRadius:4,outline:"none",boxSizing:"border-box"}}
+                          value={t.premium||""} onChange={e=>{const v=[...pendingTrades];v[i]={...v[i],premium:e.target.value};setPendingTrades(v);}}/>
+                      </div>
+                      <div>
+                        <div style={{fontSize:9,color:"#5a7a9a",marginBottom:2}}>CONTRACTS</div>
+                        <input type="number" style={{width:"100%",background:"#080c10",border:"1px solid #1a2a3a",color:"#8aaac8",fontFamily:"DM Mono,monospace",fontSize:11,padding:"4px 8px",borderRadius:4,outline:"none",boxSizing:"border-box"}}
+                          value={t.contracts||1} onChange={e=>{const v=[...pendingTrades];v[i]={...v[i],contracts:e.target.value};setPendingTrades(v);}}/>
+                      </div>
+                    </div>
+                    <div style={{fontSize:10,color:"#5a7a9a",textAlign:"right"}}>
+                      Total: <span style={{color:"#fff",fontWeight:600}}>${((parseFloat(t.premium)||0)*(parseInt(t.contracts)||1)*100).toFixed(2)}</span>
+                    </div>
                   </div>
                 ))}
-                <div style={{display:"flex",gap:8,marginTop:8}}>
+                <div style={{display:"flex",gap:8,marginTop:4}}>
                   <button className="btn bsm" onClick={confirmTrades} style={{flex:1}}>✅ Confirm</button>
-                  <button className="btn bsm bdanger" onClick={()=>setPendingTrades([])} style={{flex:1}}>✕ Cancel</button>
+                  <button className="btn bsm bdanger" onClick={()=>{setPendingTrades([]);setMissingField(null);}} style={{flex:1}}>✕ Cancel</button>
+                </div>
+              </div>
+            )}
+            {pendingTrades.length>0&&missingField&&(
+              <div style={{background:"#f5c84210",border:"1px solid #f5c84233",borderRadius:8,padding:10}}>
+                <div style={{fontSize:11,color:"#f5c842",marginBottom:8}}>⚠️ Missing: {missingField}</div>
+                <input
+                  style={{width:"100%",background:"#080c10",border:"1px solid #1a2a3a",color:"#c8d8e8",fontFamily:"DM Mono,monospace",fontSize:12,padding:"6px 10px",borderRadius:6,outline:"none",marginBottom:8}}
+                  placeholder={missingField==="expiration"?"YYYY-MM-DD (e.g. 2027-01-15)":"Enter value..."}
+                  value={missingInput}
+                  onChange={e=>setMissingInput(e.target.value)}
+                  onKeyDown={e=>e.key==="Enter"&&applyMissingField()}
+                />
+                <div style={{display:"flex",gap:8}}>
+                  <button className="btn bsm bwarn" onClick={applyMissingField} style={{flex:1}}>Apply & Confirm</button>
+                  <button className="btn bsm bdanger" onClick={()=>{setPendingTrades([]);setMissingField(null);setMissingInput("");}} style={{flex:1}}>✕ Cancel</button>
                 </div>
               </div>
             )}
@@ -1570,7 +1921,7 @@ function ClaudeChat({ assets, onSaveTrade }) {
 
           {/* Input */}
           <div style={{padding:"10px 12px",borderTop:"1px solid #1a2a3a",display:"flex",gap:8,alignItems:"center"}}>
-            <button className="btn bsm bneutral" onClick={()=>fileRef.current?.click()} title="Upload photo">📸</button>
+            <button className="btn bsm bneutral" onClick={handleFileClick} title="Upload photo">📸</button>
             <input ref={fileRef} type="file" accept="image/*" style={{display:"none"}} onChange={handleFile}/>
             <input
               style={{flex:1,background:"#080c10",border:"1px solid #1a2a3a",color:"#c8d8e8",fontFamily:"DM Mono,monospace",fontSize:12,padding:"6px 10px",borderRadius:6,outline:"none"}}

@@ -46,7 +46,7 @@ export async function fetchAssets() {
 }
 
 export async function addAsset(asset) {
-  const { data, error } = await supabase.from('assets').insert({
+  const { data, error } = await supabase.from('assets').upsert({
     id: asset.id,
     ticker: asset.ticker,
     strategy: asset.strategy,
@@ -56,7 +56,7 @@ export async function addAsset(asset) {
     leap_delta: asset.leapDelta,
     initial_price: asset.initialPrice || 0,
     active: true,
-  }).select().single();
+  }, {onConflict: 'id'}).select().single();
   if (error) throw error;
   return data;
 }
@@ -98,6 +98,21 @@ export async function updateTrade(id, changes) {
 export async function deleteTrade(id) {
   const { error } = await supabase.from('trades').delete().eq('id', id);
   if (error) throw error;
+}
+
+export async function deleteLeap(id) {
+  const { error } = await supabase.from('leaps').delete().eq('id', id);
+  if (error) throw error;
+}
+
+export async function fetchOpenTrades(assetId) {
+  const { data, error } = await supabase
+    .from('trades')
+    .select('*')
+    .eq('asset_id', assetId)
+    .eq('status', 'open');
+  if (error) throw error;
+  return data;
 }
 
 export async function closeAsset(id) {
