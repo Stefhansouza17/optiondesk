@@ -718,7 +718,7 @@ function AssetDashboard({ asset, onClose, onSaveTrade, onUpdateTrade, onDeleteTr
             {crForm.mode!=="expired"&&(
             <div className="fgrp" style={{marginBottom:12}}>
               <label className="flbl">Price paid to close ($)</label>
-              <input className="finput" type="number" step="0.01" placeholder="0.05" value={crForm.closePrem} onChange={e=>setCrForm({...crForm,closePrem:e.target.value})}/>
+              <input className="finput" type="number" min="0" step="0.01" placeholder="0.05" value={crForm.closePrem} onChange={e=>setCrForm({...crForm,closePrem:Math.abs(parseFloat(e.target.value)||0)||""})} />
             </div>
             )}
             {crForm.mode==="expired"&&(
@@ -731,7 +731,7 @@ function AssetDashboard({ asset, onClose, onSaveTrade, onUpdateTrade, onDeleteTr
                 <div style={{borderTop:"1px solid #1a2a3a",paddingTop:12,marginBottom:10,fontSize:10,letterSpacing:2,textTransform:"uppercase",color:"#3a5a7a"}}>New position</div>
                 <div className="frow">
                   <div className="fgrp"><label className="flbl">New strike ($)</label><input className="finput" type="number" step="0.5" value={crForm.newStrike} onChange={e=>setCrForm({...crForm,newStrike:e.target.value})}/></div>
-                  <div className="fgrp"><label className="flbl">Premium received ($)</label><input className="finput" type="number" step="0.01" placeholder="0.55" value={crForm.newPrem} onChange={e=>setCrForm({...crForm,newPrem:e.target.value})}/></div>
+                  <div className="fgrp"><label className="flbl">Premium received ($)</label><input className="finput" type="number" min="0" step="0.01" placeholder="0.55" value={crForm.newPrem} onChange={e=>setCrForm({...crForm,newPrem:Math.abs(parseFloat(e.target.value)||0)||""})}/></div>
                 </div>
                 <div className="fgrp" style={{marginBottom:12}}>
                   <label className="flbl">New expiration</label>
