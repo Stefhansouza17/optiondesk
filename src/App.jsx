@@ -87,43 +87,6 @@ const importJSON = (onSuccess) => {
   input.click();
 };
 
-// ── Initial Data ──────────────────────────────────────────────────────────────
-const INITIAL_ASSETS = [
-  { id:"IBIT", ticker:"IBIT", strategy:"PMCC", color:"#00d4aa", leapStrike:37, leapExpiration:"Jan 2027", leapDelta:0.71, initialPrice:41.55, active:true,
-    leaps:[
-      {id:"l1", date:"2026-05-01", strike:37, expiration:"2027-01-15", cost:10.12, contracts:1},
-      {id:"l2", date:"2026-06-02", strike:37, expiration:"2027-01-15", cost:6.65,  contracts:1},
-    ],
-    trades:[
-      {id:1, date:"2026-05-26",action:"SELL",strike:43.5, expiration:"2026-05-29",premium:0.32,contracts:1,status:"closed"},
-      {id:2, date:"2026-05-28",action:"BUY", strike:43.5, expiration:"2026-05-29",premium:0.02,contracts:1,status:"closed"},
-      {id:3, date:"2026-05-28",action:"SELL",strike:41.5, expiration:"2026-05-29",premium:0.23,contracts:1,status:"closed"},
-      {id:4, date:"2026-05-28",action:"BUY", strike:42.0, expiration:"2026-05-29",premium:0.13,contracts:1,status:"closed"},
-      {id:5, date:"2026-05-29",action:"SELL",strike:42.0, expiration:"2026-05-29",premium:0.15,contracts:1,status:"closed"},
-      {id:6, date:"2026-05-29",action:"BUY", strike:41.5, expiration:"2026-05-29",premium:0.44,contracts:1,status:"closed"},
-      {id:7, date:"2026-05-29",action:"SELL",strike:41.5, expiration:"2026-06-01",premium:0.66,contracts:1,status:"closed"},
-      {id:8, date:"2026-06-01",action:"BUY", strike:41.5, expiration:"2026-06-01",premium:0.02,contracts:1,status:"closed"},
-      {id:9, date:"2026-06-01",action:"SELL",strike:41.0, expiration:"2026-06-03",premium:0.30,contracts:1,status:"closed"},
-      {id:10,date:"2026-06-02",action:"BUY", strike:41.0, expiration:"2026-06-03",premium:0.03,contracts:1,status:"closed"},
-    ]
-  },
-  { id:"EWZ", ticker:"EWZ", strategy:"PMCC", color:"#f5c842", leapStrike:29, leapExpiration:"Nov 2026", leapDelta:0.65, initialPrice:33.5, active:true,
-    leaps:[
-      {id:"l1", date:"2026-05-01", strike:29, expiration:"2026-11-21", cost:9.34, contracts:1},
-    ],
-    trades:[
-      {id:1, date:"2026-05-14",action:"SELL",strike:38.0, expiration:"2026-05-22",premium:0.34,contracts:1,status:"closed"},
-      {id:2, date:"2026-05-19",action:"BUY", strike:38.0, expiration:"2026-05-22",premium:0.03,contracts:1,status:"closed"},
-      {id:3, date:"2026-05-19",action:"SELL",strike:37.0, expiration:"2026-05-22",premium:0.13,contracts:1,status:"closed"},
-      {id:4, date:"2026-05-21",action:"BUY", strike:37.0, expiration:"2026-05-22",premium:0.24,contracts:1,status:"closed"},
-      {id:5, date:"2026-05-21",action:"SELL",strike:37.5, expiration:"2026-05-29",premium:0.37,contracts:1,status:"closed"},
-      {id:6, date:"2026-05-27",action:"BUY", strike:37.5, expiration:"2026-05-29",premium:0.07,contracts:1,status:"closed"},
-      {id:7, date:"2026-05-27",action:"SELL",strike:37.0, expiration:"2026-06-05",premium:0.42,contracts:1,status:"closed"},
-      {id:8, date:"2026-06-01",action:"BUY", strike:37.0, expiration:"2026-06-05",premium:0.10,contracts:1,status:"closed"},
-      {id:9, date:"2026-06-01",action:"SELL",strike:36.5, expiration:"2026-06-05",premium:0.19,contracts:1,status:"open"},
-    ]
-  },
-];
 
 // ── CSS ───────────────────────────────────────────────────────────────────────
 const CSS = `
