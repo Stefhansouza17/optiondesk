@@ -385,8 +385,9 @@ function AssetDashboard({ asset, onClose, onSaveTrade, onUpdateTrade, onDeleteTr
   const leapAvgPerShare = leapContracts>0 ? leaps.reduce((s,l)=>s+l.cost*l.contracts,0)/leapContracts : 0;
 
   const totalCollected = trades.reduce((a,t)=>{
-    if(t.status==="expired") return a; // expired worthless — no cost, keep full premium
-    return t.action==="SELL"?a+parseFloat(t.premium||0)*parseInt(t.contracts||1):a-parseFloat(t.premium||0)*parseInt(t.contracts||1);
+    if(t.action==="SELL") return a+parseFloat(t.premium||0)*parseInt(t.contracts||1);
+    if(t.action==="BUY"&&t.status!=="open") return a-parseFloat(t.premium||0)*parseInt(t.contracts||1);
+    return a;
   },0);
   const totalDollar = totalCollected*100;
   const costBasis = leapAvg - totalDollar;
@@ -407,12 +408,13 @@ function AssetDashboard({ asset, onClose, onSaveTrade, onUpdateTrade, onDeleteTr
     } else {
       const saved=await onSaveTrade(tradeData);
       if(saved){
-        if(tradeData.action==="BUY"){
-          const toClose=trades.filter(t=>t.status==="open"&&t.action==="SELL"&&parseFloat(t.strike)===parseFloat(tradeData.strike));
-          setTrades(p=>[...p.map(t=>toClose.some(c=>c.id===t.id)?{...t,status:"closed"}:t),saved]);
-        } else {
-          setTrades(p=>[...p,saved]);
-        }
+        const oppositeAction=tradeData.action==="BUY"?"SELL":"BUY";
+        const toClose=trades.filter(t=>
+          t.status==="open"&&t.action===oppositeAction&&
+          parseFloat(t.strike)===parseFloat(tradeData.strike)&&
+          t.expiration===tradeData.expiration
+        );
+        setTrades(p=>[...p.map(t=>toClose.some(c=>c.id===t.id)?{...t,status:"closed"}:t),saved]);
       }
     }
     setShowForm(false);
@@ -852,8 +854,9 @@ function Home({ assets, onSelectAsset, onShowPositions }) {
     const leapContracts = leaps.reduce((s,l)=>s+l.contracts,0);
     const leapAvg = leapContracts>0 ? leapCost/leapContracts : 0; // dollars per contract
     const col=a.trades.reduce((acc,t)=>{
-      if(t.status==="expired") return acc;
-      return t.action==="SELL"?acc+parseFloat(t.premium||0)*parseInt(t.contracts||1):acc-parseFloat(t.premium||0)*parseInt(t.contracts||1);
+      if(t.action==="SELL") return acc+parseFloat(t.premium||0)*parseInt(t.contracts||1);
+      if(t.action==="BUY"&&t.status!=="open") return acc-parseFloat(t.premium||0)*parseInt(t.contracts||1);
+      return acc;
     },0);
     const openTrades=a.trades.filter(t=>t.status==="open");
     const openSells=openTrades.filter(t=>t.action==="SELL");
@@ -1145,6 +1148,43 @@ function Home({ assets, onSelectAsset, onShowPositions }) {
   );
 }
 
+// ── Expiration Alert Modal ────────────────────────────────────────────────────
+function ExpirationAlertModal({ trades, onResolve }) {
+  const [decisions, setDecisions] = useState(()=>Object.fromEntries(trades.map(t=>[t.id,"expired"])));
+  const confirm = () => onResolve(trades.map(t=>({...t,decision:decisions[t.id]})));
+  return (
+    <div className="overlay">
+      <div className="fbox" style={{width:540,maxWidth:"95vw"}}>
+        <div className="ftitle">⚠️ Posições expiradas</div>
+        <p style={{fontSize:12,color:"#8aaac8",lineHeight:1.6,marginBottom:14}}>
+          As posições abaixo passaram da data de expiração. O que aconteceu com cada uma?
+        </p>
+        {trades.map(t=>(
+          <div key={t.id} style={{background:"#080c10",border:"1px solid #1a2a3a",borderRadius:6,padding:"10px 14px",marginBottom:10}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+              <div style={{fontSize:13}}>
+                <span style={{color:t.color||"#00d4aa",fontWeight:700,fontFamily:"Syne,sans-serif"}}>{t.ticker}</span>
+                {" "}<span style={{color:"#f5c842"}}>${t.strike}</span>
+                {" "}<span style={{color:"#5a7a9a"}}>{t.action}</span>
+                {" · exp "}<span style={{color:"#5a7a9a"}}>{t.expiration}</span>
+                {" · "}<span style={{color:"#00d4aa"}}>${fmt(parseFloat(t.premium||0)*(parseInt(t.contracts||1))*100)}</span>
+              </div>
+              <span style={{fontSize:10,color:"#ff4d6a",background:"#ff4d6a10",border:"1px solid #ff4d6a33",padding:"2px 8px",borderRadius:3,letterSpacing:1,textTransform:"uppercase"}}>expirado</span>
+            </div>
+            <div className="toggle-group">
+              <button className="tgl" style={{flex:1,background:decisions[t.id]==="expired"?"#a78bfa":"transparent",color:decisions[t.id]==="expired"?"#fff":"#5a7a9a"}}
+                onClick={()=>setDecisions(p=>({...p,[t.id]:"expired"}))}>Virou pó (worthless)</button>
+              <button className="tgl" style={{flex:1,background:decisions[t.id]==="closed"?"#f5c842":"transparent",color:decisions[t.id]==="closed"?"#080c10":"#5a7a9a"}}
+                onClick={()=>setDecisions(p=>({...p,[t.id]:"closed"}))}>Fechado / Rolado</button>
+            </div>
+          </div>
+        ))}
+        <button className="btn bfull" style={{marginTop:16,width:"100%"}} onClick={confirm}>Confirmar</button>
+      </div>
+    </div>
+  );
+}
+
 // ── Closed Strategies ─────────────────────────────────────────────────────────
 function ClosedStrategies({ closedAssets }) {
   return (
@@ -1154,8 +1194,9 @@ function ClosedStrategies({ closedAssets }) {
       ):(
         closedAssets.map(a=>{
           const total=a.trades.reduce((acc,t)=>{
-            if(t.status==="expired") return acc;
-            return t.action==="SELL"?acc+parseFloat(t.premium||0)*parseInt(t.contracts||1):acc-parseFloat(t.premium||0)*parseInt(t.contracts||1);
+            if(t.action==="SELL") return acc+parseFloat(t.premium||0)*parseInt(t.contracts||1);
+            if(t.action==="BUY"&&t.status!=="open") return acc-parseFloat(t.premium||0)*parseInt(t.contracts||1);
+            return acc;
           },0);
           return (
             <div key={a.id} className="sec" style={{marginBottom:16}}>
@@ -1374,19 +1415,35 @@ function App() {
   const [showAdd, setShowAdd] = useState(false);
   const [showPositions, setShowPositions] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [expiredPending, setExpiredPending] = useState([]);
 
   useEffect(()=>{
     const today=new Date().toISOString().slice(0,10);
     fetchAssets()
-      .then(async data=>{
-        const expireIds=data.flatMap(a=>a.trades.filter(t=>t.status==="open"&&t.expiration<today).map(t=>t.id));
-        if(expireIds.length) await Promise.all(expireIds.map(id=>updateTrade(id,{status:"expired"})));
-        const updated=data.map(a=>({...a,trades:a.trades.map(t=>expireIds.includes(t.id)?{...t,status:"expired"}:t)}));
-        setAssets(updated);
+      .then(data=>{
+        setAssets(data);
+        const expired=data.flatMap(a=>
+          a.trades
+            .filter(t=>t.status==="open"&&t.expiration<today)
+            .map(t=>({...t,ticker:a.ticker,assetId:a.id,color:a.color}))
+        );
+        if(expired.length) setExpiredPending(expired);
         setLoading(false);
       })
       .catch(err=>{ console.error(err); setLoading(false); });
   },[]);
+
+  const handleExpiredResolution = async (resolvedTrades) => {
+    await Promise.all(resolvedTrades.map(t=>updateTrade(t.id,{status:t.decision})));
+    setAssets(p=>p.map(a=>({
+      ...a,
+      trades:a.trades.map(t=>{
+        const r=resolvedTrades.find(x=>x.id===t.id);
+        return r?{...t,status:r.decision}:t;
+      })
+    })));
+    setExpiredPending([]);
+  };
 
   const addAsset = async (a) => {
     try {
@@ -1451,20 +1508,15 @@ function App() {
   const handleSaveTrade = async (assetId, trade) => {
     try {
       const saved = await addTrade(assetId, trade);
-      if(trade.action==="BUY"){
-        const asset = assets.find(a=>a.id===assetId);
-        console.log("[handleSaveTrade] BUY registrado");
-        console.log("[handleSaveTrade] assetId:", assetId);
-        console.log("[handleSaveTrade] strike buscado:", trade.strike, "→ parseFloat:", parseFloat(trade.strike));
-        console.log("[handleSaveTrade] asset encontrado:", asset ? asset.id : "NÃO ENCONTRADO");
-        console.log("[handleSaveTrade] trades no estado:", asset?.trades?.map(t=>({id:t.id,action:t.action,strike:t.strike,status:t.status})));
-        const toClose = (asset?.trades||[]).filter(t=>t.status==="open"&&t.action==="SELL"&&parseFloat(t.strike)===parseFloat(trade.strike));
-        console.log("[handleSaveTrade] toClose (matches):", toClose);
-        if(toClose.length) await Promise.all(toClose.map(t=>updateTrade(t.id,{status:"closed"})));
-        setAssets(p=>p.map(a=>a.id===assetId?{...a,trades:[...a.trades.map(t=>toClose.some(c=>c.id===t.id)?{...t,status:"closed"}:t),saved]}:a));
-      } else {
-        setAssets(p=>p.map(a=>a.id===assetId?{...a,trades:[...a.trades,saved]}:a));
-      }
+      const asset = assets.find(a=>a.id===assetId);
+      const oppositeAction = trade.action==="BUY"?"SELL":"BUY";
+      const toClose = (asset?.trades||[]).filter(t=>
+        t.status==="open"&&t.action===oppositeAction&&
+        parseFloat(t.strike)===parseFloat(trade.strike)&&
+        t.expiration===trade.expiration
+      );
+      if(toClose.length) await Promise.all(toClose.map(t=>updateTrade(t.id,{status:"closed"})));
+      setAssets(p=>p.map(a=>a.id===assetId?{...a,trades:[...a.trades.map(t=>toClose.some(c=>c.id===t.id)?{...t,status:"closed"}:t),saved]}:a));
       return saved;
     } catch(e){ console.error(e); }
   };
@@ -1536,6 +1588,7 @@ function App() {
       {active==="closed"&&<ClosedStrategies closedAssets={closedAssets}/>}
       {showAdd&&<AddAssetModal onAdd={addAsset} onClose={()=>setShowAdd(false)} usedColors={assets.map(a=>a.color)}/>}
       {showPositions&&<AllPositionsModal assets={assets} onClose={()=>setShowPositions(false)}/>}
+      {expiredPending.length>0&&<ExpirationAlertModal trades={expiredPending} onResolve={handleExpiredResolution}/>}
       <ClaudeChat assets={assets} onSaveTrade={handleSaveTrade} onUpdateTrade={handleUpdateTrade} onSaveLeap={handleSaveLeap} onAddAsset={addAssetSilent}/>
     </div>
   );
@@ -1642,12 +1695,18 @@ function ClaudeChat({ assets, onSaveTrade, onUpdateTrade, onSaveLeap, onAddAsset
   };
 
   const confirmTrades = async () => {
+    if(loading) return;
+    const trades = pendingTrades;
+    if(!trades.length) return;
+    setPendingTrades([]); // clear immediately to block double-click
+    setLoading(true);
+
     let saved = 0;
     let notFound = [];
     let closed = 0;
     const createdAssets = {}; // track assets created during this loop
 
-    for(const t of pendingTrades){
+    for(const t of trades){
       const assetId = (t.asset_id||"").toUpperCase();
       let asset = assets.find(a=>a.id===assetId) || createdAssets[assetId];
 
@@ -1698,40 +1757,47 @@ function ClaudeChat({ assets, onSaveTrade, onUpdateTrade, onSaveLeap, onAddAsset
         fixedExp && (new Date(fixedExp) - new Date()) > 180*24*60*60*1000;
 
       if(isLeap){
-        // Save as LEAP instead of trade
-        await onSaveLeap(assetId, {
-          id: `${assetId}_${Date.now()}`,
-          date: fixedDate,
-          strike: parseFloat(t.strike),
-          expiration: fixedExp,
-          cost: normalizedPremium,
-          contracts: parseInt(t.contracts||1),
-        });
+        // Skip if a LEAP with same strike + expiration already exists (avoids duplicates)
+        const existingLeaps = asset?.leaps || [];
+        const leapExists = existingLeaps.some(l=>
+          parseFloat(l.strike)===parseFloat(t.strike) &&
+          l.expiration===fixedExp
+        );
+        if(!leapExists){
+          await onSaveLeap(assetId, {
+            id: `${assetId}_${Date.now()}`,
+            date: fixedDate,
+            strike: parseFloat(t.strike),
+            expiration: fixedExp,
+            cost: normalizedPremium,
+            contracts: parseInt(t.contracts||1),
+          });
+        }
         saved++;
         continue;
       }
 
-      // If BUY (and not a LEAP) — close matching open SELL with same strike
-      if(t.action==="BUY"){
-        try {
-          const openTrades = await fetchOpenTrades(assetId);
-          const openSell = openTrades.find(tr=>
-            tr.action==="SELL" &&
-            tr.status==="open" &&
-            Math.abs(parseFloat(tr.strike)-parseFloat(t.strike))<0.01
-          );
-          if(openSell){
-            const sellContracts = parseInt(openSell.contracts||1);
-            const buyContracts = parseInt(t.contracts||1);
-            if(buyContracts>=sellContracts){
-              await onUpdateTrade(assetId, openSell.id, {status:"closed"});
-            } else {
-              await onUpdateTrade(assetId, openSell.id, {contracts: sellContracts-buyContracts});
-            }
-            closed++;
+      // Close matching open position with opposite action, same strike and expiration
+      try {
+        const openTrades = await fetchOpenTrades(assetId);
+        const oppositeAction = t.action==="BUY"?"SELL":"BUY";
+        const match = openTrades.find(tr=>
+          tr.action===oppositeAction &&
+          tr.status==="open" &&
+          Math.abs(parseFloat(tr.strike)-parseFloat(t.strike))<0.01 &&
+          tr.expiration===fixedExp
+        );
+        if(match){
+          const matchContracts = parseInt(match.contracts||1);
+          const newContracts = parseInt(t.contracts||1);
+          if(newContracts>=matchContracts){
+            await onUpdateTrade(assetId, match.id, {status:"closed"});
+          } else {
+            await onUpdateTrade(assetId, match.id, {contracts: matchContracts-newContracts});
           }
-        } catch(e){ console.error("Error matching open sell:", e); }
-      }
+          closed++;
+        }
+      } catch(e){ console.error("Error matching trade:", e); }
 
       // Save the new trade — use status from Claude response, not assumed
       await onSaveTrade(assetId, {
@@ -1742,7 +1808,7 @@ function ClaudeChat({ assets, onSaveTrade, onUpdateTrade, onSaveLeap, onAddAsset
       saved++;
     }
 
-    setPendingTrades([]);
+    setLoading(false);
     let msg = `✅ ${saved} trade${saved>1?"s":""} saved!`;
     if(closed>0) msg += ` ${closed} open position${closed>1?"s":""} closed.`;
     const newAssetNames = Object.keys(createdAssets);
@@ -1887,8 +1953,8 @@ function ClaudeChat({ assets, onSaveTrade, onUpdateTrade, onSaveLeap, onAddAsset
                   </div>
                 ))}
                 <div style={{display:"flex",gap:8,marginTop:4}}>
-                  <button className="btn bsm" onClick={confirmTrades} style={{flex:1}}>✅ Confirm</button>
-                  <button className="btn bsm bdanger" onClick={()=>{setPendingTrades([]);setMissingField(null);}} style={{flex:1}}>✕ Cancel</button>
+                  <button className="btn bsm" onClick={confirmTrades} disabled={loading} style={{flex:1,opacity:loading?0.5:1}}>{loading?"Saving...":"✅ Confirm"}</button>
+                  <button className="btn bsm bdanger" onClick={()=>{setPendingTrades([]);setMissingField(null);}} disabled={loading} style={{flex:1}}>✕ Cancel</button>
                 </div>
               </div>
             )}

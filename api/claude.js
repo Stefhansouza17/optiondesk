@@ -1,53 +1,10 @@
-export default async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-  if (req.method === 'OPTIONS') return res.status(200).end();
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
-
-  const { messages } = req.body;
-  const currentYear = new Date().getFullYear();
-
-  try {
-    const formattedMessages = messages.map(m => {
-      if (Array.isArray(m.content)) {
-        return {
-          role: m.role,
-          content: m.content.map(c => {
-            if (c.type === 'image') {
-              return {
-                type: 'image',
-                source: {
-                  type: 'base64',
-                  media_type: c.source?.media_type || 'image/jpeg',
-                  data: c.source?.data || c.data,
-                }
-              };
-            }
-            return c;
-          })
-        };
-      }
-      return m;
-    });
-
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': process.env.ANTHROPIC_API_KEY,
-        'anthropic-version': '2023-06-01',
-      },
-      body: JSON.stringify({
-        model: 'claude-opus-4-5',
-        max_tokens: 1024,
-        system: `You are a trading assistant for OptionDesk. Current year is ${currentYear}.
+const SYSTEM = (year) => `You are a trading assistant for OptionDesk. Current year is ${year}.
 
 Extract trade information from messages or images and return JSON only.
 
 ACTION AND STATUS RULES — read carefully from the confirmation:
 - STO (Sell to Open) → action: "SELL", status: "open"
-- BTC (Buy to Close) → action: "BUY", status: "closed"  
+- BTC (Buy to Close) → action: "BUY", status: "closed"
 - BTO (Buy to Open) → action: "BUY", status: "open"
 - STC (Sell to Close) → action: "SELL", status: "closed"
 - If "Position effect: Open" → status: "open"
@@ -60,7 +17,7 @@ PREMIUM RULES:
 - Never return premium > 5 for standard options
 
 DATE RULES:
-- Always use year ${currentYear} unless clearly a future expiration
+- Always use year ${year} unless clearly a future expiration
 - Never use past years for trade date
 - If expiration not visible → set to "unknown"
 
@@ -69,10 +26,10 @@ Return JSON only, no markdown:
   "trades": [
     {
       "asset_id": "IBIT",
-      "date": "${currentYear}-06-03",
+      "date": "${year}-06-03",
       "action": "SELL",
       "strike": 42.0,
-      "expiration": "${currentYear}-06-06",
+      "expiration": "${year}-06-06",
       "premium": 0.45,
       "contracts": 1,
       "status": "open"
@@ -81,17 +38,58 @@ Return JSON only, no markdown:
   "message": "Found 1 trade: SELL to Open IBIT $42 Call exp 06/06 @ $0.45"
 }
 
-If no trade found: {"trades":[],"message":"Could not identify any trades. Please send a clearer image."}`,
-        messages: formattedMessages,
-      }),
-    });
+If no trade found: {"trades":[],"message":"Could not identify any trades. Please send a clearer image."}`;
 
-    const data = await response.json();
-    if (!response.ok) {
-      return res.status(200).json({ error: data.error?.message || JSON.stringify(data.error) });
+async function callAnthropic(model, system, messages) {
+  const response = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': process.env.ANTHROPIC_API_KEY,
+      'anthropic-version': '2023-06-01',
+    },
+    body: JSON.stringify({ model, max_tokens: 1024, system, messages }),
+  });
+  const data = await response.json();
+  return { response, data };
+}
+
+export default async function handler(req, res) {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  if (req.method === 'OPTIONS') return res.status(200).end();
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+
+  const { messages } = req.body;
+  const year = new Date().getFullYear();
+
+  const formatted = messages.map(m => {
+    if (!Array.isArray(m.content)) return m;
+    return {
+      role: m.role,
+      content: m.content.map(c => c.type === 'image'
+        ? { type: 'image', source: { type: 'base64', media_type: c.source?.media_type || 'image/jpeg', data: c.source?.data || c.data } }
+        : c
+      ),
+    };
+  });
+
+  const models = ['claude-haiku-4-5-20251001', 'claude-sonnet-4-6'];
+
+  for (const model of models) {
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        if (attempt > 0) await new Promise(r => setTimeout(r, 800 * attempt));
+        const { response, data } = await callAnthropic(model, SYSTEM(year), formatted);
+        if (response.status === 529 || data.error?.type === 'overloaded_error') continue;
+        if (!response.ok) return res.status(200).json({ error: data.error?.message || JSON.stringify(data.error) });
+        return res.status(200).json(data);
+      } catch (e) {
+        if (attempt === 2) break;
+      }
     }
-    res.status(200).json(data);
-  } catch (error) {
-    res.status(200).json({ error: error.message });
   }
+
+  res.status(200).json({ error: 'API temporarily overloaded — wait a few seconds and try again.' });
 }
