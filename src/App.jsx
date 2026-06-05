@@ -1453,7 +1453,13 @@ function App() {
       const saved = await addTrade(assetId, trade);
       if(trade.action==="BUY"){
         const asset = assets.find(a=>a.id===assetId);
+        console.log("[handleSaveTrade] BUY registrado");
+        console.log("[handleSaveTrade] assetId:", assetId);
+        console.log("[handleSaveTrade] strike buscado:", trade.strike, "→ parseFloat:", parseFloat(trade.strike));
+        console.log("[handleSaveTrade] asset encontrado:", asset ? asset.id : "NÃO ENCONTRADO");
+        console.log("[handleSaveTrade] trades no estado:", asset?.trades?.map(t=>({id:t.id,action:t.action,strike:t.strike,status:t.status})));
         const toClose = (asset?.trades||[]).filter(t=>t.status==="open"&&t.action==="SELL"&&parseFloat(t.strike)===parseFloat(trade.strike));
+        console.log("[handleSaveTrade] toClose (matches):", toClose);
         if(toClose.length) await Promise.all(toClose.map(t=>updateTrade(t.id,{status:"closed"})));
         setAssets(p=>p.map(a=>a.id===assetId?{...a,trades:[...a.trades.map(t=>toClose.some(c=>c.id===t.id)?{...t,status:"closed"}:t),saved]}:a));
       } else {
