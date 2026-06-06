@@ -947,6 +947,102 @@ function AssetDashboard({ asset, onClose, onSaveTrade, onUpdateTrade, onDeleteTr
   );
 }
 
+// ── Payoff Chart ─────────────────────────────────────────────────────────────
+function PayoffChart({ spot, strike, premium, breakeven, optType, side }) {
+  if (!spot || !strike || premium <= 0) return null;
+  const W = 600, H = 185;
+  const PAD = { l: 44, r: 18, t: 28, b: 26 };
+  const cW = W - PAD.l - PAD.r, cH = H - PAD.t - PAD.b;
+  const pMin = spot * 0.76, pMax = spot * 1.24;
+
+  const pnlAt = p => {
+    const intr = optType === "call" ? Math.max(p - strike, 0) : Math.max(strike - p, 0);
+    const raw = (intr - premium) * 100;
+    return side === "buy" ? raw : -raw;
+  };
+
+  const absMax = Math.max(Math.abs(pnlAt(pMax)), Math.abs(pnlAt(pMin)), premium * 100) * 1.3;
+  const yMin = -absMax, yMax = absMax;
+  const xOf = p => PAD.l + ((p - pMin) / (pMax - pMin)) * cW;
+  const yOf = v => PAD.t + ((yMax - v) / (yMax - yMin)) * cH;
+  const yZero = yOf(0);
+
+  const N = 80;
+  const pts = Array.from({ length: N + 1 }, (_, i) => pMin + (i / N) * (pMax - pMin));
+  const curvePts = pts.map(p => `${xOf(p).toFixed(1)},${yOf(pnlAt(p)).toFixed(1)}`).join(" ");
+  const polyPts = `${PAD.l},${yZero} ${curvePts} ${W - PAD.r},${yZero}`;
+
+  const rawStep = (yMax - yMin) / 5;
+  const step = Math.max(Math.pow(10, Math.floor(Math.log10(rawStep))), 5);
+  const gridVals = [];
+  for (let v = Math.ceil(yMin / step) * step; v <= yMax + 0.01; v += step) gridVals.push(Math.round(v));
+
+  const xLabels = Array.from({ length: 7 }, (_, i) => pMin + (i / 6) * (pMax - pMin));
+  const uid = strike + "-" + premium.toFixed(2);
+  const beVisible = breakeven > pMin && breakeven < pMax;
+  const isUnlimited = optType === "call" && side === "buy";
+  const isUnlimitedLoss = optType === "call" && side === "sell";
+
+  const clampLabel = (x, w) => Math.min(Math.max(x, PAD.l + w / 2), W - PAD.r - w / 2);
+
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} style={{ width: "100%", height: H, display: "block" }} preserveAspectRatio="none">
+      <defs>
+        <clipPath id={`above-${uid}`}><rect x={PAD.l} y={PAD.t} width={cW} height={Math.max(yZero - PAD.t, 0)} /></clipPath>
+        <clipPath id={`below-${uid}`}><rect x={PAD.l} y={yZero} width={cW} height={Math.max(H - PAD.b - yZero, 0)} /></clipPath>
+      </defs>
+
+      {/* Zone backgrounds */}
+      <rect x={PAD.l} y={PAD.t} width={cW} height={Math.max(yZero - PAD.t, 0)} fill="rgba(0,212,170,.06)" />
+      <rect x={PAD.l} y={yZero} width={cW} height={Math.max(H - PAD.b - yZero, 0)} fill="rgba(226,75,74,.10)" />
+
+      {/* Grid */}
+      {gridVals.map(v => (
+        <g key={v}>
+          <line x1={PAD.l} y1={yOf(v)} x2={W - PAD.r} y2={yOf(v)} stroke={v === 0 ? "#2a4a6a" : "#151f2e"} strokeWidth={v === 0 ? 1 : 0.5} />
+          <text x={PAD.l - 4} y={yOf(v) + 3.5} textAnchor="end" fontSize={8} fill="#3a5a7a" fontFamily="DM Mono,monospace">{v > 0 ? "+" : ""}{v}</text>
+        </g>
+      ))}
+
+      {/* Filled areas */}
+      <polygon points={polyPts} fill="rgba(0,212,170,.18)" clipPath={`url(#above-${uid})`} />
+      <polygon points={polyPts} fill="rgba(226,75,74,.20)" clipPath={`url(#below-${uid})`} />
+
+      {/* ATM vertical */}
+      <line x1={xOf(spot)} y1={PAD.t} x2={xOf(spot)} y2={H - PAD.b} stroke="#3a8fff" strokeWidth={1} strokeDasharray="4,3" />
+
+      {/* Breakeven vertical */}
+      {beVisible && <>
+        <line x1={xOf(breakeven)} y1={PAD.t} x2={xOf(breakeven)} y2={H - PAD.b} stroke="#00d4aa" strokeWidth={1} strokeDasharray="4,3" />
+        <circle cx={xOf(breakeven)} cy={yZero} r={4} fill="#00d4aa" stroke="#080c10" strokeWidth={1.5} />
+        <rect x={clampLabel(xOf(breakeven), 80) - 40} y={PAD.t} width={80} height={16} rx={3} fill="#00d4aa18" stroke="#00d4aa55" />
+        <text x={clampLabel(xOf(breakeven), 80)} y={PAD.t + 11} textAnchor="middle" fontSize={8.5} fill="#00d4aa" fontFamily="DM Mono,monospace">BE ${breakeven.toFixed(2)}</text>
+      </>}
+
+      {/* Strike dot */}
+      <circle cx={xOf(strike)} cy={yOf(pnlAt(strike))} r={4} fill="#3a8fff" stroke="#080c10" strokeWidth={1.5} />
+
+      {/* ATM label */}
+      <rect x={clampLabel(xOf(spot), 80) - 40} y={PAD.t} width={80} height={16} rx={3} fill="#3a8fff18" stroke="#3a8fff44" />
+      <text x={clampLabel(xOf(spot), 80)} y={PAD.t + 11} textAnchor="middle" fontSize={8.5} fill="#3a8fff" fontFamily="DM Mono,monospace">ATM ${spot.toFixed(2)}</text>
+
+      {/* Payoff line */}
+      <polyline points={curvePts} fill="none" stroke="#00d4aa" strokeWidth={2} strokeLinejoin="round" />
+
+      {/* Annotations */}
+      {side === "buy" && <text x={PAD.l + 8} y={Math.min(yOf(-premium * 100) - 5, H - PAD.b - 4)} fontSize={8.5} fill="#ff6b6b99" fontFamily="DM Mono,monospace">Prejuízo máx: -${(premium * 100).toFixed(0)}</text>}
+      {isUnlimited && <text x={W - PAD.r - 6} y={PAD.t + 18} textAnchor="end" fontSize={9} fill="#00d4aa66" fontFamily="DM Mono,monospace">Lucro ilimitado ↗</text>}
+      {isUnlimitedLoss && <text x={W - PAD.r - 6} y={PAD.t + 18} textAnchor="end" fontSize={9} fill="#ff6b6b66" fontFamily="DM Mono,monospace">Risco ilimitado ↗</text>}
+
+      {/* X axis */}
+      {xLabels.map((p, i) => (
+        <text key={i} x={xOf(p)} y={H - PAD.b + 15} textAnchor="middle" fontSize={8} fill="#3a5a7a" fontFamily="DM Mono,monospace">${p.toFixed(0)}</text>
+      ))}
+      <text x={10} y={H / 2} textAnchor="middle" fontSize={8} fill="#3a5a7a" transform={`rotate(-90,10,${H / 2})`} fontFamily="DM Mono,monospace">P&L ($)</text>
+    </svg>
+  );
+}
+
 // ── Simulator Panel ───────────────────────────────────────────────────────────
 function SimulatorPanel({ onSaveManualTrade }) {
   const [searchInput, setSearchInput] = useState("IBIT");
@@ -966,6 +1062,8 @@ function SimulatorPanel({ onSaveManualTrade }) {
   const [showQuickAdd, setShowQuickAdd] = useState(false);
   const [tooltip, setTooltip] = useState(null);
   const [tipPos, setTipPos]   = useState({x:0,y:0});
+  const [customPremium, setCustomPremium] = useState(null);
+  const [premiumInput, setPremiumInput]   = useState("");
 
   const spot = quote?.last || 0;
 
@@ -987,6 +1085,10 @@ function SimulatorPanel({ onSaveManualTrade }) {
   const selOption = useMemo(()=>filteredChain.find(o=>o.strike===selStrike),[filteredChain,selStrike]);
 
   const premium  = selOption?.ask||selOption?.last||0;
+  const activePremium = customPremium !== null ? customPremium : premium;
+
+  // Sync premium input when market price changes (new chain load)
+  useEffect(()=>{ if(premium>0) setPremiumInput(premium.toFixed(2)); },[premium]);
   const iv       = Math.max(selOption?.greeks?.smv_vol||0.3, 0.05);
   const delta    = selOption?.greeks?.delta||0;
   const theta    = selOption?.greeks?.theta||0;
@@ -994,31 +1096,32 @@ function SimulatorPanel({ onSaveManualTrade }) {
   const vega     = selOption?.greeks?.vega||0;
 
   const breakeven = useMemo(()=>{
-    if(!selStrike||!premium) return 0;
-    if(optType==="call") return side==="buy"?selStrike+premium:selStrike-premium;
-    return side==="buy"?selStrike-premium:selStrike+premium;
-  },[selStrike,premium,optType,side]);
+    if(!selStrike||!activePremium) return 0;
+    if(optType==="call") return side==="buy"?selStrike+activePremium:selStrike-activePremium;
+    return side==="buy"?selStrike-activePremium:selStrike+activePremium;
+  },[selStrike,activePremium,optType,side]);
 
-  const maxLoss   = side==="buy"?premium*100:(optType==="call"?Infinity:(selStrike-premium)*100);
-  const maxProfit = side==="buy"?(optType==="call"?Infinity:(selStrike-premium)*100):premium*100;
+  const maxLoss   = side==="buy"?activePremium*100:(optType==="call"?Infinity:(selStrike-activePremium)*100);
+  const maxProfit = side==="buy"?(optType==="call"?Infinity:(selStrike-activePremium)*100):activePremium*100;
   const probITM   = Math.abs(delta);
   const probTouch = Math.min(probITM*2,0.99);
   const chanceOfProfit = side==="buy"?probITM:(1-probITM);
 
   const loadSym = useCallback(async(s)=>{
-    setLoading(true); setError(null); setChain([]); setQuote(null); setSelStrike(null);
+    setLoading(true); setError(null); setChain([]); setQuote(null); setSelStrike(null); setCustomPremium(null);
     try{
       const e=await fetchExpirations(s);
       if(!e?.length){setError(`No options for "${s}"`);setLoading(false);return;}
-      setExps(e); setSelExp(e[0]); setSym(s);
-      const[q,ch]=await Promise.all([fetchQuote(s),fetchOptionChain(s,e[0])]);
+      const defaultExp=e[Math.min(11,e.length-1)];
+      setExps(e); setSelExp(defaultExp); setSym(s);
+      const[q,ch]=await Promise.all([fetchQuote(s),fetchOptionChain(s,defaultExp)]);
       setQuote(q); setChain(ch);
     }catch{setError("Error fetching data.");}
     setLoading(false);
   },[]);
 
   const loadChain = useCallback(async(exp)=>{
-    setSelExp(exp); setLoading(true);
+    setSelExp(exp); setLoading(true); setCustomPremium(null);
     try{const ch=await fetchOptionChain(sym,exp);setChain(ch);}catch{}
     setLoading(false);
   },[sym]);
@@ -1059,7 +1162,7 @@ function SimulatorPanel({ onSaveManualTrade }) {
 
   // P&L matrix using Black-Scholes
   const matrixRows = useMemo(()=>{
-    if(!availableStrikes.length||!selExp||!selStrike||premium<=0) return [];
+    if(!availableStrikes.length||!selExp||!selStrike||activePremium<=0) return [];
     const K=selStrike, sigma=iv, r=0.05;
     const expDate=new Date(selExp+"T16:00:00");
     const priceRows=availableStrikes
@@ -1071,12 +1174,12 @@ function SimulatorPanel({ onSaveManualTrade }) {
         const colDate=new Date(exp+"T16:00:00");
         const T=Math.max((expDate-colDate)/(365*24*3600*1000),0);
         const optVal=bsPrice(rowPrice,K,T,r,sigma,optType);
-        const raw=side==="buy"?(optVal-premium)*100:(premium-optVal)*100;
+        const raw=side==="buy"?(optVal-activePremium)*100:(activePremium-optVal)*100;
         return Math.round(raw);
       });
       return{price:rowPrice,pct:parseFloat(pct),cols};
     });
-  },[availableStrikes,colExps,selExp,selStrike,premium,iv,optType,side,spot]);
+  },[availableStrikes,colExps,selExp,selStrike,activePremium,iv,optType,side,spot]);
 
   const atmRowIdx = useMemo(()=>{
     if(!matrixRows.length||!spot) return -1;
@@ -1117,9 +1220,10 @@ function SimulatorPanel({ onSaveManualTrade }) {
   const pnlColor=(v)=>v>0?"#00d4aa":v<-5?"#ff6b6b":"#2a3a4a";
 
   const fmtCell=(v,cost)=>{
+    const c=cost||activePremium*100||1;
     if(viewMode==="dollar") return(v>0?"+":"")+v;
-    if(viewMode==="pct")    return(v>0?"+":"")+(v/cost*100).toFixed(0)+"%";
-    return(1+v/cost).toFixed(2)+"x";
+    if(viewMode==="pct")    return(v>0?"+":"")+(v/c*100).toFixed(0)+"%";
+    return(1+v/c).toFixed(2)+"x";
   };
 
   const distFromATM = selStrike&&spot?(selStrike-spot).toFixed(2):"0.00";
@@ -1205,13 +1309,38 @@ function SimulatorPanel({ onSaveManualTrade }) {
           </div>
         )}
 
-        {/* Summary metrics */}
+        {/* Premium editor */}
         {premium>0&&(
+          <div>
+            <div className="sim-slbl" style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+              Preço Pago
+              {customPremium!==null&&(
+                <button onClick={()=>{setCustomPremium(null);setPremiumInput(premium.toFixed(2));}}
+                  style={{fontSize:9,color:"#3a8fff",background:"none",border:"none",cursor:"pointer",padding:0,fontFamily:"DM Mono,monospace"}}>
+                  ↺ usar mercado (${premium.toFixed(2)})
+                </button>
+              )}
+            </div>
+            <div style={{display:"flex",alignItems:"center",gap:6,background:"#080c10",border:`1px solid ${customPremium!==null?"#f5c84266":"#1a2a3a"}`,borderRadius:6,padding:"7px 10px"}}>
+              <span style={{color:"#5a7a9a",fontSize:12,fontFamily:"DM Mono,monospace"}}>$</span>
+              <input value={premiumInput}
+                onChange={e=>setPremiumInput(e.target.value)}
+                onBlur={e=>{const v=parseFloat(e.target.value);if(!isNaN(v)&&v>0){setCustomPremium(v);setPremiumInput(v.toFixed(2));}else{setCustomPremium(null);setPremiumInput(premium.toFixed(2));}}}
+                onKeyDown={e=>{if(e.key==="Enter"){const v=parseFloat(premiumInput);if(!isNaN(v)&&v>0){setCustomPremium(v);setPremiumInput(v.toFixed(2));}}}}
+                style={{background:"transparent",border:"none",outline:"none",color:customPremium!==null?"#f5c842":"#c8d8e8",fontFamily:"DM Mono,monospace",fontSize:16,fontWeight:600,width:"70px"}}/>
+              {customPremium!==null&&<span style={{fontSize:8,color:"#f5c842",background:"#f5c84215",border:"1px solid #f5c84233",borderRadius:3,padding:"1px 5px",letterSpacing:.5}}>custom</span>}
+              {customPremium===null&&<span style={{fontSize:9,color:"#3a5a7a",marginLeft:"auto"}}>ask</span>}
+            </div>
+          </div>
+        )}
+
+        {/* Summary metrics */}
+        {activePremium>0&&(
           <div>
             <div className="sim-slbl">Resumo</div>
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:5}}>
               {[
-                ["Net "+(side==="buy"?"Debit":"Credit"),(side==="buy"?"-":"+")+`$${(premium*100).toFixed(0)}`,side==="buy"?"#ff4d6a":"#00d4aa"],
+                ["Net "+(side==="buy"?"Debit":"Credit"),(side==="buy"?"-":"+")+`$${(activePremium*100).toFixed(0)}`,side==="buy"?"#ff4d6a":"#00d4aa"],
                 ["Max Loss",maxLoss===Infinity?"Unlimited":"$"+maxLoss.toFixed(0),"#ff4d6a"],
                 ["Max Profit",maxProfit===Infinity?"Unlimited":"$"+maxProfit.toFixed(0),"#00d4aa"],
                 ["Breakeven",`$${breakeven.toFixed(2)}`,"#f5c842"],
@@ -1274,7 +1403,7 @@ function SimulatorPanel({ onSaveManualTrade }) {
         )}
 
         {/* Selected expiration info */}
-        {selExp&&premium>0&&(
+        {selExp&&activePremium>0&&(
           <div style={{background:"#080c10",border:"1px solid #00d4aa33",borderRadius:6,padding:"9px 11px"}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
               <div style={{fontFamily:"Syne,sans-serif",fontSize:13,fontWeight:700,color:"#00d4aa"}}>{selExp}</div>
@@ -1287,7 +1416,7 @@ function SimulatorPanel({ onSaveManualTrade }) {
           </div>
         )}
 
-        {premium>0&&(
+        {activePremium>0&&(
           <button className="btn" style={{width:"100%",padding:9,fontSize:11,fontWeight:600}} onClick={()=>setShowQuickAdd(p=>!p)}>
             {showQuickAdd?"✕ Cancelar":"+ Registrar Trade"}
           </button>
@@ -1319,6 +1448,16 @@ function SimulatorPanel({ onSaveManualTrade }) {
                 </div>
               ))}
             </div>
+          </div>
+        )}
+
+        {/* Payoff Chart */}
+        {selStrike&&activePremium>0&&(
+          <div style={{padding:"10px 12px 0",borderBottom:"1px solid #1a2a3a"}}>
+            <div style={{fontSize:9,letterSpacing:1.5,textTransform:"uppercase",color:"#3a5a7a",marginBottom:6}}>
+              Payoff na Expiração — {strategy}
+            </div>
+            <PayoffChart spot={spot} strike={selStrike} premium={activePremium} breakeven={breakeven} optType={optType} side={side}/>
           </div>
         )}
 
@@ -1364,7 +1503,7 @@ function SimulatorPanel({ onSaveManualTrade }) {
                 {matrixRows.map((row,ri)=>{
                   const isAtm=ri===atmRowIdx;
                   const isBe=ri===beRowIdx&&ri!==atmRowIdx;
-                  const cost=premium*100;
+                  const cost=activePremium*100;
                   return(
                     <tr key={row.price}
                       className={isAtm?"sim-row-atm":isBe?"sim-row-be":""}
@@ -1391,7 +1530,7 @@ function SimulatorPanel({ onSaveManualTrade }) {
                               fontWeight:Math.abs(v)>100?600:400}}
                             onMouseEnter={e=>{
                               setTooltip({price:row.price,pct:row.pct,date:colLabel,dollar:v,
-                                pctStr:(v/cost*100).toFixed(1),roi:(1+v/cost).toFixed(2)});
+                                pctStr:(v/(activePremium*100)*100).toFixed(1),roi:(1+v/(activePremium*100)).toFixed(2)});
                               setTipPos({x:e.clientX,y:e.clientY});
                             }}
                             onMouseLeave={()=>setTooltip(null)}
@@ -1438,13 +1577,13 @@ function SimulatorPanel({ onSaveManualTrade }) {
       )}
 
       {/* Quick Add preview */}
-      {showQuickAdd&&sym&&premium>0&&(
+      {showQuickAdd&&sym&&activePremium>0&&(
         <div style={{position:"fixed",bottom:20,right:80,zIndex:200,background:"#0d1821",border:"1px solid #00d4aa44",borderRadius:10,padding:"14px 16px",minWidth:210,boxShadow:"0 8px 32px rgba(0,0,0,.5)"}}>
           <div style={{fontFamily:"Syne,sans-serif",fontSize:13,fontWeight:700,color:"#fff",marginBottom:10}}>
             {sym} <span style={{fontSize:11,color:"#00d4aa",fontFamily:"DM Mono,monospace"}}>{strategy}</span>
           </div>
           {[["Strike",`$${(selStrike||0).toFixed(2)}`],["Expiração",selExp],
-            ["Prêmio",(side==="buy"?"-":"+")+`$${(premium*100).toFixed(0)}`],
+            ["Prêmio",(side==="buy"?"-":"+")+`$${(activePremium*100).toFixed(0)}`],
             ["Breakeven",`$${breakeven.toFixed(2)}`]].map(([l,v])=>(
             <div key={l} style={{display:"flex",justifyContent:"space-between",marginBottom:5,fontSize:11}}>
               <span style={{color:"#5a7a9a"}}>{l}</span><span style={{color:"#c8d8e8",fontWeight:500}}>{v}</span>
@@ -1458,7 +1597,7 @@ function SimulatorPanel({ onSaveManualTrade }) {
                 date:new Date().toISOString().slice(0,10),
                 action:side.toUpperCase(),
                 strike:selStrike,expiration:selExp,
-                premium,contracts:1,status:"open",option_type:optType,
+                premium:activePremium,contracts:1,status:"open",option_type:optType,
               });
             }}>Registrar Trade →</button>
           </div>
