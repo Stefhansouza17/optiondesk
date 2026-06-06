@@ -1223,9 +1223,9 @@ function ExpirationAlertModal({ trades, onResolve }) {
   return (
     <div className="overlay">
       <div className="fbox" style={{width:540,maxWidth:"95vw"}}>
-        <div className="ftitle">⚠️ Posições expiradas</div>
+        <div className="ftitle">⚠️ Expired positions</div>
         <p style={{fontSize:12,color:"#8aaac8",lineHeight:1.6,marginBottom:14}}>
-          As posições abaixo passaram da data de expiração. O que aconteceu com cada uma?
+          The positions below have passed their expiration date. What happened to each one?
         </p>
         {trades.map(t=>(
           <div key={t.id} style={{background:"#080c10",border:"1px solid #1a2a3a",borderRadius:6,padding:"10px 14px",marginBottom:10}}>
@@ -1237,17 +1237,17 @@ function ExpirationAlertModal({ trades, onResolve }) {
                 {" · exp "}<span style={{color:"#5a7a9a"}}>{t.expiration}</span>
                 {" · "}<span style={{color:"#00d4aa"}}>${fmt(parseFloat(t.premium||0)*(parseInt(t.contracts||1))*100)}</span>
               </div>
-              <span style={{fontSize:10,color:"#ff4d6a",background:"#ff4d6a10",border:"1px solid #ff4d6a33",padding:"2px 8px",borderRadius:3,letterSpacing:1,textTransform:"uppercase"}}>expirado</span>
+              <span style={{fontSize:10,color:"#ff4d6a",background:"#ff4d6a10",border:"1px solid #ff4d6a33",padding:"2px 8px",borderRadius:3,letterSpacing:1,textTransform:"uppercase"}}>expired</span>
             </div>
             <div className="toggle-group">
               <button className="tgl" style={{flex:1,background:decisions[t.id]==="expired"?"#a78bfa":"transparent",color:decisions[t.id]==="expired"?"#fff":"#5a7a9a"}}
-                onClick={()=>setDecisions(p=>({...p,[t.id]:"expired"}))}>Virou pó (worthless)</button>
+                onClick={()=>setDecisions(p=>({...p,[t.id]:"expired"}))}>Expired worthless</button>
               <button className="tgl" style={{flex:1,background:decisions[t.id]==="closed"?"#f5c842":"transparent",color:decisions[t.id]==="closed"?"#080c10":"#5a7a9a"}}
-                onClick={()=>setDecisions(p=>({...p,[t.id]:"closed"}))}>Fechado / Rolado</button>
+                onClick={()=>setDecisions(p=>({...p,[t.id]:"closed"}))}>Closed / Rolled</button>
             </div>
           </div>
         ))}
-        <button className="btn bfull" style={{marginTop:16,width:"100%"}} onClick={confirm}>Confirmar</button>
+        <button className="btn bfull" style={{marginTop:16,width:"100%"}} onClick={confirm}>Confirm</button>
       </div>
     </div>
   );
@@ -1512,8 +1512,8 @@ function ManualTradeModal({ onClose, onSave, defaultData }) {
     :  (totalValue - fees);
 
   // Validation — only show errors after field has been touched or save attempted.
-  const REQUIRED = { symbol:"Símbolo", strike:"Strike", expiration:"Vencimento", price:"Preço" };
-  const fieldErr = (f) => touched[f] && !form[f] ? `${REQUIRED[f]} é obrigatório` : null;
+  const REQUIRED = { symbol:"Symbol", strike:"Strike", expiration:"Expiration", price:"Price" };
+  const fieldErr = (f) => touched[f] && !form[f] ? `${REQUIRED[f]} is required` : null;
   const canSave   = form.symbol && form.strike && form.expiration && form.price
     && parseFloat(form.price) > 0 && parseFloat(form.strike) > 0;
 
@@ -1543,7 +1543,7 @@ function ManualTradeModal({ onClose, onSave, defaultData }) {
       await onSave(form.symbol.toUpperCase(), tradeData);
       onClose();
     } catch(e) {
-      setSaveError(e?.message || "Erro ao salvar trade. Tente novamente.");
+      setSaveError(e?.message || "Error saving trade. Please try again.");
     } finally {
       setSaving(false);
     }
@@ -1552,13 +1552,13 @@ function ManualTradeModal({ onClose, onSave, defaultData }) {
   const orderColor = form.orderType==="BUY" ? "#00d4aa" : "#ff4d6a";
 
   const summaryRows = [
-    ["Ativo",      form.symbol||"—",                                                                                                    "#c8d8e8"],
-    ["Ordem",      `${form.orderType==="BUY"?"Buy":"Sell"} ${form.optionType==="call"?"Call":"Put"}`,                                   orderColor],
+    ["Asset",      form.symbol||"—",                                                                                                    "#c8d8e8"],
+    ["Order",      `${form.orderType==="BUY"?"Buy":"Sell"} ${form.optionType==="call"?"Call":"Put"}`,                                   orderColor],
     ["Strike",     form.strike  ? `$${fmt(parseFloat(form.strike))}` : "—",                                                            "#f5c842"],
-    ["Vencimento", form.expiration || "—",                                                                                              "#c8d8e8"],
-    ["Quantidade", `${qty} contrato${qty>1?"s":""}`,                                                                                    "#8aaac8"],
-    ["Preço",      price ? `$${fmt(price)}` : "—",                                                                                     "#c8d8e8"],
-    ["Valor",      totalValue>0 ? `${netAmount<0?"-":"+"}$${fmt(Math.abs(netAmount))}` : "—", netAmount<0 ? "#ff4d6a" : "#00d4aa"],
+    ["Expiration", form.expiration || "—",                                                                                              "#c8d8e8"],
+    ["Qty",        `${qty} contract${qty>1?"s":""}`,                                                                                    "#8aaac8"],
+    ["Price",      price ? `$${fmt(price)}` : "—",                                                                                     "#c8d8e8"],
+    ["Value",      totalValue>0 ? `${netAmount<0?"-":"+"}$${fmt(Math.abs(netAmount))}` : "—", netAmount<0 ? "#ff4d6a" : "#00d4aa"],
   ];
 
   const inputStyle = (field) => ({
@@ -1572,7 +1572,7 @@ function ManualTradeModal({ onClose, onSave, defaultData }) {
         {/* Header */}
         <div style={{display:"flex",alignItems:"center",gap:10,padding:"16px 24px",borderBottom:"1px solid #1a2a3a",flexShrink:0}}>
           <span style={{color:"#00d4aa",fontSize:16,fontWeight:700}}>+</span>
-          <span style={{fontFamily:"Syne,sans-serif",fontWeight:700,fontSize:16,color:"#fff"}}>Registrar trade manualmente</span>
+          <span style={{fontFamily:"Syne,sans-serif",fontWeight:700,fontSize:16,color:"#fff"}}>Register trade manually</span>
           <button onClick={onClose} style={{marginLeft:"auto",background:"none",border:"none",color:"#5a7a9a",cursor:"pointer",fontSize:20,lineHeight:1,padding:"0 4px"}}>✕</button>
         </div>
 
@@ -1582,11 +1582,11 @@ function ManualTradeModal({ onClose, onSave, defaultData }) {
           {/* Left — Form */}
           <div style={{flex:1,padding:"20px 24px",overflowY:"auto"}}>
 
-            {/* Ativo */}
-            <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:"#3a5a7a",marginBottom:10}}>Ativo</div>
+            {/* Asset */}
+            <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:"#3a5a7a",marginBottom:10}}>Asset</div>
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:20}}>
               <div className="fgrp">
-                <label className="flbl">Símbolo *</label>
+                <label className="flbl">Symbol *</label>
                 <input className="finput" style={{textTransform:"uppercase",letterSpacing:1,...inputStyle("symbol")}}
                   placeholder="PBR, AAPL..."
                   value={form.symbol}
@@ -1595,19 +1595,19 @@ function ManualTradeModal({ onClose, onSave, defaultData }) {
                 {fieldErr("symbol")&&<span style={{fontSize:10,color:"#ff4d6a",marginTop:2,display:"block"}}>{fieldErr("symbol")}</span>}
               </div>
               <div className="fgrp">
-                <label className="flbl">Nome do ativo (opcional)</label>
+                <label className="flbl">Asset name (optional)</label>
                 <input className="finput" placeholder="Petrobras PN"
                   value={form.assetName} onChange={e=>setForm(p=>({...p,assetName:e.target.value}))}/>
               </div>
             </div>
 
-            {/* Detalhes */}
-            <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:"#3a5a7a",marginBottom:10}}>Detalhes do trade</div>
+            {/* Trade Details */}
+            <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:"#3a5a7a",marginBottom:10}}>Trade details</div>
 
             {/* Order type + Option type */}
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14,marginBottom:14}}>
               <div className="fgrp">
-                <label className="flbl">Tipo de ordem</label>
+                <label className="flbl">Order type</label>
                 <div style={{display:"flex",borderRadius:6,overflow:"hidden",border:"1px solid #1a2a3a"}}>
                   {[["BUY","Buy","#00d4aa","#080c10"],["SELL","Sell","#ff4d6a","#fff"]].map(([val,label,col,tc])=>(
                     <button key={val} onClick={()=>setForm(p=>({...p,orderType:val}))}
@@ -1619,7 +1619,7 @@ function ManualTradeModal({ onClose, onSave, defaultData }) {
                 </div>
               </div>
               <div className="fgrp">
-                <label className="flbl">Tipo de opção</label>
+                <label className="flbl">Option type</label>
                 <div style={{display:"flex",borderRadius:6,overflow:"hidden",border:"1px solid #1a2a3a"}}>
                   {[["call","Call","#3a8fff"],["put","Put","#a78bfa"]].map(([val,label,col])=>(
                     <button key={val} onClick={()=>setForm(p=>({...p,optionType:val}))}
@@ -1635,7 +1635,7 @@ function ManualTradeModal({ onClose, onSave, defaultData }) {
             {/* Qty / Strike / Expiration / Price */}
             <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:10,marginBottom:4}}>
               <div className="fgrp">
-                <label className="flbl">Quantidade</label>
+                <label className="flbl">Quantity</label>
                 <input className="finput" type="number" min="1" step="1" value={form.quantity}
                   onChange={e=>setForm(p=>({...p,quantity:e.target.value}))}/>
               </div>
@@ -1648,7 +1648,7 @@ function ManualTradeModal({ onClose, onSave, defaultData }) {
                 {fieldErr("strike")&&<span style={{fontSize:10,color:"#ff4d6a",marginTop:2,display:"block"}}>{fieldErr("strike")}</span>}
               </div>
               <div className="fgrp">
-                <label className="flbl">Vencimento *</label>
+                <label className="flbl">Expiration *</label>
                 <input className="finput" type="date"
                   value={form.expiration} style={inputStyle("expiration")}
                   onBlur={()=>touch("expiration")}
@@ -1656,7 +1656,7 @@ function ManualTradeModal({ onClose, onSave, defaultData }) {
                 {fieldErr("expiration")&&<span style={{fontSize:10,color:"#ff4d6a",marginTop:2,display:"block"}}>{fieldErr("expiration")}</span>}
               </div>
               <div className="fgrp">
-                <label className="flbl">Preço *</label>
+                <label className="flbl">Price *</label>
                 <div style={{position:"relative"}}>
                   <input className="finput" type="number" step="0.01" placeholder="0.23"
                     value={form.price} style={{paddingRight:38,...inputStyle("price")}}
@@ -1667,30 +1667,30 @@ function ManualTradeModal({ onClose, onSave, defaultData }) {
                 {fieldErr("price")&&<span style={{fontSize:10,color:"#ff4d6a",marginTop:2,display:"block"}}>{fieldErr("price")}</span>}
               </div>
             </div>
-            <div style={{fontSize:10,color:"#3a5a7a",marginBottom:14,letterSpacing:0.5}}>contratos</div>
+            <div style={{fontSize:10,color:"#3a5a7a",marginBottom:14,letterSpacing:0.5}}>contracts</div>
 
             {/* Debit / Credit — only active box is fully visible */}
             <div style={{marginBottom:16}}>
               {form.orderType==="BUY" ? (
                 <div style={{background:"#ff4d6a12",border:"1px solid #ff4d6a55",borderRadius:8,padding:"14px 16px"}}>
-                  <div style={{fontSize:11,color:"#ff4d6a",marginBottom:6,fontWeight:600,letterSpacing:0.5}}>Você vai pagar (débito)</div>
+                  <div style={{fontSize:11,color:"#ff4d6a",marginBottom:6,fontWeight:600,letterSpacing:0.5}}>You will pay (debit)</div>
                   <div style={{fontFamily:"Syne,sans-serif",fontSize:22,fontWeight:700,color:"#ff4d6a"}}>
-                    -{totalValue>0?`US$ ${fmt(totalValue)}`:"US$ —"}
+                    -{totalValue>0?`$${fmt(totalValue)}`:"$—"}
                   </div>
                   <div style={{fontSize:11,color:"#5a7a9a",marginTop:4}}>
-                    {qty} contrato{qty>1?"s":""} × 100 ações × ${fmt(price)}
-                    {fees>0 && <span style={{color:"#ff4d6a88"}}> + ${fmt(fees)} taxas</span>}
+                    {qty} contract{qty>1?"s":""} × 100 shares × ${fmt(price)}
+                    {fees>0 && <span style={{color:"#ff4d6a88"}}> + ${fmt(fees)} fees</span>}
                   </div>
                 </div>
               ) : (
                 <div style={{background:"#00d4aa12",border:"1px solid #00d4aa55",borderRadius:8,padding:"14px 16px"}}>
-                  <div style={{fontSize:11,color:"#00d4aa",marginBottom:6,fontWeight:600,letterSpacing:0.5}}>Você vai receber (crédito)</div>
+                  <div style={{fontSize:11,color:"#00d4aa",marginBottom:6,fontWeight:600,letterSpacing:0.5}}>You will receive (credit)</div>
                   <div style={{fontFamily:"Syne,sans-serif",fontSize:22,fontWeight:700,color:"#00d4aa"}}>
-                    +{totalValue>0?`US$ ${fmt(totalValue)}`:"US$ —"}
+                    +{totalValue>0?`$${fmt(totalValue)}`:"$—"}
                   </div>
                   <div style={{fontSize:11,color:"#5a7a9a",marginTop:4}}>
-                    {qty} contrato{qty>1?"s":""} × 100 ações × ${fmt(price)}
-                    {fees>0 && <span style={{color:"#5a7a9a88"}}> − ${fmt(fees)} taxas</span>}
+                    {qty} contract{qty>1?"s":""} × 100 shares × ${fmt(price)}
+                    {fees>0 && <span style={{color:"#5a7a9a88"}}> − ${fmt(fees)} fees</span>}
                   </div>
                 </div>
               )}
@@ -1699,7 +1699,7 @@ function ManualTradeModal({ onClose, onSave, defaultData }) {
             {/* Fees + Notes */}
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:14}}>
               <div className="fgrp">
-                <label className="flbl">Taxas / Comissões (opcional)</label>
+                <label className="flbl">Fees / Commissions (optional)</label>
                 <div style={{position:"relative"}}>
                   <input className="finput" type="number" step="0.01" placeholder="0.00"
                     value={form.fees} style={{paddingRight:38}}
@@ -1708,8 +1708,8 @@ function ManualTradeModal({ onClose, onSave, defaultData }) {
                 </div>
               </div>
               <div className="fgrp">
-                <label className="flbl">Notas (opcional)</label>
-                <input className="finput" placeholder="Ex: Entrada da PMCC, primeira perna..."
+                <label className="flbl">Notes (optional)</label>
+                <input className="finput" placeholder="e.g. PMCC entry, first leg..."
                   value={form.notes} onChange={e=>setForm(p=>({...p,notes:e.target.value}))}/>
               </div>
             </div>
@@ -1717,37 +1717,37 @@ function ManualTradeModal({ onClose, onSave, defaultData }) {
             {/* Strategy + Tags */}
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:0}}>
               <div className="fgrp">
-                <label className="flbl">Estratégia (opcional)</label>
+                <label className="flbl">Strategy (optional)</label>
                 <select className="fsel" value={form.strategy} onChange={e=>setForm(p=>({...p,strategy:e.target.value}))}>
-                  <option value="">Selecionar estratégia</option>
+                  <option value="">Select strategy</option>
                   {Object.values(STRATEGIES).flat().map(s=>(
                     <option key={s.id} value={s.id}>{s.label}</option>
                   ))}
                 </select>
               </div>
               <div className="fgrp">
-                <label className="flbl">Tags (opcional)</label>
-                <input className="finput" placeholder="Ex: PMCC, longo prazo, petróleo..."
+                <label className="flbl">Tags (optional)</label>
+                <input className="finput" placeholder="e.g. PMCC, long term, oil..."
                   value={form.tags} onChange={e=>setForm(p=>({...p,tags:e.target.value}))}/>
               </div>
             </div>
 
-            {/* Mostrar mais */}
+            {/* Show more */}
             <button onClick={()=>setShowMore(!showMore)} style={{display:"flex",alignItems:"center",justifyContent:"space-between",width:"100%",background:"none",border:"none",borderTop:"1px solid #1a2a3a",color:"#5a7a9a",cursor:"pointer",fontFamily:"DM Mono,monospace",fontSize:12,padding:"12px 0",marginTop:14}}>
-              <span>Mostrar mais opções</span>
+              <span>Show more options</span>
               <span style={{fontSize:11}}>{showMore?"▲":"▼"}</span>
             </button>
 
             {showMore&&(
               <div style={{paddingTop:12,display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
                 <div className="fgrp">
-                  <label className="flbl">Trade Group (nome livre)</label>
-                  <input className="finput" placeholder="Ex: PMCC PBR 2026, IBIT CC..."
+                  <label className="flbl">Trade Group (free label)</label>
+                  <input className="finput" placeholder="e.g. PMCC PBR 2026, IBIT CC..."
                     value={form.tradeGroup} onChange={e=>setForm(p=>({...p,tradeGroup:e.target.value}))}/>
-                  <span style={{fontSize:10,color:"#3a5a7a",marginTop:3,display:"block"}}>Agrupa pernas da mesma estratégia</span>
+                  <span style={{fontSize:10,color:"#3a5a7a",marginTop:3,display:"block"}}>Groups legs of the same strategy</span>
                 </div>
                 <div className="fgrp">
-                  <label className="flbl">Data do trade</label>
+                  <label className="flbl">Trade date</label>
                   <input className="finput" type="date" value={form.date}
                     onChange={e=>setForm(p=>({...p,date:e.target.value}))}/>
                 </div>
@@ -1757,7 +1757,7 @@ function ManualTradeModal({ onClose, onSave, defaultData }) {
 
           {/* Right — Summary */}
           <div style={{width:196,background:"#080c10",borderLeft:"1px solid #1a2a3a",padding:"20px 16px",flexShrink:0,overflowY:"auto"}}>
-            <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:"#3a5a7a",marginBottom:14}}>Resumo do trade</div>
+            <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:"#3a5a7a",marginBottom:14}}>Trade summary</div>
             {summaryRows.map(([label,value,color])=>(
               <div key={label} style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:10,paddingBottom:10,borderBottom:"1px solid #0f1e2e"}}>
                 <span style={{fontSize:11,color:"#3a5a7a",flexShrink:0}}>{label}</span>
@@ -1767,10 +1767,10 @@ function ManualTradeModal({ onClose, onSave, defaultData }) {
             <div style={{background:"#0d1821",border:"1px solid #1a2a3a",borderRadius:8,padding:"12px",marginTop:4}}>
               <div style={{display:"flex",alignItems:"center",gap:5,marginBottom:6}}>
                 <span style={{fontSize:13}}>💡</span>
-                <span style={{fontSize:11,fontWeight:600,color:"#f5c842"}}>Dica</span>
+                <span style={{fontSize:11,fontWeight:600,color:"#f5c842"}}>Tip</span>
               </div>
               <div style={{fontSize:11,color:"#5a7a9a",lineHeight:1.6}}>
-                Todos os trades registrados serão adicionados ao seu portfólio e usados para calcular P&L e desempenho das suas estratégias.
+                All registered trades will be added to your portfolio and used to calculate P&L and strategy performance.
               </div>
             </div>
           </div>
@@ -1784,10 +1784,10 @@ function ManualTradeModal({ onClose, onSave, defaultData }) {
             </div>
           )}
           <div style={{display:"flex",gap:10,justifyContent:"flex-end"}}>
-            <button className="btn bneutral" style={{padding:"9px 28px",fontSize:13}} onClick={onClose}>Cancelar</button>
+            <button className="btn bneutral" style={{padding:"9px 28px",fontSize:13}} onClick={onClose}>Cancel</button>
             <button className="btn" style={{padding:"9px 28px",fontSize:13,color:"#00d4aa",borderColor:"#00d4aa44",background:"#00d4aa15",opacity:canSave?1:0.5,cursor:canSave?"pointer":"not-allowed"}}
               onClick={handleSave} disabled={saving}>
-              {saving?"Salvando...":"Salvar trade"}
+              {saving?"Saving...":"Save trade"}
             </button>
           </div>
         </div>
@@ -2237,7 +2237,7 @@ function ClaudeChat({ assets, onSaveTrade, onUpdateTrade, onSaveLeap, onAddAsset
 
     // PDF not supported
     if(file.type==="application/pdf"){
-      setMessages(p=>[...p,{role:"assistant",content:"PDFs não são suportados ainda. Por favor envie uma foto (PNG ou JPEG) da confirmação! 📸"}]);
+      setMessages(p=>[...p,{role:"assistant",content:"PDFs are not supported yet. Please send a photo (PNG or JPEG) of the confirmation! 📸"}]);
       return;
     }
 
