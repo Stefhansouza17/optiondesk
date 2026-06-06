@@ -409,6 +409,155 @@ function Calculator({ asset, totalCollected, etfPrice }) {
   );
 }
 
+// ── Unified Trade Modal ───────────────────────────────────────────────────────
+function UnifiedTradeModal({ title="Add Trade", initial={}, asset=null, isEdit=false, onSave, onSaveLeap, onClose }) {
+  const [form, setForm] = useState({
+    date:new Date().toISOString().slice(0,10), action:"SELL", option_type:"call",
+    strategy:"", strike:"", expiration:"", premium:"", contracts:1,
+    fees:"", notes:"", status:"open", ...initial,
+  });
+  const upd = (k,v) => setForm(p=>({...p,[k]:v}));
+  const leaps = asset?.leaps||[];
+  const [selLeapId, setSelLeapId] = useState(leaps[0]?.id||"none");
+  const color = asset?.color||"#00d4aa";
+
+  const isPMCC = form.strategy==="PMCC";
+  const showLeapSelector = isPMCC && form.action==="SELL" && leaps.length>0;
+  const isLeapEntry = !isEdit && form.action==="BUY" && form.expiration && form.date &&
+    (new Date(form.expiration)-new Date(form.date))>180*24*60*60*1000 &&
+    (form.strategy==="PMCC"||form.strategy==="Covered Call");
+
+  const totalVal = ((parseFloat(form.premium)||0)*(parseInt(form.contracts)||1)*100);
+
+  async function handleSave(){
+    if(!form.strike||!form.expiration||!form.premium) return;
+    const d={...form,strike:parseFloat(form.strike),premium:parseFloat(form.premium),
+      contracts:Math.max(1,parseInt(form.contracts)||1),fees:parseFloat(form.fees)||0};
+    if(isLeapEntry&&onSaveLeap){
+      await onSaveLeap({id:`${asset?.id||"t"}_${Date.now()}`,date:d.date,strike:d.strike,expiration:d.expiration,cost:d.premium,contracts:d.contracts});
+      onClose(); return;
+    }
+    if(showLeapSelector&&selLeapId!=="none") d.trade_group=selLeapId;
+    await onSave(d);
+    onClose();
+  }
+
+  const inp={background:"#080c10",border:"1px solid #1a2a3a",color:"#c8d8e8",fontFamily:"DM Mono,monospace",fontSize:12,padding:"7px 10px",borderRadius:5,outline:"none",width:"100%",boxSizing:"border-box"};
+  const lbl={fontSize:9,letterSpacing:1.5,textTransform:"uppercase",color:"#3a5a7a",marginBottom:4,display:"block"};
+  const g2={display:"grid",gridTemplateColumns:"1fr 1fr",gap:10};
+  const col={display:"flex",flexDirection:"column"};
+
+  return(
+    <div className="overlay" onClick={e=>e.target===e.currentTarget&&onClose()}>
+      <div style={{background:"#0d1821",border:"1px solid #1a2a3a",borderRadius:12,padding:"22px 24px",width:380,maxHeight:"92vh",overflowY:"auto",boxSizing:"border-box"}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:18}}>
+          <div style={{fontFamily:"Syne,sans-serif",fontSize:15,fontWeight:800,color:"#fff"}}>{title}</div>
+          <div style={{display:"flex",alignItems:"center",gap:8}}>
+            {isLeapEntry&&<span style={{fontSize:9,background:"#00d4aa15",border:"1px solid #00d4aa44",color:"#00d4aa",padding:"2px 7px",borderRadius:4}}>→ LEAP</span>}
+            <button onClick={onClose} style={{background:"none",border:"none",color:"#3a5a7a",fontSize:16,cursor:"pointer",lineHeight:1}}>✕</button>
+          </div>
+        </div>
+        <div style={{display:"flex",flexDirection:"column",gap:12}}>
+
+          <div style={g2}>
+            <div style={col}><label style={lbl}>Date</label><input style={inp} type="date" value={form.date} onChange={e=>upd("date",e.target.value)}/></div>
+            <div style={col}><label style={lbl}>Action</label>
+              <div style={{display:"flex",gap:4}}>
+                {["BUY","SELL"].map(a=>(
+                  <button key={a} onClick={()=>upd("action",a)} style={{flex:1,padding:"7px 0",borderRadius:5,border:"1px solid",cursor:"pointer",fontSize:12,fontFamily:"DM Mono,monospace",fontWeight:600,
+                    background:form.action===a?(a==="BUY"?"#ff4d6a22":"#00d4aa22"):"transparent",
+                    color:form.action===a?(a==="BUY"?"#ff4d6a":"#00d4aa"):"#3a5a7a",
+                    borderColor:form.action===a?(a==="BUY"?"#ff4d6a55":"#00d4aa55"):"#1a2a3a"}}>{a}</button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div style={g2}>
+            <div style={col}><label style={lbl}>Option Type</label>
+              <div style={{display:"flex",gap:4}}>
+                {["call","put"].map(o=>(
+                  <button key={o} onClick={()=>upd("option_type",o)} style={{flex:1,padding:"7px 0",borderRadius:5,border:"1px solid",cursor:"pointer",fontSize:12,fontFamily:"DM Mono,monospace",fontWeight:600,
+                    background:form.option_type===o?(o==="call"?"#3a8fff22":"#a78bfa22"):"transparent",
+                    color:form.option_type===o?(o==="call"?"#3a8fff":"#a78bfa"):"#3a5a7a",
+                    borderColor:form.option_type===o?(o==="call"?"#3a8fff55":"#a78bfa55"):"#1a2a3a"}}>
+                    {o.charAt(0).toUpperCase()+o.slice(1)}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div style={col}><label style={lbl}>Strategy</label>
+              <select style={{...inp}} value={form.strategy} onChange={e=>upd("strategy",e.target.value)}>
+                <option value="">— Standalone —</option>
+                {SIM_STRATEGIES.map(s=><option key={s} value={s}>{s}</option>)}
+              </select>
+            </div>
+          </div>
+
+          <div style={g2}>
+            <div style={col}><label style={lbl}>Strike ($)</label><input style={inp} type="number" step="0.5" value={form.strike} onChange={e=>upd("strike",e.target.value)}/></div>
+            <div style={col}><label style={lbl}>Premium / share ($)</label><input style={inp} type="number" step="0.01" value={form.premium} onChange={e=>upd("premium",e.target.value)}/></div>
+          </div>
+
+          <div style={g2}>
+            <div style={col}><label style={lbl}>Expiration</label><input style={inp} type="date" value={form.expiration} onChange={e=>upd("expiration",e.target.value)}/></div>
+            <div style={col}><label style={lbl}>Contracts</label>
+              <div style={{display:"flex",alignItems:"center",gap:5,background:"#080c10",border:"1px solid #1a2a3a",borderRadius:5,padding:"4px 8px"}}>
+                <button onClick={()=>upd("contracts",Math.max(1,(parseInt(form.contracts)||1)-1))} style={{background:"#1a2a3a",border:"none",color:"#c8d8e8",width:22,height:22,borderRadius:4,cursor:"pointer",fontSize:14,lineHeight:"22px",textAlign:"center"}}>−</button>
+                <input value={form.contracts} onChange={e=>upd("contracts",Math.max(1,parseInt(e.target.value)||1))} style={{flex:1,background:"transparent",border:"none",outline:"none",color:"#fff",fontFamily:"DM Mono,monospace",fontSize:14,fontWeight:600,textAlign:"center"}}/>
+                <button onClick={()=>upd("contracts",(parseInt(form.contracts)||1)+1)} style={{background:"#1a2a3a",border:"none",color:"#c8d8e8",width:22,height:22,borderRadius:4,cursor:"pointer",fontSize:14,lineHeight:"22px",textAlign:"center"}}>+</button>
+              </div>
+            </div>
+          </div>
+
+          {showLeapSelector&&(
+            <div style={col}>
+              <label style={{...lbl,color:"#f5c842"}}>Associate with LEAP</label>
+              <select style={{...inp,borderColor:"#f5c84244",color:"#f5c842"}} value={selLeapId} onChange={e=>setSelLeapId(e.target.value)}>
+                <option value="none">— No association —</option>
+                {leaps.map(l=><option key={l.id} value={l.id}>${l.strike} · {l.expiration} · {l.contracts} contract{l.contracts!==1?"s":""}</option>)}
+              </select>
+              <div style={{fontSize:9,color:"#3a5a7a",marginTop:3}}>Premium from this sale will reduce the selected LEAP's cost basis</div>
+            </div>
+          )}
+
+          <div style={g2}>
+            <div style={col}><label style={lbl}>Fees ($) <span style={{opacity:.4}}>optional</span></label><input style={inp} type="number" step="0.01" placeholder="0.00" value={form.fees} onChange={e=>upd("fees",e.target.value)}/></div>
+            <div style={col}><label style={lbl}>Status</label>
+              <select style={inp} value={form.status} onChange={e=>upd("status",e.target.value)}>
+                <option value="open">Open</option><option value="closed">Closed</option><option value="expired">Expired</option>
+              </select>
+            </div>
+          </div>
+
+          <div style={col}>
+            <label style={lbl}>Notes <span style={{opacity:.4}}>optional</span></label>
+            <textarea style={{...inp,resize:"vertical",minHeight:52,lineHeight:1.5}} placeholder="e.g. earnings play, hedge, rolling from Jul…" value={form.notes||""} onChange={e=>upd("notes",e.target.value)}/>
+          </div>
+
+          {form.premium&&form.contracts&&(
+            <div style={{background:"#080c10",border:"1px solid #1a2a3a",borderRadius:6,padding:"9px 12px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+              <span style={{fontSize:10,color:"#3a5a7a"}}>Total value</span>
+              <span style={{fontFamily:"DM Mono,monospace",fontSize:15,fontWeight:700,color:form.action==="SELL"?"#00d4aa":"#ff4d6a"}}>
+                {form.action==="SELL"?"+":"-"}${totalVal.toFixed(0)}
+              </span>
+            </div>
+          )}
+        </div>
+
+        <div style={{display:"flex",gap:8,marginTop:16}}>
+          <button className="btn bneutral" style={{flex:1,padding:"10px 0"}} onClick={onClose}>Cancel</button>
+          <button className="btn" style={{flex:2,padding:"10px 0",fontWeight:700,color,borderColor:color+"44",background:color+"15",opacity:(!form.strike||!form.expiration||!form.premium)?0.4:1}}
+            disabled={!form.strike||!form.expiration||!form.premium}
+            onClick={handleSave}>
+            {isEdit?"Save Changes":isLeapEntry?"Save as LEAP →":"Add Trade →"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Asset Dashboard ───────────────────────────────────────────────────────────
 function AssetDashboard({ asset, onClose, onSaveTrade, onUpdateTrade, onDeleteTrade, onDeleteLeap, onDeleteAsset, onSaveLeap }) {
   const [trades, setTrades] = useState(asset.trades);
@@ -428,7 +577,7 @@ function AssetDashboard({ asset, onClose, onSaveTrade, onUpdateTrade, onDeleteTr
   const [crForm, setCrForm] = useState({mode:"close",closePrem:"",newStrike:"",newExp:"",newPrem:"",contracts:1});
   const [crGroup, setCrGroup] = useState([]);
   const [closeForm, setCloseForm] = useState({mode:"close",closePrem:"",newStrike:"",newExp:"",newPrem:""});
-  const ef = {date:new Date().toISOString().slice(0,10),action:"SELL",strike:"",expiration:"",premium:"",contracts:"1",status:"open"};
+  const ef = {date:new Date().toISOString().slice(0,10),action:"SELL",option_type:"call",strategy:strategy,strike:"",expiration:"",premium:"",contracts:1,fees:"",notes:"",status:"open"};
   const [form, setForm] = useState(ef);
   const color = asset.color;
   const strategy = asset.strategy || "PMCC";
@@ -460,39 +609,17 @@ function AssetDashboard({ asset, onClose, onSaveTrade, onUpdateTrade, onDeleteTr
   const expiredTrades = trades.filter(t=>t.status==="expired").sort((a,b)=>new Date(b.date)-new Date(a.date));
   const filteredTrades = (statusFilter==="open"?openTrades:statusFilter==="closed"?closedTrades:statusFilter==="expired"?expiredTrades:trades).sort((a,b)=>new Date(b.date)-new Date(a.date));
 
-  function openAdd(){setEditId(null);setForm(ef);setShowForm(true);}
-  function openEdit(t){setEditId(t.id);setForm({...t,contracts:t.contracts||1});setShowForm(true);}
-  async function saveTrade(){
-    if(!form.strike||!form.expiration||!form.premium)return;
-    const tradeData={...form,strike:parseFloat(form.strike),premium:parseFloat(form.premium),contracts:parseInt(form.contracts||1)};
-    const isLeap = !editId && tradeData.action==="BUY" &&
-      tradeData.expiration && tradeData.date &&
-      (new Date(tradeData.expiration)-new Date(tradeData.date))>180*24*60*60*1000 &&
-      (strategy==="PMCC" || strategy==="Covered Call");
-    if(isLeap && onSaveLeap){
-      await onSaveLeap({
-        id:`${asset.id}_${Date.now()}`,
-        date:tradeData.date,
-        strike:tradeData.strike,
-        expiration:tradeData.expiration,
-        cost:tradeData.premium,
-        contracts:tradeData.contracts,
-      });
-      setShowForm(false);
-      return;
-    }
+  function openAdd(){setEditId(null);setForm({...ef,strategy});setShowForm(true);}
+  function openEdit(t){setEditId(t.id);setForm({...ef,...t,contracts:t.contracts||1,fees:t.fees||"",notes:t.notes||""});setShowForm(true);}
+  async function saveTrade(tradeData){
     if(editId){
       await onUpdateTrade(editId,tradeData);
       setTrades(p=>p.map(t=>t.id===editId?{...t,...tradeData}:t));
     } else {
       const saved=await onSaveTrade(tradeData);
       if(saved){
-        const oppositeAction=tradeData.action==="BUY"?"SELL":"BUY";
-        const toClose=trades.filter(t=>
-          t.status==="open"&&t.action===oppositeAction&&
-          parseFloat(t.strike)===parseFloat(tradeData.strike)&&
-          t.expiration===tradeData.expiration
-        );
+        const opp=tradeData.action==="BUY"?"SELL":"BUY";
+        const toClose=trades.filter(t=>t.status==="open"&&t.action===opp&&parseFloat(t.strike)===parseFloat(tradeData.strike)&&t.expiration===tradeData.expiration);
         setTrades(p=>[...p.map(t=>toClose.some(c=>c.id===t.id)?{...t,status:"closed"}:t),saved]);
       }
     }
@@ -746,7 +873,7 @@ function AssetDashboard({ asset, onClose, onSaveTrade, onUpdateTrade, onDeleteTr
                       <td style={{color:t.action==="SELL"?color:"#ff4d6a"}}>{t.action==="SELL"?"+":"-"}${fmt(t.premium*(t.contracts||1)*100)}</td>
                       <td>{t.status==="open"?<span className="stopen" style={{color,borderColor:color+"44",background:color+"15"}}>Open</span>:t.status==="expired"?<span className="stexpired">Expired</span>:<span className="stclosed">Closed</span>}</td>
                       <td><div style={{display:"flex",gap:5}}>
-                        <button className="btn bsm bneutral" onClick={()=>openEdit(t)}>Edit</button>
+                        <button className="btn bsm bneutral" title="Edit trade" onClick={()=>openEdit(t)}>✏</button>
                         <button className="btn bsm bdanger" onClick={()=>removeTrade(t.id)}>✕</button>
                       </div></td>
                     </tr>
@@ -919,30 +1046,15 @@ function AssetDashboard({ asset, onClose, onSaveTrade, onUpdateTrade, onDeleteTr
 
       {/* Trade Form */}
       {showForm&&(
-        <div className="overlay" onClick={e=>e.target===e.currentTarget&&setShowForm(false)}>
-          <div className="fbox">
-            <div className="ftitle">{editId?"Edit trade":"Add trade"}</div>
-            <div className="frow">
-              <div className="fgrp"><label className="flbl">Date</label><input className="finput" type="date" value={form.date} onChange={e=>setForm({...form,date:e.target.value})}/></div>
-              <div className="fgrp"><label className="flbl">Action</label><select className="fsel" value={form.action} onChange={e=>setForm({...form,action:e.target.value})}><option value="SELL">SELL</option><option value="BUY">BUY</option></select></div>
-            </div>
-            <div className="frow">
-              <div className="fgrp"><label className="flbl">Strike ($)</label><input className="finput" type="number" step="0.5" value={form.strike} onChange={e=>setForm({...form,strike:e.target.value})}/></div>
-              <div className="fgrp"><label className="flbl">Premium ($)</label><input className="finput" type="number" step="0.01" value={form.premium} onChange={e=>setForm({...form,premium:e.target.value})}/></div>
-            </div>
-            <div className="frow">
-              <div className="fgrp"><label className="flbl">Expiration</label><input className="finput" type="date" value={form.expiration} onChange={e=>setForm({...form,expiration:e.target.value})}/></div>
-              <div className="fgrp"><label className="flbl">Contracts</label><input className="finput" type="number" step="1" min="1" value={form.contracts} onChange={e=>setForm({...form,contracts:e.target.value})}/></div>
-            </div>
-            <div className="frow">
-              <div className="fgrp"><label className="flbl">Status</label><select className="fsel" value={form.status} onChange={e=>setForm({...form,status:e.target.value})}><option value="open">Open</option><option value="closed">Closed</option><option value="expired">Expired (worthless)</option></select></div>
-            </div>
-            <div className="factions">
-              <button className="btn bneutral bfull" onClick={()=>setShowForm(false)}>Cancel</button>
-              <button className="btn bfull" onClick={saveTrade} style={{color,borderColor:color+"44",background:color+"15"}}>{editId?"Save":"Confirm"}</button>
-            </div>
-          </div>
-        </div>
+        <UnifiedTradeModal
+          title={editId?"Edit Trade":"Add Trade"}
+          initial={form}
+          asset={asset}
+          isEdit={!!editId}
+          onSave={saveTrade}
+          onSaveLeap={onSaveLeap}
+          onClose={()=>setShowForm(false)}
+        />
       )}
     </div>
   );
@@ -3112,7 +3224,15 @@ function ClaudeChat({ assets, onSaveTrade, onUpdateTrade, onSaveLeap, onAddAsset
                           value={t.contracts||1} onChange={e=>{const v=[...pendingTrades];v[i]={...v[i],contracts:e.target.value};setPendingTrades(v);}}/>
                       </div>
                     </div>
-                    <div style={{fontSize:10,color:"#5a7a9a",textAlign:"right"}}>
+                    <div style={{marginTop:6}}>
+                      <div style={{fontSize:9,color:"#5a7a9a",marginBottom:2}}>STRATEGY</div>
+                      <select style={{width:"100%",background:"#080c10",border:"1px solid #1a2a3a",color:"#a78bfa",fontFamily:"DM Mono,monospace",fontSize:11,padding:"4px 8px",borderRadius:4,outline:"none"}}
+                        value={t.strategy||""} onChange={e=>{const v=[...pendingTrades];v[i]={...v[i],strategy:e.target.value};setPendingTrades(v);}}>
+                        <option value="">— Standalone —</option>
+                        {SIM_STRATEGIES.map(s=><option key={s} value={s}>{s}</option>)}
+                      </select>
+                    </div>
+                    <div style={{fontSize:10,color:"#5a7a9a",textAlign:"right",marginTop:6}}>
                       Total: <span style={{color:"#fff",fontWeight:600}}>${((parseFloat(t.premium)||0)*(parseInt(t.contracts)||1)*100).toFixed(2)}</span>
                     </div>
                   </div>
