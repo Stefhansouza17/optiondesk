@@ -1023,6 +1023,9 @@ function SimulatorPanel({ onSaveManualTrade }) {
     setLoading(false);
   },[sym]);
 
+  // Auto-load default symbol on mount
+  useEffect(()=>{ loadSym("IBIT"); },[]);
+
   // Group expirations by month for timeline
   const groupedExps = useMemo(()=>{
     const g={};
@@ -1035,8 +1038,24 @@ function SimulatorPanel({ onSaveManualTrade }) {
     return g;
   },[exps]);
 
-  // Columns: expirations up to and including selExp
-  const colExps = useMemo(()=>exps.filter(e=>e<=selExp).slice(0,14),[exps,selExp]);
+  // Columns: smart selection — weeklies if ≤180d, monthly opex + selExp if >180d
+  const colExps = useMemo(()=>{
+    if(!exps.length||!selExp) return [];
+    const upToSel = exps.filter(e=>e<=selExp);
+    const dteSelExp = Math.ceil((new Date(selExp+"T12:00:00")-new Date())/(1000*60*60*24));
+    if(dteSelExp<=180){
+      return upToSel.slice(0,12);
+    }
+    // Far-term: keep last expiration of each month (monthly opex), then append selExp
+    const byMonth={};
+    upToSel.forEach(exp=>{
+      const d=new Date(exp+"T12:00:00");
+      const key=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`;
+      byMonth[key]=exp; // overwrite keeps last of month
+    });
+    const monthly=Object.values(byMonth).filter(e=>e!==selExp);
+    return [...monthly.slice(0,11), selExp];
+  },[exps,selExp]);
 
   // P&L matrix using Black-Scholes
   const matrixRows = useMemo(()=>{
