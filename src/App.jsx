@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
-import { fetchAssets, addAsset as dbAddAsset, addLeap, addTrade, updateTrade, deleteTrade, deleteLeap, fetchOpenTrades, closeAsset as dbCloseAsset } from "./supabase";
+import { fetchAssets, addAsset as dbAddAsset, addLeap, addTrade, updateTrade, deleteTrade, updateLeap, deleteLeap, fetchOpenTrades, closeAsset as dbCloseAsset } from "./supabase";
 
 // ── API ───────────────────────────────────────────────────────────────────────
 async function fetchQuote(symbol) {
@@ -559,7 +559,7 @@ function UnifiedTradeModal({ title="Add Trade", initial={}, asset=null, isEdit=f
 }
 
 // ── Asset Dashboard ───────────────────────────────────────────────────────────
-function AssetDashboard({ asset, onClose, onSaveTrade, onUpdateTrade, onDeleteTrade, onDeleteLeap, onDeleteAsset, onSaveLeap }) {
+function AssetDashboard({ asset, onClose, onSaveTrade, onUpdateTrade, onDeleteTrade, onDeleteLeap, onUpdateLeap, onDeleteAsset, onSaveLeap }) {
   const [trades, setTrades] = useState(asset.trades);
   const [etfPrice, setEtfPrice] = useState(asset.initialPrice||0);
   const [liveData, setLiveData] = useState(null);
@@ -574,6 +574,7 @@ function AssetDashboard({ asset, onClose, onSaveTrade, onUpdateTrade, onDeleteTr
   const [showDelete, setShowDelete] = useState(false);
   const [closeLeap, setCloseLeap] = useState(null);
   const [closeLeapPrem, setCloseLeapPrem] = useState("");
+  const [editLeapData, setEditLeapData] = useState(null);
   const [crForm, setCrForm] = useState({mode:"close",closePrem:"",newStrike:"",newExp:"",newPrem:"",contracts:1});
   const [crGroup, setCrGroup] = useState([]);
   const [closeForm, setCloseForm] = useState({mode:"close",closePrem:"",newStrike:"",newExp:"",newPrem:""});
@@ -792,7 +793,10 @@ function AssetDashboard({ asset, onClose, onSaveTrade, onUpdateTrade, onDeleteTr
                           <td style={{color}}>${fmt(l.cost)}</td>
                           <td style={{color:"#8aaac8"}}>{l.contracts}</td>
                           <td style={{color}}>${fmt(l.cost*l.contracts*100)}</td>
-                          <td><button className="btn bsm bdanger" onClick={()=>{setCloseLeap(l);setCloseLeapPrem("");}}>Close</button></td>
+                          <td><div style={{display:"flex",gap:5}}>
+                            <button className="btn bsm bneutral" onClick={()=>setEditLeapData(l)}>Edit</button>
+                            <button className="btn bsm bdanger" onClick={()=>{setCloseLeap(l);setCloseLeapPrem("");}}>Close</button>
+                          </div></td>
                         </tr>
                       ))}
                     </tbody>
@@ -962,6 +966,35 @@ function AssetDashboard({ asset, onClose, onSaveTrade, onUpdateTrade, onDeleteTr
             </div>
           </div>
         </div>
+      )}
+
+      {/* Edit LEAP Modal */}
+      {editLeapData&&(
+        <UnifiedTradeModal
+          title="Edit LEAP"
+          isEdit={true}
+          asset={asset}
+          initial={{
+            date: editLeapData.date,
+            action: "BUY",
+            option_type: "call",
+            strike: String(editLeapData.strike),
+            expiration: editLeapData.expiration,
+            premium: String(editLeapData.cost),
+            contracts: editLeapData.contracts,
+          }}
+          onSave={async (d)=>{
+            await onUpdateLeap(editLeapData.id, {
+              date: d.date,
+              strike: parseFloat(d.strike),
+              expiration: d.expiration,
+              cost: parseFloat(d.premium),
+              contracts: parseInt(d.contracts||1),
+            });
+            setEditLeapData(null);
+          }}
+          onClose={()=>setEditLeapData(null)}
+        />
       )}
 
       {/* Close LEAP Modal */}
@@ -2808,6 +2841,13 @@ function App() {
     } catch(e){ console.error(e); }
   };
 
+  const handleUpdateLeap = async (assetId, leapId, changes) => {
+    try {
+      await updateLeap(leapId, changes);
+      setAssets(p=>p.map(a=>a.id===assetId?{...a,leaps:a.leaps.map(l=>l.id===leapId?{...l,...changes}:l)}:a));
+    } catch(e){ console.error(e); }
+  };
+
   const handleDeleteTrade = async (assetId, tradeId) => {
     try {
       await deleteTrade(tradeId);
@@ -2875,6 +2915,7 @@ function App() {
           onUpdateTrade={(id,c)=>handleUpdateTrade(a.id,id,c)}
           onDeleteTrade={(id)=>handleDeleteTrade(a.id,id)}
           onDeleteLeap={(id)=>handleDeleteLeap(a.id,id)}
+          onUpdateLeap={(leapId,changes)=>handleUpdateLeap(a.id,leapId,changes)}
           onSaveLeap={(l)=>handleSaveLeap(a.id,l)}
           onDeleteAsset={handleDeleteAsset}
         />

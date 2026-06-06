@@ -153,6 +153,11 @@ export async function deleteTrade(id) {
   if (error) throw error;
 }
 
+export async function updateLeap(id, changes) {
+  const { error } = await supabase.from('leaps').update(changes).eq('id', id);
+  if (error) throw error;
+}
+
 export async function deleteLeap(id) {
   const { error } = await supabase.from('leaps').delete().eq('id', id);
   if (error) throw error;
