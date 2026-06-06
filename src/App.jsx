@@ -1060,6 +1060,10 @@ function SimulatorPanel({ onSaveManualTrade }) {
   const [loading, setLoading] = useState(false);
   const [error, setError]     = useState(null);
   const [showQuickAdd, setShowQuickAdd] = useState(false);
+  const [qaContracts, setQaContracts]   = useState(1);
+  const [qaPremium,   setQaPremium]     = useState("");
+  const [qaStrike,    setQaStrike]      = useState(null);
+  const [qaExp,       setQaExp]         = useState("");
   const [tooltip, setTooltip] = useState(null);
   const [tipPos, setTipPos]   = useState({x:0,y:0});
   const [customPremium, setCustomPremium] = useState(null);
@@ -1089,6 +1093,11 @@ function SimulatorPanel({ onSaveManualTrade }) {
 
   // Sync premium input when market price changes (new chain load)
   useEffect(()=>{ if(premium>0) setPremiumInput(premium.toFixed(2)); },[premium]);
+
+  // Populate Add Trade modal fields when opened
+  useEffect(()=>{
+    if(showQuickAdd){ setQaContracts(1); setQaPremium(activePremium.toFixed(2)); setQaStrike(selStrike); setQaExp(selExp); }
+  },[showQuickAdd]);
   const iv       = Math.max(selOption?.greeks?.smv_vol||0.3, 0.05);
   const delta    = selOption?.greeks?.delta||0;
   const theta    = selOption?.greeks?.theta||0;
@@ -1567,7 +1576,7 @@ function SimulatorPanel({ onSaveManualTrade }) {
           </div>
           <div style={{height:1,background:"#1a2a3a",margin:"5px 0"}}/>
           {[["P&L $",(tooltip.dollar>=0?"+":"")+"$"+tooltip.dollar,tooltip.dollar>=0?"#00d4aa":"#ff4d6a"],
-            ["Retorno",(parseFloat(tooltip.pctStr)>=0?"+":"")+tooltip.pctStr+"%","#c8d8e8"],
+            ["Return",(parseFloat(tooltip.pctStr)>=0?"+":"")+tooltip.pctStr+"%","#c8d8e8"],
             ["ROI",tooltip.roi+"x","#c8d8e8"]].map(([l,v,c])=>(
             <div key={l} style={{display:"flex",justifyContent:"space-between",gap:16,marginBottom:3,fontSize:11}}>
               <span style={{color:"#5a7a9a"}}>{l}</span><span style={{fontWeight:600,color:c}}>{v}</span>
@@ -1576,33 +1585,118 @@ function SimulatorPanel({ onSaveManualTrade }) {
         </div>
       )}
 
-      {/* Quick Add preview */}
-      {showQuickAdd&&sym&&activePremium>0&&(
-        <div style={{position:"fixed",bottom:20,right:80,zIndex:200,background:"#0d1821",border:"1px solid #00d4aa44",borderRadius:10,padding:"14px 16px",minWidth:210,boxShadow:"0 8px 32px rgba(0,0,0,.5)"}}>
-          <div style={{fontFamily:"Syne,sans-serif",fontSize:13,fontWeight:700,color:"#fff",marginBottom:10}}>
-            {sym} <span style={{fontSize:11,color:"#00d4aa",fontFamily:"DM Mono,monospace"}}>{strategy}</span>
-          </div>
-          {[["Strike",`$${(selStrike||0).toFixed(2)}`],["Expiration",selExp],
-            ["Premium",(side==="buy"?"-":"+")+`$${(activePremium*100).toFixed(0)}`],
-            ["Breakeven",`$${breakeven.toFixed(2)}`]].map(([l,v])=>(
-            <div key={l} style={{display:"flex",justifyContent:"space-between",marginBottom:5,fontSize:11}}>
-              <span style={{color:"#5a7a9a"}}>{l}</span><span style={{color:"#c8d8e8",fontWeight:500}}>{v}</span>
+      {/* Add Trade Modal */}
+      {showQuickAdd&&sym&&(()=>{
+        const qaPrem = parseFloat(qaPremium)||0;
+        const qaCont = Math.max(1, parseInt(qaContracts)||1);
+        const totalCost = qaPrem * qaCont * 100;
+        const qaBreakeven = qaStrike ? (optType==="call"
+          ? (side==="buy"?qaStrike+qaPrem:qaStrike-qaPrem)
+          : (side==="buy"?qaStrike-qaPrem:qaStrike+qaPrem)) : 0;
+        return(
+          <>
+            {/* Backdrop */}
+            <div onClick={()=>setShowQuickAdd(false)}
+              style={{position:"fixed",inset:0,zIndex:300,background:"rgba(0,0,0,.55)"}}/>
+            {/* Modal */}
+            <div style={{position:"fixed",top:"50%",left:"50%",transform:"translate(-50%,-50%)",
+              zIndex:301,background:"#0d1821",border:"1px solid #1a2a3a",borderRadius:12,
+              padding:"20px 22px",width:320,boxShadow:"0 16px 48px rgba(0,0,0,.7)"}}>
+
+              {/* Header */}
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:16}}>
+                <div>
+                  <div style={{fontFamily:"Syne,sans-serif",fontSize:15,fontWeight:800,color:"#fff"}}>{sym}</div>
+                  <div style={{fontSize:10,color:"#00d4aa",letterSpacing:.5,marginTop:2}}>
+                    {side==="buy"?"BUY":"SELL"} {optType.toUpperCase()} · {strategy}
+                  </div>
+                </div>
+                <button onClick={()=>setShowQuickAdd(false)}
+                  style={{background:"none",border:"none",color:"#3a5a7a",fontSize:16,cursor:"pointer",lineHeight:1}}>✕</button>
+              </div>
+
+              {/* Editable fields */}
+              <div style={{display:"flex",flexDirection:"column",gap:10}}>
+
+                {/* Contracts */}
+                <div>
+                  <div style={{fontSize:9,letterSpacing:1.5,textTransform:"uppercase",color:"#3a5a7a",marginBottom:4}}>Contracts</div>
+                  <div style={{display:"flex",alignItems:"center",gap:6,background:"#080c10",border:"1px solid #1a2a3a",borderRadius:6,padding:"7px 10px"}}>
+                    <button onClick={()=>setQaContracts(c=>Math.max(1,c-1))}
+                      style={{background:"#1a2a3a",border:"none",color:"#c8d8e8",width:22,height:22,borderRadius:4,cursor:"pointer",fontSize:14,lineHeight:"22px",textAlign:"center"}}>−</button>
+                    <input value={qaContracts} onChange={e=>setQaContracts(Math.max(1,parseInt(e.target.value)||1))}
+                      style={{flex:1,background:"transparent",border:"none",outline:"none",color:"#fff",fontFamily:"DM Mono,monospace",fontSize:15,fontWeight:600,textAlign:"center"}}/>
+                    <button onClick={()=>setQaContracts(c=>c+1)}
+                      style={{background:"#1a2a3a",border:"none",color:"#c8d8e8",width:22,height:22,borderRadius:4,cursor:"pointer",fontSize:14,lineHeight:"22px",textAlign:"center"}}>+</button>
+                  </div>
+                </div>
+
+                {/* Price per contract */}
+                <div>
+                  <div style={{fontSize:9,letterSpacing:1.5,textTransform:"uppercase",color:"#3a5a7a",marginBottom:4}}>Price per Contract</div>
+                  <div style={{display:"flex",alignItems:"center",gap:6,background:"#080c10",border:"1px solid #1a2a3a",borderRadius:6,padding:"7px 10px"}}>
+                    <span style={{color:"#5a7a9a",fontFamily:"DM Mono,monospace"}}>$</span>
+                    <input value={qaPremium} onChange={e=>setQaPremium(e.target.value)}
+                      onBlur={e=>{const v=parseFloat(e.target.value);if(!isNaN(v)&&v>0)setQaPremium(v.toFixed(2));}}
+                      style={{flex:1,background:"transparent",border:"none",outline:"none",color:"#f5c842",fontFamily:"DM Mono,monospace",fontSize:15,fontWeight:600}}/>
+                    <span style={{fontSize:9,color:"#3a5a7a"}}>×100 = ${(qaPrem*100).toFixed(0)}</span>
+                  </div>
+                </div>
+
+                {/* Strike */}
+                <div>
+                  <div style={{fontSize:9,letterSpacing:1.5,textTransform:"uppercase",color:"#3a5a7a",marginBottom:4}}>Strike</div>
+                  <select value={qaStrike||""} onChange={e=>setQaStrike(parseFloat(e.target.value))}
+                    className="fsel" style={{width:"100%",fontSize:13}}>
+                    {availableStrikes.map(s=><option key={s} value={s}>${s.toFixed(2)}</option>)}
+                  </select>
+                </div>
+
+                {/* Expiration */}
+                <div>
+                  <div style={{fontSize:9,letterSpacing:1.5,textTransform:"uppercase",color:"#3a5a7a",marginBottom:4}}>Expiration</div>
+                  <select value={qaExp} onChange={e=>setQaExp(e.target.value)}
+                    className="fsel" style={{width:"100%",fontSize:13}}>
+                    {exps.map(e=><option key={e} value={e}>{e}</option>)}
+                  </select>
+                </div>
+              </div>
+
+              {/* Summary strip */}
+              <div style={{marginTop:14,padding:"10px 12px",background:"#080c10",borderRadius:7,border:"1px solid #1a2a3a"}}>
+                {[
+                  ["Total Cost",(side==="buy"?"-":"+")+`$${totalCost.toFixed(0)}`],
+                  ["Breakeven",`$${qaBreakeven.toFixed(2)}`],
+                  ["Contracts",`${qaCont} × $${(qaPrem*100).toFixed(0)}`],
+                ].map(([l,v])=>(
+                  <div key={l} style={{display:"flex",justifyContent:"space-between",marginBottom:4,fontSize:11}}>
+                    <span style={{color:"#5a7a9a"}}>{l}</span>
+                    <span style={{color:"#c8d8e8",fontWeight:600,fontFamily:"DM Mono,monospace"}}>{v}</span>
+                  </div>
+                ))}
+              </div>
+
+              {/* Actions */}
+              <div style={{display:"flex",gap:8,marginTop:14}}>
+                <button className="btn bneutral" style={{flex:1,padding:"9px 0",fontSize:12}}
+                  onClick={()=>setShowQuickAdd(false)}>Cancel</button>
+                <button className="btn" style={{flex:2,padding:"9px 0",fontSize:12,fontWeight:700}}
+                  disabled={!qaStrike||!qaExp||qaPrem<=0}
+                  onClick={()=>{
+                    setShowQuickAdd(false);
+                    onSaveManualTrade&&onSaveManualTrade(sym,{
+                      date:new Date().toISOString().slice(0,10),
+                      action:side.toUpperCase(),
+                      strike:qaStrike, expiration:qaExp,
+                      premium:qaPrem, contracts:qaCont,
+                      status:"open", option_type:optType,
+                    });
+                  }}>Add Trade →</button>
+              </div>
             </div>
-          ))}
-          <div style={{display:"flex",gap:6,marginTop:10}}>
-            <button className="btn bneutral bsm" style={{flex:1}} onClick={()=>setShowQuickAdd(false)}>✕</button>
-            <button className="btn bsm" style={{flex:2}} onClick={()=>{
-              setShowQuickAdd(false);
-              onSaveManualTrade&&onSaveManualTrade(sym,{
-                date:new Date().toISOString().slice(0,10),
-                action:side.toUpperCase(),
-                strike:selStrike,expiration:selExp,
-                premium:activePremium,contracts:1,status:"open",option_type:optType,
-              });
-            }}>Add Trade →</button>
-          </div>
-        </div>
-      )}
+          </>
+        );
+      })()}
     </div>
   );
 }
