@@ -577,11 +577,11 @@ function AssetDashboard({ asset, onClose, onSaveTrade, onUpdateTrade, onDeleteTr
   const [crForm, setCrForm] = useState({mode:"close",closePrem:"",newStrike:"",newExp:"",newPrem:"",contracts:1});
   const [crGroup, setCrGroup] = useState([]);
   const [closeForm, setCloseForm] = useState({mode:"close",closePrem:"",newStrike:"",newExp:"",newPrem:""});
-  const ef = {date:new Date().toISOString().slice(0,10),action:"SELL",option_type:"call",strategy:strategy,strike:"",expiration:"",premium:"",contracts:1,fees:"",notes:"",status:"open"};
-  const [form, setForm] = useState(ef);
   const color = asset.color;
   const strategy = asset.strategy || "PMCC";
   const isPremium = isPremiumStrategy(strategy);
+  const ef = {date:new Date().toISOString().slice(0,10),action:"SELL",option_type:"call",strategy:strategy,strike:"",expiration:"",premium:"",contracts:1,fees:"",notes:"",status:"open"};
+  const [form, setForm] = useState(ef);
 
   const fetchLive = useCallback(async()=>{
     setLoadingLive(true);setLiveErr(null);
