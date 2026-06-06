@@ -467,7 +467,8 @@ function AssetDashboard({ asset, onClose, onSaveTrade, onUpdateTrade, onDeleteTr
     const tradeData={...form,strike:parseFloat(form.strike),premium:parseFloat(form.premium),contracts:parseInt(form.contracts||1)};
     const isLeap = !editId && tradeData.action==="BUY" &&
       tradeData.expiration && tradeData.date &&
-      (new Date(tradeData.expiration)-new Date(tradeData.date))>180*24*60*60*1000;
+      (new Date(tradeData.expiration)-new Date(tradeData.date))>180*24*60*60*1000 &&
+      (strategy==="PMCC" || strategy==="Covered Call");
     if(isLeap && onSaveLeap){
       await onSaveLeap({
         id:`${asset.id}_${Date.now()}`,
@@ -1690,6 +1691,7 @@ function SimulatorPanel({ onSaveManualTrade }) {
                       strike:qaStrike, expiration:qaExp,
                       premium:qaPrem, contracts:qaCont,
                       status:"open", option_type:optType,
+                      strategy:strategy,
                     });
                   }}>Add Trade →</button>
               </div>
@@ -2699,7 +2701,7 @@ function App() {
       const usedColors = assets.map(a=>a.color);
       const color = COLORS.find(c=>!usedColors.includes(c)) || "#a78bfa";
       const newAsset = {
-        id:ticker, ticker, strategy:trade.strategy||"", color,
+        id:ticker, ticker, strategy:trade.strategy||"Long Call", color,
         leapStrike:0, leapExpiration:"", leapCost:0, leapDelta:0,
         initialPrice:0, active:true, trades:[],
       };
