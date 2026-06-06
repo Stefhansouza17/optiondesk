@@ -1030,9 +1030,9 @@ function PayoffChart({ spot, strike, premium, breakeven, optType, side }) {
       <polyline points={curvePts} fill="none" stroke="#00d4aa" strokeWidth={2} strokeLinejoin="round" />
 
       {/* Annotations */}
-      {side === "buy" && <text x={PAD.l + 8} y={Math.min(yOf(-premium * 100) - 5, H - PAD.b - 4)} fontSize={8.5} fill="#ff6b6b99" fontFamily="DM Mono,monospace">Prejuízo máx: -${(premium * 100).toFixed(0)}</text>}
-      {isUnlimited && <text x={W - PAD.r - 6} y={PAD.t + 18} textAnchor="end" fontSize={9} fill="#00d4aa66" fontFamily="DM Mono,monospace">Lucro ilimitado ↗</text>}
-      {isUnlimitedLoss && <text x={W - PAD.r - 6} y={PAD.t + 18} textAnchor="end" fontSize={9} fill="#ff6b6b66" fontFamily="DM Mono,monospace">Risco ilimitado ↗</text>}
+      {side === "buy" && <text x={PAD.l + 8} y={Math.min(yOf(-premium * 100) - 5, H - PAD.b - 4)} fontSize={8.5} fill="#ff6b6b99" fontFamily="DM Mono,monospace">Max loss: -${(premium * 100).toFixed(0)}</text>}
+      {isUnlimited && <text x={W - PAD.r - 6} y={PAD.t + 18} textAnchor="end" fontSize={9} fill="#00d4aa66" fontFamily="DM Mono,monospace">Unlimited profit ↗</text>}
+      {isUnlimitedLoss && <text x={W - PAD.r - 6} y={PAD.t + 18} textAnchor="end" fontSize={9} fill="#ff6b6b66" fontFamily="DM Mono,monospace">Unlimited risk ↗</text>}
 
       {/* X axis */}
       {xLabels.map((p, i) => (
@@ -1278,14 +1278,14 @@ function SimulatorPanel({ onSaveManualTrade }) {
               <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
                 <div className="sim-strike-big">${selStrike?.toFixed(2)||"—"}</div>
                 <div style={{display:"flex",flexDirection:"column",gap:2}}>
-                  <div style={{fontSize:8,color:"#3a5a7a",letterSpacing:1,textTransform:"uppercase"}}>Digitar</div>
+                  <div style={{fontSize:8,color:"#3a5a7a",letterSpacing:1,textTransform:"uppercase"}}>Type</div>
                   <input className="sim-strike-input" value={strikeInputVal}
                     onChange={e=>setStrikeInputVal(e.target.value)}
                     onBlur={e=>snapStrike(e.target.value)}
                     onKeyDown={e=>e.key==="Enter"&&snapStrike(e.target.value)}/>
                 </div>
               </div>
-              <div style={{fontSize:8,letterSpacing:1.5,textTransform:"uppercase",color:"#3a5a7a",marginBottom:5}}>Strikes disponíveis</div>
+              <div style={{fontSize:8,letterSpacing:1.5,textTransform:"uppercase",color:"#3a5a7a",marginBottom:5}}>Available strikes</div>
               <div style={{overflowX:"auto",paddingBottom:3}}>
                 <div style={{display:"flex",gap:3,minWidth:"max-content"}}>
                   {availableStrikes.map(s=>{
@@ -1313,11 +1313,11 @@ function SimulatorPanel({ onSaveManualTrade }) {
         {premium>0&&(
           <div>
             <div className="sim-slbl" style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-              Preço Pago
+              Price Paid
               {customPremium!==null&&(
                 <button onClick={()=>{setCustomPremium(null);setPremiumInput(premium.toFixed(2));}}
                   style={{fontSize:9,color:"#3a8fff",background:"none",border:"none",cursor:"pointer",padding:0,fontFamily:"DM Mono,monospace"}}>
-                  ↺ usar mercado (${premium.toFixed(2)})
+                  ↺ use market (${premium.toFixed(2)})
                 </button>
               )}
             </div>
@@ -1337,7 +1337,7 @@ function SimulatorPanel({ onSaveManualTrade }) {
         {/* Summary metrics */}
         {activePremium>0&&(
           <div>
-            <div className="sim-slbl">Resumo</div>
+            <div className="sim-slbl">Summary</div>
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:5}}>
               {[
                 ["Net "+(side==="buy"?"Debit":"Credit"),(side==="buy"?"-":"+")+`$${(activePremium*100).toFixed(0)}`,side==="buy"?"#ff4d6a":"#00d4aa"],
@@ -1354,10 +1354,10 @@ function SimulatorPanel({ onSaveManualTrade }) {
           </div>
         )}
 
-        {/* Probabilidades */}
+        {/* Probabilities */}
         {selOption&&(
           <div>
-            <div className="sim-slbl">Probabilidades</div>
+            <div className="sim-slbl">Probabilities</div>
             <div style={{background:"#080c10",border:"1px solid #1a2a3a",borderRadius:6,padding:"10px 11px"}}>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:7}}>
                 <div>
@@ -1410,7 +1410,7 @@ function SimulatorPanel({ onSaveManualTrade }) {
               <div style={{fontSize:9,color:"#3a5a7a",background:"#0d1821",border:"1px solid #1a2a3a",borderRadius:4,padding:"2px 6px"}}>{dte} DTE</div>
             </div>
             <div style={{fontSize:10,color:"#3a5a7a",marginTop:3}}>
-              Prêmio: <span style={{color:"#c8d8e8"}}>${fmt(premium)} ask</span>
+              Premium: <span style={{color:"#c8d8e8"}}>${fmt(premium)} ask</span>
               {iv>0&&<> &nbsp;·&nbsp; IV: <span style={{color:"#f5c842"}}>{(iv*100).toFixed(1)}%</span></>}
             </div>
           </div>
@@ -1418,7 +1418,7 @@ function SimulatorPanel({ onSaveManualTrade }) {
 
         {activePremium>0&&(
           <button className="btn" style={{width:"100%",padding:9,fontSize:11,fontWeight:600}} onClick={()=>setShowQuickAdd(p=>!p)}>
-            {showQuickAdd?"✕ Cancelar":"+ Registrar Trade"}
+            {showQuickAdd?"✕ Cancel":"+ Add Trade"}
           </button>
         )}
       </div>
@@ -1455,7 +1455,7 @@ function SimulatorPanel({ onSaveManualTrade }) {
         {selStrike&&activePremium>0&&(
           <div style={{padding:"10px 12px 0",borderBottom:"1px solid #1a2a3a"}}>
             <div style={{fontSize:9,letterSpacing:1.5,textTransform:"uppercase",color:"#3a5a7a",marginBottom:6}}>
-              Payoff na Expiração — {strategy}
+              Payoff at Expiration — {strategy}
             </div>
             <PayoffChart spot={spot} strike={selStrike} premium={activePremium} breakeven={breakeven} optType={optType} side={side}/>
           </div>
@@ -1464,7 +1464,7 @@ function SimulatorPanel({ onSaveManualTrade }) {
         {/* Toolbar */}
         {matrixRows.length>0&&(
           <div className="sim-toolbar">
-            <div style={{fontSize:9,color:"#3a5a7a",letterSpacing:1.5,textTransform:"uppercase"}}>Exibir</div>
+            <div style={{fontSize:9,color:"#3a5a7a",letterSpacing:1.5,textTransform:"uppercase"}}>View</div>
             <div className="sim-view-group">
               {[["dollar","P&L $"],["pct","P&L %"],["roi","ROI"]].map(([m,l])=>(
                 <button key={m} className={`sim-view-btn${viewMode===m?" sel":""}`} onClick={()=>setViewMode(m)}>{l}</button>
@@ -1476,7 +1476,7 @@ function SimulatorPanel({ onSaveManualTrade }) {
             <div style={{display:"flex",alignItems:"center",gap:5,fontSize:10,color:"#00d4aa"}}>
               <div style={{width:20,height:2,background:"#00d4aa33",boxShadow:"0 0 4px #00d4aa44"}}/> ATM ${spot.toFixed(2)}
             </div>
-            <div style={{marginLeft:"auto",fontSize:9,color:"#3a5a7a"}}>Passe o mouse sobre qualquer célula</div>
+            <div style={{marginLeft:"auto",fontSize:9,color:"#3a5a7a"}}>Hover any cell for details</div>
           </div>
         )}
 
@@ -1547,7 +1547,7 @@ function SimulatorPanel({ onSaveManualTrade }) {
           </div>
         ):(
           <div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",color:"#3a5a7a",fontSize:12,flexDirection:"column",gap:8}}>
-            {loading?"Carregando dados...":sym?"Selecione um strike para ver o heatmap":"Digite um símbolo e pressione ↻ para começar"}
+            {loading?"Loading data...":sym?"Select a strike to view the heatmap":"Enter a symbol and press ↻ to begin"}
           </div>
         )}
       </div>
@@ -1582,8 +1582,8 @@ function SimulatorPanel({ onSaveManualTrade }) {
           <div style={{fontFamily:"Syne,sans-serif",fontSize:13,fontWeight:700,color:"#fff",marginBottom:10}}>
             {sym} <span style={{fontSize:11,color:"#00d4aa",fontFamily:"DM Mono,monospace"}}>{strategy}</span>
           </div>
-          {[["Strike",`$${(selStrike||0).toFixed(2)}`],["Expiração",selExp],
-            ["Prêmio",(side==="buy"?"-":"+")+`$${(activePremium*100).toFixed(0)}`],
+          {[["Strike",`$${(selStrike||0).toFixed(2)}`],["Expiration",selExp],
+            ["Premium",(side==="buy"?"-":"+")+`$${(activePremium*100).toFixed(0)}`],
             ["Breakeven",`$${breakeven.toFixed(2)}`]].map(([l,v])=>(
             <div key={l} style={{display:"flex",justifyContent:"space-between",marginBottom:5,fontSize:11}}>
               <span style={{color:"#5a7a9a"}}>{l}</span><span style={{color:"#c8d8e8",fontWeight:500}}>{v}</span>
@@ -1599,7 +1599,7 @@ function SimulatorPanel({ onSaveManualTrade }) {
                 strike:selStrike,expiration:selExp,
                 premium:activePremium,contracts:1,status:"open",option_type:optType,
               });
-            }}>Registrar Trade →</button>
+            }}>Add Trade →</button>
           </div>
         </div>
       )}
