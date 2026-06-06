@@ -831,7 +831,7 @@ function AssetDashboard({ asset, onClose, onSaveTrade, onUpdateTrade, onDeleteTr
                           </div>
                         </td>
                         <td><div style={{display:"flex",gap:5}}>
-                          <button className="btn bsm bneutral" title="Edit trade" onClick={()=>openEdit(t)}>✏</button>
+                          <button className="btn bsm bneutral" onClick={()=>openEdit(t)}>Edit</button>
                           {isPremium&&<button className="btn bsm bwarn" onClick={()=>openCR(t)}>Close/Roll</button>}
                           <button className="btn bsm bdanger" onClick={()=>removeTrade(t.id)}>✕</button>
                         </div></td>
@@ -873,7 +873,7 @@ function AssetDashboard({ asset, onClose, onSaveTrade, onUpdateTrade, onDeleteTr
                       <td style={{color:t.action==="SELL"?color:"#ff4d6a"}}>{t.action==="SELL"?"+":"-"}${fmt(t.premium*(t.contracts||1)*100)}</td>
                       <td>{t.status==="open"?<span className="stopen" style={{color,borderColor:color+"44",background:color+"15"}}>Open</span>:t.status==="expired"?<span className="stexpired">Expired</span>:<span className="stclosed">Closed</span>}</td>
                       <td><div style={{display:"flex",gap:5}}>
-                        <button className="btn bsm bneutral" title="Edit trade" onClick={()=>openEdit(t)}>✏</button>
+                        <button className="btn bsm bneutral" onClick={()=>openEdit(t)}>Edit</button>
                         <button className="btn bsm bdanger" onClick={()=>removeTrade(t.id)}>✕</button>
                       </div></td>
                     </tr>
