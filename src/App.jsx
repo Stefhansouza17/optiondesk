@@ -1486,7 +1486,7 @@ function SimulatorPanel({ onSaveManualTrade }) {
             <table style={{width:"100%",borderCollapse:"collapse"}}>
               <thead>
                 <tr>
-                  <th className="sim-th sp1">Preço</th>
+                  <th className="sim-th sp1">Price</th>
                   <th className="sim-th sp2">Chg%</th>
                   {colExps.map((exp,ci)=>{
                     const d=new Date(exp+"T12:00:00");
