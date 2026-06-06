@@ -831,7 +831,7 @@ function AssetDashboard({ asset, onClose, onSaveTrade, onUpdateTrade, onDeleteTr
                           </div>
                         </td>
                         <td><div style={{display:"flex",gap:5}}>
-                          <button className="btn bsm bneutral" onClick={()=>openEdit(t)}>Edit</button>
+                          <button className="btn bsm bneutral" title="Edit trade" onClick={()=>openEdit(t)}>✏</button>
                           {isPremium&&<button className="btn bsm bwarn" onClick={()=>openCR(t)}>Close/Roll</button>}
                           <button className="btn bsm bdanger" onClick={()=>removeTrade(t.id)}>✕</button>
                         </div></td>
@@ -1771,6 +1771,16 @@ function SimulatorPanel({ onSaveManualTrade }) {
                   <select value={qaExp} onChange={e=>setQaExp(e.target.value)}
                     className="fsel" style={{width:"100%",fontSize:13}}>
                     {exps.map(e=><option key={e} value={e}>{e}</option>)}
+                  </select>
+                </div>
+
+                {/* Strategy (optional) */}
+                <div>
+                  <div style={{fontSize:9,letterSpacing:1.5,textTransform:"uppercase",color:"#3a5a7a",marginBottom:4}}>Strategy <span style={{opacity:.5}}>(optional)</span></div>
+                  <select value={strategy} onChange={e=>setStrategy(e.target.value)}
+                    className="fsel" style={{width:"100%",fontSize:13}}>
+                    <option value="">— Standalone —</option>
+                    {SIM_STRATEGIES.map(s=><option key={s} value={s}>{s}</option>)}
                   </select>
                 </div>
               </div>
