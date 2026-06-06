@@ -886,7 +886,7 @@ function AssetDashboard({ asset, onClose, onSaveTrade, onUpdateTrade, onDeleteTr
 }
 
 // ── Home ──────────────────────────────────────────────────────────────────────
-function Home({ assets, onSelectAsset, onShowPositions }) {
+function Home({ assets, onSelectAsset, onShowPositions, onSaveManualTrade }) {
   const [searchInput, setSearchInput] = useState("NDAQ");
   const [sym, setSym] = useState("NDAQ");
   const [quote, setQuote] = useState(null);
@@ -900,6 +900,7 @@ function Home({ assets, onSelectAsset, onShowPositions }) {
   const [error, setError] = useState(null);
   const [stratFilter, setStratFilter] = useState("all");
   const [sortBy, setSortBy] = useState("expiration");
+  const [showManualTrade, setShowManualTrade] = useState(false);
 
   const totals = useMemo(()=>assets.filter(a=>a.active).map(a=>{
     const leaps = a.leaps||[];
@@ -1162,7 +1163,7 @@ function Home({ assets, onSelectAsset, onShowPositions }) {
           </div>
           {priceRows.length>0&&(
             <div className="sec">
-              <div className="sechdr"><div className="sectitle">P&L by price and expiration</div><button className="btn">+ Add to portfolio</button></div>
+              <div className="sechdr"><div className="sectitle">P&L by price and expiration</div><button className="btn" onClick={()=>setShowManualTrade(true)}>+ Add to portfolio</button></div>
               <div style={{overflowX:"auto"}}>
                 <table>
                   <thead><tr><th>Price</th><th>%</th>{exps.slice(0,6).map(e=><th key={e} style={{textAlign:"center"}}>{e}</th>)}</tr></thead>
@@ -1197,6 +1198,20 @@ function Home({ assets, onSelectAsset, onShowPositions }) {
         </>
       )}
       {!sym&&loading&&(<div style={{textAlign:"center",padding:"20px 0",color:"#3a5a7a",fontSize:12}}>Loading...</div>)}
+      {showManualTrade&&(
+        <ManualTradeModal
+          onClose={()=>setShowManualTrade(false)}
+          onSave={onSaveManualTrade}
+          defaultData={{
+            symbol:     sym,
+            side,
+            optType,
+            strike:     closestOpt?.strike,
+            expiration: selExp,
+            premium,
+          }}
+        />
+      )}
     </div>
   );
 }
@@ -1461,6 +1476,326 @@ function AllPositionsModal({ assets, onClose }) {
     </div>
   );
 }
+
+// ── Manual Trade Modal ───────────────────────────────────────────────────────
+function ManualTradeModal({ onClose, onSave, defaultData }) {
+  const today = new Date().toISOString().slice(0,10);
+  const [form, setForm] = useState({
+    symbol:     defaultData?.symbol     || "",
+    assetName:  "",
+    orderType:  defaultData?.side==="sell" ? "SELL" : "BUY",
+    optionType: defaultData?.optType    || "call",
+    quantity:   "1",
+    strike:     defaultData?.strike     ? String(defaultData.strike)  : "",
+    expiration: defaultData?.expiration || "",
+    price:      defaultData?.premium    ? String(defaultData.premium) : "",
+    fees:       "",
+    strategy:   "",
+    tags:       "",
+    notes:      "",
+    tradeGroup: "",
+    date:       today,
+  });
+  const [showMore,  setShowMore]  = useState(false);
+  const [saving,    setSaving]    = useState(false);
+  const [saveError, setSaveError] = useState(null);
+  const [touched,   setTouch]     = useState({});
+
+  const touch = (field) => setTouch(p=>({...p,[field]:true}));
+
+  const qty        = Math.max(1, parseInt(form.quantity)  || 1);
+  const price      = Math.max(0, parseFloat(form.price)   || 0);
+  const fees       = Math.max(0, parseFloat(form.fees)    || 0);
+  const totalValue = qty * price * 100;                          // always positive
+  const netAmount  = form.orderType==="BUY"                     // signed result
+    ? -(totalValue + fees)
+    :  (totalValue - fees);
+
+  // Validation — only show errors after field has been touched or save attempted.
+  const REQUIRED = { symbol:"Símbolo", strike:"Strike", expiration:"Vencimento", price:"Preço" };
+  const fieldErr = (f) => touched[f] && !form[f] ? `${REQUIRED[f]} é obrigatório` : null;
+  const canSave   = form.symbol && form.strike && form.expiration && form.price
+    && parseFloat(form.price) > 0 && parseFloat(form.strike) > 0;
+
+  const handleSave = async () => {
+    // Mark all required fields as touched to surface any errors.
+    setTouch({ symbol:true, strike:true, expiration:true, price:true });
+    if (!canSave) return;
+    setSaving(true);
+    setSaveError(null);
+    try {
+      const tradeData = {
+        date:        form.date || today,
+        action:      form.orderType,           // BUY | SELL  (matches trades.action)
+        strike:      parseFloat(form.strike),
+        expiration:  form.expiration,
+        premium:     price,                    // price → premium  (matches trades.premium)
+        contracts:   qty,                      // quantity → contracts
+        status:      "open",
+        // Extended fields — saved only when columns exist (supabase.js handles fallback)
+        option_type: form.optionType,          // call | put
+        fees:        fees || undefined,
+        notes:       form.notes   || undefined,
+        tags:        form.tags    || undefined,
+        strategy:    form.strategy|| undefined,
+        tradeGroup:  form.tradeGroup || undefined,
+      };
+      await onSave(form.symbol.toUpperCase(), tradeData);
+      onClose();
+    } catch(e) {
+      setSaveError(e?.message || "Erro ao salvar trade. Tente novamente.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const orderColor = form.orderType==="BUY" ? "#00d4aa" : "#ff4d6a";
+
+  const summaryRows = [
+    ["Ativo",      form.symbol||"—",                                                                                                    "#c8d8e8"],
+    ["Ordem",      `${form.orderType==="BUY"?"Buy":"Sell"} ${form.optionType==="call"?"Call":"Put"}`,                                   orderColor],
+    ["Strike",     form.strike  ? `$${fmt(parseFloat(form.strike))}` : "—",                                                            "#f5c842"],
+    ["Vencimento", form.expiration || "—",                                                                                              "#c8d8e8"],
+    ["Quantidade", `${qty} contrato${qty>1?"s":""}`,                                                                                    "#8aaac8"],
+    ["Preço",      price ? `$${fmt(price)}` : "—",                                                                                     "#c8d8e8"],
+    ["Valor",      totalValue>0 ? `${netAmount<0?"-":"+"}$${fmt(Math.abs(netAmount))}` : "—", netAmount<0 ? "#ff4d6a" : "#00d4aa"],
+  ];
+
+  const inputStyle = (field) => ({
+    ...(touched[field] && !form[field] ? {borderColor:"#ff4d6a88"} : {}),
+  });
+
+  return (
+    <div className="overlay" onClick={e=>e.target===e.currentTarget&&onClose()}>
+      <div style={{background:"#0d1821",border:"1px solid #1a2a3a",borderRadius:12,width:880,maxWidth:"97vw",maxHeight:"92vh",boxShadow:"0 40px 80px rgba(0,0,0,0.7)",display:"flex",flexDirection:"column",overflowY:"auto"}}>
+
+        {/* Header */}
+        <div style={{display:"flex",alignItems:"center",gap:10,padding:"16px 24px",borderBottom:"1px solid #1a2a3a",flexShrink:0}}>
+          <span style={{color:"#00d4aa",fontSize:16,fontWeight:700}}>+</span>
+          <span style={{fontFamily:"Syne,sans-serif",fontWeight:700,fontSize:16,color:"#fff"}}>Registrar trade manualmente</span>
+          <button onClick={onClose} style={{marginLeft:"auto",background:"none",border:"none",color:"#5a7a9a",cursor:"pointer",fontSize:20,lineHeight:1,padding:"0 4px"}}>✕</button>
+        </div>
+
+        {/* Body */}
+        <div style={{display:"flex",flex:1,minHeight:0}}>
+
+          {/* Left — Form */}
+          <div style={{flex:1,padding:"20px 24px",overflowY:"auto"}}>
+
+            {/* Ativo */}
+            <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:"#3a5a7a",marginBottom:10}}>Ativo</div>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:20}}>
+              <div className="fgrp">
+                <label className="flbl">Símbolo *</label>
+                <input className="finput" style={{textTransform:"uppercase",letterSpacing:1,...inputStyle("symbol")}}
+                  placeholder="PBR, AAPL..."
+                  value={form.symbol}
+                  onBlur={()=>touch("symbol")}
+                  onChange={e=>setForm(p=>({...p,symbol:e.target.value.toUpperCase()}))}/>
+                {fieldErr("symbol")&&<span style={{fontSize:10,color:"#ff4d6a",marginTop:2,display:"block"}}>{fieldErr("symbol")}</span>}
+              </div>
+              <div className="fgrp">
+                <label className="flbl">Nome do ativo (opcional)</label>
+                <input className="finput" placeholder="Petrobras PN"
+                  value={form.assetName} onChange={e=>setForm(p=>({...p,assetName:e.target.value}))}/>
+              </div>
+            </div>
+
+            {/* Detalhes */}
+            <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:"#3a5a7a",marginBottom:10}}>Detalhes do trade</div>
+
+            {/* Order type + Option type */}
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14,marginBottom:14}}>
+              <div className="fgrp">
+                <label className="flbl">Tipo de ordem</label>
+                <div style={{display:"flex",borderRadius:6,overflow:"hidden",border:"1px solid #1a2a3a"}}>
+                  {[["BUY","Buy","#00d4aa","#080c10"],["SELL","Sell","#ff4d6a","#fff"]].map(([val,label,col,tc])=>(
+                    <button key={val} onClick={()=>setForm(p=>({...p,orderType:val}))}
+                      style={{flex:1,padding:"10px 0",border:"none",cursor:"pointer",fontFamily:"DM Mono,monospace",fontSize:13,fontWeight:700,transition:"all 0.2s",
+                        background:form.orderType===val?col:"#080c10",
+                        color:form.orderType===val?tc:"#5a7a9a",
+                        letterSpacing:0.5}}>{label}</button>
+                  ))}
+                </div>
+              </div>
+              <div className="fgrp">
+                <label className="flbl">Tipo de opção</label>
+                <div style={{display:"flex",borderRadius:6,overflow:"hidden",border:"1px solid #1a2a3a"}}>
+                  {[["call","Call","#3a8fff"],["put","Put","#a78bfa"]].map(([val,label,col])=>(
+                    <button key={val} onClick={()=>setForm(p=>({...p,optionType:val}))}
+                      style={{flex:1,padding:"10px 0",border:"none",cursor:"pointer",fontFamily:"DM Mono,monospace",fontSize:13,fontWeight:700,transition:"all 0.2s",
+                        background:form.optionType===val?col:"#080c10",
+                        color:form.optionType===val?"#fff":"#5a7a9a",
+                        letterSpacing:0.5}}>{label}</button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Qty / Strike / Expiration / Price */}
+            <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:10,marginBottom:4}}>
+              <div className="fgrp">
+                <label className="flbl">Quantidade</label>
+                <input className="finput" type="number" min="1" step="1" value={form.quantity}
+                  onChange={e=>setForm(p=>({...p,quantity:e.target.value}))}/>
+              </div>
+              <div className="fgrp">
+                <label className="flbl">Strike *</label>
+                <input className="finput" type="number" step="0.5" placeholder="17.50"
+                  value={form.strike} style={inputStyle("strike")}
+                  onBlur={()=>touch("strike")}
+                  onChange={e=>setForm(p=>({...p,strike:e.target.value}))}/>
+                {fieldErr("strike")&&<span style={{fontSize:10,color:"#ff4d6a",marginTop:2,display:"block"}}>{fieldErr("strike")}</span>}
+              </div>
+              <div className="fgrp">
+                <label className="flbl">Vencimento *</label>
+                <input className="finput" type="date"
+                  value={form.expiration} style={inputStyle("expiration")}
+                  onBlur={()=>touch("expiration")}
+                  onChange={e=>setForm(p=>({...p,expiration:e.target.value}))}/>
+                {fieldErr("expiration")&&<span style={{fontSize:10,color:"#ff4d6a",marginTop:2,display:"block"}}>{fieldErr("expiration")}</span>}
+              </div>
+              <div className="fgrp">
+                <label className="flbl">Preço *</label>
+                <div style={{position:"relative"}}>
+                  <input className="finput" type="number" step="0.01" placeholder="0.23"
+                    value={form.price} style={{paddingRight:38,...inputStyle("price")}}
+                    onBlur={()=>touch("price")}
+                    onChange={e=>setForm(p=>({...p,price:e.target.value}))}/>
+                  <span style={{position:"absolute",right:9,top:"50%",transform:"translateY(-50%)",fontSize:10,color:"#3a5a7a",pointerEvents:"none"}}>USD</span>
+                </div>
+                {fieldErr("price")&&<span style={{fontSize:10,color:"#ff4d6a",marginTop:2,display:"block"}}>{fieldErr("price")}</span>}
+              </div>
+            </div>
+            <div style={{fontSize:10,color:"#3a5a7a",marginBottom:14,letterSpacing:0.5}}>contratos</div>
+
+            {/* Debit / Credit — only active box is fully visible */}
+            <div style={{marginBottom:16}}>
+              {form.orderType==="BUY" ? (
+                <div style={{background:"#ff4d6a12",border:"1px solid #ff4d6a55",borderRadius:8,padding:"14px 16px"}}>
+                  <div style={{fontSize:11,color:"#ff4d6a",marginBottom:6,fontWeight:600,letterSpacing:0.5}}>Você vai pagar (débito)</div>
+                  <div style={{fontFamily:"Syne,sans-serif",fontSize:22,fontWeight:700,color:"#ff4d6a"}}>
+                    -{totalValue>0?`US$ ${fmt(totalValue)}`:"US$ —"}
+                  </div>
+                  <div style={{fontSize:11,color:"#5a7a9a",marginTop:4}}>
+                    {qty} contrato{qty>1?"s":""} × 100 ações × ${fmt(price)}
+                    {fees>0 && <span style={{color:"#ff4d6a88"}}> + ${fmt(fees)} taxas</span>}
+                  </div>
+                </div>
+              ) : (
+                <div style={{background:"#00d4aa12",border:"1px solid #00d4aa55",borderRadius:8,padding:"14px 16px"}}>
+                  <div style={{fontSize:11,color:"#00d4aa",marginBottom:6,fontWeight:600,letterSpacing:0.5}}>Você vai receber (crédito)</div>
+                  <div style={{fontFamily:"Syne,sans-serif",fontSize:22,fontWeight:700,color:"#00d4aa"}}>
+                    +{totalValue>0?`US$ ${fmt(totalValue)}`:"US$ —"}
+                  </div>
+                  <div style={{fontSize:11,color:"#5a7a9a",marginTop:4}}>
+                    {qty} contrato{qty>1?"s":""} × 100 ações × ${fmt(price)}
+                    {fees>0 && <span style={{color:"#5a7a9a88"}}> − ${fmt(fees)} taxas</span>}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Fees + Notes */}
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:14}}>
+              <div className="fgrp">
+                <label className="flbl">Taxas / Comissões (opcional)</label>
+                <div style={{position:"relative"}}>
+                  <input className="finput" type="number" step="0.01" placeholder="0.00"
+                    value={form.fees} style={{paddingRight:38}}
+                    onChange={e=>setForm(p=>({...p,fees:e.target.value}))}/>
+                  <span style={{position:"absolute",right:9,top:"50%",transform:"translateY(-50%)",fontSize:10,color:"#3a5a7a",pointerEvents:"none"}}>USD</span>
+                </div>
+              </div>
+              <div className="fgrp">
+                <label className="flbl">Notas (opcional)</label>
+                <input className="finput" placeholder="Ex: Entrada da PMCC, primeira perna..."
+                  value={form.notes} onChange={e=>setForm(p=>({...p,notes:e.target.value}))}/>
+              </div>
+            </div>
+
+            {/* Strategy + Tags */}
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:0}}>
+              <div className="fgrp">
+                <label className="flbl">Estratégia (opcional)</label>
+                <select className="fsel" value={form.strategy} onChange={e=>setForm(p=>({...p,strategy:e.target.value}))}>
+                  <option value="">Selecionar estratégia</option>
+                  {Object.values(STRATEGIES).flat().map(s=>(
+                    <option key={s.id} value={s.id}>{s.label}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="fgrp">
+                <label className="flbl">Tags (opcional)</label>
+                <input className="finput" placeholder="Ex: PMCC, longo prazo, petróleo..."
+                  value={form.tags} onChange={e=>setForm(p=>({...p,tags:e.target.value}))}/>
+              </div>
+            </div>
+
+            {/* Mostrar mais */}
+            <button onClick={()=>setShowMore(!showMore)} style={{display:"flex",alignItems:"center",justifyContent:"space-between",width:"100%",background:"none",border:"none",borderTop:"1px solid #1a2a3a",color:"#5a7a9a",cursor:"pointer",fontFamily:"DM Mono,monospace",fontSize:12,padding:"12px 0",marginTop:14}}>
+              <span>Mostrar mais opções</span>
+              <span style={{fontSize:11}}>{showMore?"▲":"▼"}</span>
+            </button>
+
+            {showMore&&(
+              <div style={{paddingTop:12,display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
+                <div className="fgrp">
+                  <label className="flbl">Trade Group (nome livre)</label>
+                  <input className="finput" placeholder="Ex: PMCC PBR 2026, IBIT CC..."
+                    value={form.tradeGroup} onChange={e=>setForm(p=>({...p,tradeGroup:e.target.value}))}/>
+                  <span style={{fontSize:10,color:"#3a5a7a",marginTop:3,display:"block"}}>Agrupa pernas da mesma estratégia</span>
+                </div>
+                <div className="fgrp">
+                  <label className="flbl">Data do trade</label>
+                  <input className="finput" type="date" value={form.date}
+                    onChange={e=>setForm(p=>({...p,date:e.target.value}))}/>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Right — Summary */}
+          <div style={{width:196,background:"#080c10",borderLeft:"1px solid #1a2a3a",padding:"20px 16px",flexShrink:0,overflowY:"auto"}}>
+            <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:"#3a5a7a",marginBottom:14}}>Resumo do trade</div>
+            {summaryRows.map(([label,value,color])=>(
+              <div key={label} style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:10,paddingBottom:10,borderBottom:"1px solid #0f1e2e"}}>
+                <span style={{fontSize:11,color:"#3a5a7a",flexShrink:0}}>{label}</span>
+                <span style={{fontSize:12,fontWeight:600,color,textAlign:"right",marginLeft:6,wordBreak:"break-all"}}>{value}</span>
+              </div>
+            ))}
+            <div style={{background:"#0d1821",border:"1px solid #1a2a3a",borderRadius:8,padding:"12px",marginTop:4}}>
+              <div style={{display:"flex",alignItems:"center",gap:5,marginBottom:6}}>
+                <span style={{fontSize:13}}>💡</span>
+                <span style={{fontSize:11,fontWeight:600,color:"#f5c842"}}>Dica</span>
+              </div>
+              <div style={{fontSize:11,color:"#5a7a9a",lineHeight:1.6}}>
+                Todos os trades registrados serão adicionados ao seu portfólio e usados para calcular P&L e desempenho das suas estratégias.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div style={{padding:"14px 24px",borderTop:"1px solid #1a2a3a",flexShrink:0}}>
+          {saveError&&(
+            <div style={{background:"#ff4d6a10",border:"1px solid #ff4d6a44",borderRadius:6,padding:"8px 12px",marginBottom:10,fontSize:12,color:"#ff4d6a"}}>
+              ⚠ {saveError}
+            </div>
+          )}
+          <div style={{display:"flex",gap:10,justifyContent:"flex-end"}}>
+            <button className="btn bneutral" style={{padding:"9px 28px",fontSize:13}} onClick={onClose}>Cancelar</button>
+            <button className="btn" style={{padding:"9px 28px",fontSize:13,color:"#00d4aa",borderColor:"#00d4aa44",background:"#00d4aa15",opacity:canSave?1:0.5,cursor:canSave?"pointer":"not-allowed"}}
+              onClick={handleSave} disabled={saving}>
+              {saving?"Salvando...":"Salvar trade"}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function App() {
   const [assets, setAssets] = useState([]);
   const [closedAssets, setClosedAssets] = useState([]);
@@ -1607,6 +1942,26 @@ function App() {
     } catch(e){ console.error(e); }
   };
 
+  const handleSaveManualTrade = async (symbol, trade) => {
+    const ticker = symbol.toUpperCase();
+    const existing = assets.find(a=>a.ticker===ticker);
+    let assetId;
+    if (!existing) {
+      const usedColors = assets.map(a=>a.color);
+      const color = COLORS.find(c=>!usedColors.includes(c)) || "#a78bfa";
+      const newAsset = {
+        id:ticker, ticker, strategy:trade.strategy||"", color,
+        leapStrike:0, leapExpiration:"", leapCost:0, leapDelta:0,
+        initialPrice:0, active:true, trades:[],
+      };
+      await addAssetSilent(newAsset);
+      assetId = ticker;
+    } else {
+      assetId = existing.id;
+    }
+    await handleSaveTrade(assetId, trade);
+  };
+
   if(loading) return (
     <div style={{minHeight:"100vh",background:"#080c10",display:"flex",alignItems:"center",justifyContent:"center"}}>
       <style>{CSS}</style>
@@ -1640,7 +1995,7 @@ function App() {
         )}
       </div>
 
-      {active==="home"&&<Home assets={assets} onSelectAsset={id=>setActive(id)} onShowPositions={()=>setShowPositions(true)}/>}
+      {active==="home"&&<Home assets={assets} onSelectAsset={id=>setActive(id)} onShowPositions={()=>setShowPositions(true)} onSaveManualTrade={handleSaveManualTrade}/>}
       {assets.filter(a=>a.active).map(a=>active===a.id&&(
         <AssetDashboard key={a.id} asset={a} onClose={closeAsset}
           onSaveTrade={(t)=>handleSaveTrade(a.id,t)}

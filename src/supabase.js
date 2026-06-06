@@ -33,14 +33,20 @@ export async function fetchAssets() {
       contracts: l.contracts,
     })),
     trades: (a.trades||[]).map(t => ({
-      id: t.id,
-      date: t.date,
-      action: t.action,
-      strike: t.strike,
-      expiration: t.expiration,
-      premium: t.premium,
-      contracts: t.contracts,
-      status: t.status,
+      id:          t.id,
+      date:        t.date,
+      action:      t.action,
+      strike:      t.strike,
+      expiration:  t.expiration,
+      premium:     t.premium,
+      contracts:   t.contracts,
+      status:      t.status,
+      option_type: t.option_type  ?? null,
+      fees:        t.fees         ?? 0,
+      notes:       t.notes        ?? null,
+      tags:        t.tags         ?? null,
+      trade_group: t.trade_group  ?? null,
+      strategy:    t.strategy     ?? null,
     })),
   }));
 }
@@ -75,17 +81,64 @@ export async function addLeap(assetId, leap) {
   return data;
 }
 
-export async function addTrade(assetId, trade) {
-  const { data, error } = await supabase.from('trades').insert({
-    asset_id: assetId,
-    date: trade.date,
-    action: trade.action,
-    strike: trade.strike,
+// Builds the core payload (always works with the existing schema).
+function coreTradePayload(assetId, trade) {
+  return {
+    asset_id:   assetId,
+    date:       trade.date,
+    action:     trade.action,
+    strike:     trade.strike,
     expiration: trade.expiration,
-    premium: trade.premium,
-    contracts: trade.contracts,
-    status: trade.status,
-  }).select().single();
+    premium:    trade.premium,
+    contracts:  trade.contracts,
+    status:     trade.status,
+  };
+}
+
+// Builds the extended payload (requires the migration below to have been run).
+function extendedTradePayload(assetId, trade) {
+  return {
+    ...coreTradePayload(assetId, trade),
+    option_type: trade.option_type ?? null,
+    fees:        trade.fees        ?? 0,
+    notes:       trade.notes       ?? null,
+    tags:        trade.tags        ?? null,
+    trade_group: trade.tradeGroup  ?? null,
+    strategy:    trade.strategy    ?? null,
+  };
+}
+
+const HAS_EXTENDED_COLUMNS_KEY = '__trades_extended_ok';
+let _extendedColumnsKnown = sessionStorage.getItem(HAS_EXTENDED_COLUMNS_KEY) === '1' ? true
+  : sessionStorage.getItem(HAS_EXTENDED_COLUMNS_KEY) === '0' ? false : null;
+
+export async function addTrade(assetId, trade) {
+  // Only attempt extended payload when the trade carries extra fields.
+  const hasExtended = trade.option_type !== undefined || trade.fees !== undefined
+    || trade.notes !== undefined || trade.tags !== undefined
+    || trade.tradeGroup !== undefined || trade.strategy !== undefined;
+
+  if (hasExtended && _extendedColumnsKnown !== false) {
+    const { data, error } = await supabase
+      .from('trades').insert(extendedTradePayload(assetId, trade)).select().single();
+
+    if (!error) {
+      _extendedColumnsKnown = true;
+      sessionStorage.setItem(HAS_EXTENDED_COLUMNS_KEY, '1');
+      return { ...trade, id: data.id };
+    }
+    // 42703 = undefined_column in PostgreSQL; migration not yet applied.
+    if (error.code === '42703' || error.message?.toLowerCase().includes('column')) {
+      _extendedColumnsKnown = false;
+      sessionStorage.setItem(HAS_EXTENDED_COLUMNS_KEY, '0');
+      // Fall through to core insert below.
+    } else {
+      throw error;
+    }
+  }
+
+  const { data, error } = await supabase
+    .from('trades').insert(coreTradePayload(assetId, trade)).select().single();
   if (error) throw error;
   return { ...trade, id: data.id };
 }
