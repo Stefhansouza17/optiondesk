@@ -17,6 +17,13 @@ async function fetchExpirations(symbol) {
   const data = await res.json();
   return data?.expirations?.date || [];
 }
+async function fetchSymbolSearch(query) {
+  const res = await fetch(`/api/tradier?endpoint=markets/search&q=${encodeURIComponent(query)}&indexes=false`);
+  const data = await res.json();
+  const raw = data?.securities?.security;
+  if (!raw) return [];
+  return (Array.isArray(raw) ? raw : [raw]).slice(0, 8);
+}
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 const fmt = (n, d=2) => Number(n||0).toFixed(d);
@@ -1501,6 +1508,43 @@ function ManualTradeModal({ onClose, onSave, defaultData }) {
   const [saveError, setSaveError] = useState(null);
   const [touched,   setTouch]     = useState({});
 
+  // Symbol autocomplete state
+  const [symbolValid, setSymbolValid] = useState(!!defaultData?.symbol);
+  const [suggestions, setSuggestions] = useState([]);
+  const [searching,   setSearching]   = useState(false);
+  const [showDrop,    setShowDrop]    = useState(false);
+  const debounceRef = useRef(null);
+
+  const searchSymbols = useCallback(async (q) => {
+    setSearching(true);
+    try {
+      const results = await fetchSymbolSearch(q);
+      setSuggestions(results);
+      setShowDrop(true);
+    } catch { setSuggestions([]); setShowDrop(true); }
+    setSearching(false);
+  }, []);
+
+  const handleSymbolChange = (val) => {
+    const upper = val.toUpperCase();
+    setForm(p=>({...p, symbol:upper}));
+    setSymbolValid(false);
+    clearTimeout(debounceRef.current);
+    if (upper.length > 0) {
+      debounceRef.current = setTimeout(() => searchSymbols(upper), 300);
+    } else {
+      setSuggestions([]);
+      setShowDrop(false);
+    }
+  };
+
+  const selectSuggestion = (s) => {
+    setForm(p=>({...p, symbol:s.symbol, assetName:s.description||""}));
+    setSymbolValid(true);
+    setSuggestions([]);
+    setShowDrop(false);
+  };
+
   const touch = (field) => setTouch(p=>({...p,[field]:true}));
 
   const qty        = Math.max(1, parseInt(form.quantity)  || 1);
@@ -1512,9 +1556,9 @@ function ManualTradeModal({ onClose, onSave, defaultData }) {
     :  (totalValue - fees);
 
   // Validation — only show errors after field has been touched or save attempted.
-  const REQUIRED = { symbol:"Symbol", strike:"Strike", expiration:"Expiration", price:"Price" };
+  const REQUIRED = { strike:"Strike", expiration:"Expiration", price:"Price" };
   const fieldErr = (f) => touched[f] && !form[f] ? `${REQUIRED[f]} is required` : null;
-  const canSave   = form.symbol && form.strike && form.expiration && form.price
+  const canSave   = symbolValid && form.symbol && form.strike && form.expiration && form.price
     && parseFloat(form.price) > 0 && parseFloat(form.strike) > 0;
 
   const handleSave = async () => {
@@ -1585,18 +1629,53 @@ function ManualTradeModal({ onClose, onSave, defaultData }) {
             {/* Asset */}
             <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:"#3a5a7a",marginBottom:10}}>Asset</div>
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:20}}>
+              {/* Symbol — autocomplete from Tradier search */}
               <div className="fgrp">
                 <label className="flbl">Symbol *</label>
-                <input className="finput" style={{textTransform:"uppercase",letterSpacing:1,...inputStyle("symbol")}}
-                  placeholder="PBR, AAPL..."
-                  value={form.symbol}
-                  onBlur={()=>touch("symbol")}
-                  onChange={e=>setForm(p=>({...p,symbol:e.target.value.toUpperCase()}))}/>
-                {fieldErr("symbol")&&<span style={{fontSize:10,color:"#ff4d6a",marginTop:2,display:"block"}}>{fieldErr("symbol")}</span>}
+                <div style={{position:"relative"}}>
+                  <input className="finput"
+                    style={{textTransform:"uppercase",letterSpacing:1,paddingRight:30,
+                      ...(symbolValid?{borderColor:"#00d4aa66"}
+                        :touched.symbol&&form.symbol?{borderColor:"#ff4d6a88"}
+                        :touched.symbol&&!form.symbol?{borderColor:"#ff4d6a88"}:{})
+                    }}
+                    placeholder="AAPL, TSLA..."
+                    value={form.symbol}
+                    onBlur={()=>{touch("symbol"); setTimeout(()=>setShowDrop(false),160);}}
+                    onFocus={()=>{if(suggestions.length>0) setShowDrop(true);}}
+                    onChange={e=>handleSymbolChange(e.target.value)}/>
+                  {symbolValid&&!searching&&
+                    <span style={{position:"absolute",right:9,top:"50%",transform:"translateY(-50%)",color:"#00d4aa",fontSize:13,fontWeight:700,pointerEvents:"none"}}>✓</span>}
+                  {searching&&
+                    <span style={{position:"absolute",right:9,top:"50%",transform:"translateY(-50%)",color:"#3a5a7a",fontSize:11,pointerEvents:"none",animation:"pulse 1s infinite"}}>…</span>}
+                  {showDrop&&(
+                    <div style={{position:"absolute",top:"calc(100% + 2px)",left:0,right:0,background:"#0d1821",border:"1px solid #1a2a3a",borderRadius:6,zIndex:400,boxShadow:"0 8px 24px rgba(0,0,0,0.6)",maxHeight:220,overflowY:"auto"}}>
+                      {suggestions.length===0?(
+                        <div style={{padding:"10px 14px",fontSize:12,color:"#3a5a7a"}}>No assets found</div>
+                      ):(
+                        suggestions.map(s=>(
+                          <div key={s.symbol}
+                            onMouseDown={()=>selectSuggestion(s)}
+                            style={{padding:"9px 14px",cursor:"pointer",display:"flex",alignItems:"center",gap:10,borderBottom:"1px solid #0f1e2e",transition:"background 0.15s"}}
+                            onMouseEnter={e=>e.currentTarget.style.background="#1a2a3a"}
+                            onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
+                            <span style={{fontFamily:"DM Mono,monospace",fontWeight:700,fontSize:13,color:"#fff",minWidth:56}}>{s.symbol}</span>
+                            <span style={{fontSize:11,color:"#8aaac8",flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{s.description}</span>
+                            <span style={{fontSize:10,color:"#3a5a7a",background:"#1a2a3a",padding:"2px 6px",borderRadius:3,flexShrink:0}}>{s.exchange}</span>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  )}
+                </div>
+                {touched.symbol&&!form.symbol&&
+                  <span style={{fontSize:10,color:"#ff4d6a",marginTop:2,display:"block"}}>Symbol is required</span>}
+                {touched.symbol&&form.symbol&&!symbolValid&&
+                  <span style={{fontSize:10,color:"#ff4d6a",marginTop:2,display:"block"}}>Select a valid asset from the list</span>}
               </div>
               <div className="fgrp">
                 <label className="flbl">Asset name (optional)</label>
-                <input className="finput" placeholder="Petrobras PN"
+                <input className="finput" placeholder="Auto-filled from search"
                   value={form.assetName} onChange={e=>setForm(p=>({...p,assetName:e.target.value}))}/>
               </div>
             </div>
