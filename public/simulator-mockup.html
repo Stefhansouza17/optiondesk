@@ -1,0 +1,714 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Simulator Mockup v2 — OptionDesk</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Syne:wght@700;800&display=swap" rel="stylesheet"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#080c10;color:#c8d8e8;font-family:'DM Mono',monospace;font-size:13px;min-height:100vh;overflow:hidden}
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-track{background:#080c10}
+::-webkit-scrollbar-thumb{background:#1e3a5f;border-radius:2px}
+
+/* ── Header ── */
+.hdr{
+  border-bottom:1px solid #1a2a3a;padding:11px 20px;
+  display:flex;align-items:center;gap:12px;
+  background:rgba(10,20,35,0.97);position:sticky;top:0;z-index:100;
+}
+.logo{font-family:'Syne',sans-serif;font-size:18px;font-weight:800;color:#fff}
+.logo span{color:#00d4aa}
+.divider{width:1px;height:20px;background:#1a2a3a;flex-shrink:0}
+.ticker-badge{font-family:'Syne',sans-serif;font-size:19px;font-weight:800;color:#fff;background:#0d1821;border:1px solid #1a2a3a;border-radius:6px;padding:4px 13px;letter-spacing:1px}
+.price-big{font-family:'Syne',sans-serif;font-size:22px;font-weight:700;color:#fff}
+.change-neg{color:#ff4d6a;font-size:12px}
+.delayed-tag{font-size:9px;color:#3a5a7a;background:#0d1821;border:1px solid #1a2a3a;border-radius:4px;padding:3px 7px;letter-spacing:1px}
+.hdr-right{margin-left:auto;display:flex;align-items:center;gap:8px}
+.strat-select{background:#0d1821;border:1px solid #1a2a3a;color:#c8d8e8;font-family:'DM Mono',monospace;font-size:12px;padding:6px 10px;border-radius:5px;cursor:pointer}
+.btn{background:#00d4aa15;border:1px solid #00d4aa44;color:#00d4aa;padding:6px 13px;border-radius:4px;cursor:pointer;font-family:'DM Mono',monospace;font-size:11px;letter-spacing:.5px}
+.btn-neutral{background:#1a2a3a;border:1px solid #2a3a4a;color:#8aaac8}
+
+/* ── Layout ── */
+.layout{display:flex;height:calc(100vh - 52px);overflow:hidden}
+
+/* ── Left Panel ── */
+.left{width:268px;flex-shrink:0;border-right:1px solid #1a2a3a;background:#0a1520;overflow-y:auto;padding:14px 12px;display:flex;flex-direction:column;gap:12px}
+.sec-lbl{font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#3a5a7a;margin-bottom:6px}
+
+/* search */
+.search-row{display:flex;gap:6px;align-items:center}
+.sym-input{background:#080c10;border:1px solid #1a2a3a;color:#00d4aa;font-family:'DM Mono',monospace;font-size:15px;font-weight:500;letter-spacing:2px;text-transform:uppercase;padding:7px 11px;border-radius:4px;width:100%}
+
+/* toggles */
+.toggle-row{display:flex;gap:6px}
+.tgl-group{display:flex;background:#0d1821;border:1px solid #1a2a3a;border-radius:8px;padding:3px;gap:2px;flex:1}
+.tgl{background:none;border:none;padding:6px 0;border-radius:5px;cursor:pointer;font-family:'DM Mono',monospace;font-size:11px;font-weight:600;color:#5a7a9a;flex:1;transition:all .15s}
+.tgl.ag{background:#00d4aa;color:#080c10}
+.tgl.ar{background:#ff4d6a;color:#fff}
+.tgl.ab{background:#3a8fff;color:#fff}
+.tgl.ap{background:#a78bfa;color:#fff}
+
+/* ── STRIKE SELECTOR (new) ── */
+.strike-box{background:#080c10;border:1px solid #1a2a3a;border-radius:8px;padding:12px 12px 10px}
+
+.strike-display{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.strike-val{font-family:'Syne',sans-serif;font-size:26px;font-weight:800;color:#f5c842}
+.strike-input{background:#0d1821;border:1px solid #f5c84244;color:#f5c842;font-family:'DM Mono',monospace;font-size:14px;font-weight:600;padding:5px 9px;border-radius:5px;width:88px;text-align:center;letter-spacing:.5px}
+.strike-input:focus{outline:none;border-color:#f5c842aa}
+
+/* Available strikes as chips */
+.strikes-scroll{overflow-x:auto;padding-bottom:4px}
+.strikes-row{display:flex;gap:4px;min-width:max-content}
+.sk-chip{background:none;border:1px solid #1a2a3a;color:#5a7a9a;padding:4px 9px;border-radius:16px;cursor:pointer;font-family:'DM Mono',monospace;font-size:11px;white-space:nowrap;transition:all .12s;flex-shrink:0}
+.sk-chip:hover{border-color:#3a5a7a;color:#c8d8e8}
+.sk-chip.sk-active{background:#f5c842;border-color:#f5c842;color:#080c10;font-weight:700}
+.sk-chip.sk-atm{border-color:#00d4aa55;color:#00d4aa}
+.sk-chip.sk-atm.sk-active{background:#f5c842;border-color:#f5c842;color:#080c10}
+
+.atm-info{display:flex;gap:12px;margin-top:8px;padding-top:8px;border-top:1px solid #1a2a3a}
+.atm-row{font-size:10px;color:#3a5a7a}
+.atm-row span{color:#c8d8e8}
+.atm-row .pos{color:#00d4aa}
+.atm-row .neg{color:#ff4d6a}
+
+/* metrics */
+.metric-grid{display:grid;grid-template-columns:1fr 1fr;gap:5px}
+.metric-card{background:#080c10;border:1px solid #1a2a3a;border-radius:6px;padding:9px 11px;position:relative;overflow:hidden}
+.metric-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--top);border-radius:6px 6px 0 0}
+.metric-lbl{font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:#3a5a7a;margin-bottom:3px}
+.metric-val{font-family:'Syne',sans-serif;font-size:14px;font-weight:700;color:var(--vc)}
+.metric-sub{font-size:9px;color:#3a5a7a;margin-top:1px}
+
+/* cop */
+.cop-card{background:#080c10;border:1px solid #1a2a3a;border-radius:6px;padding:10px 11px}
+.cop-main{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px}
+.cop-val{font-family:'Syne',sans-serif;font-size:19px;font-weight:800;color:#3a8fff}
+.cop-sub-grid{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-bottom:7px}
+.cop-sub{background:#0d1821;border:1px solid #1a2a3a;border-radius:5px;padding:6px 8px}
+.cop-sub-lbl{font-size:9px;color:#3a5a7a;letter-spacing:1px;margin-bottom:2px}
+.cop-sub-val{font-size:12px;font-weight:500}
+.cop-bar{height:4px;background:#1a2a3a;border-radius:2px;overflow:hidden}
+.cop-fill{height:100%;width:45.2%;background:linear-gradient(90deg,#3a8fff,#00d4aa);border-radius:2px}
+
+/* greeks */
+.greeks-row{display:grid;grid-template-columns:repeat(4,1fr);gap:4px}
+.greek{background:#080c10;border:1px solid #1a2a3a;border-radius:5px;padding:6px 7px;text-align:center}
+.greek-lbl{font-size:9px;color:#3a5a7a;margin-bottom:2px;letter-spacing:.5px}
+.greek-val{font-size:12px;font-weight:500}
+
+.add-btn{background:#00d4aa15;border:1px solid #00d4aa44;color:#00d4aa;padding:9px;border-radius:6px;cursor:pointer;font-family:'DM Mono',monospace;font-size:11px;font-weight:600;text-align:center;width:100%}
+
+/* ── Right Panel ── */
+.right{flex:1;overflow:hidden;display:flex;flex-direction:column}
+
+/* timeline */
+.exp-timeline{border-bottom:1px solid #1a2a3a;background:#0a1520;padding:9px 14px 0;flex-shrink:0}
+.month-groups{display:flex;gap:0;overflow-x:auto;padding-bottom:0}
+.month-group{flex-shrink:0}
+.month-label{font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:#3a5a7a;padding:0 10px;margin-bottom:5px;border-right:1px solid #1a2a3a;text-align:center}
+.exp-dates{display:flex;gap:3px;padding:0 6px 9px}
+.exp-btn{background:none;border:1px solid #1a2a3a;color:#5a7a9a;padding:4px 9px;border-radius:18px;cursor:pointer;font-family:'DM Mono',monospace;font-size:10px;white-space:nowrap;transition:all .15s;flex-shrink:0}
+.exp-btn:hover{border-color:#3a5a7a;color:#c8d8e8}
+.exp-btn.active{background:#00d4aa;border-color:#00d4aa;color:#080c10;font-weight:600}
+.exp-btn .dte{display:block;font-size:8px;opacity:.7;margin-top:1px;text-align:center}
+
+/* view mode toolbar */
+.matrix-toolbar{
+  display:flex;align-items:center;gap:10px;
+  padding:8px 14px;border-bottom:1px solid #1a2a3a;
+  background:#090f18;flex-shrink:0;
+}
+.view-group{display:flex;background:#0d1821;border:1px solid #1a2a3a;border-radius:7px;padding:2px;gap:2px}
+.view-btn{background:none;border:none;padding:5px 13px;border-radius:5px;cursor:pointer;font-family:'DM Mono',monospace;font-size:10px;font-weight:600;color:#5a7a9a;letter-spacing:.5px;transition:all .15s}
+.view-btn.active{background:#1a2a3a;color:#c8d8e8}
+.toolbar-hint{font-size:10px;color:#3a5a7a;margin-left:auto}
+.be-legend{display:flex;align-items:center;gap:5px;font-size:10px;color:#f5c842}
+.be-line-demo{width:24px;height:2px;background:#f5c84266;border-radius:1px;border-top:1px dashed #f5c842}
+.atm-legend{display:flex;align-items:center;gap:5px;font-size:10px;color:#00d4aa;margin-left:8px}
+.atm-line-demo{width:24px;height:2px;background:#00d4aa44;box-shadow:0 0 4px #00d4aa55}
+
+/* matrix */
+.matrix-wrap{flex:1;overflow:auto}
+table{width:100%;border-collapse:collapse}
+.mth{position:sticky;top:0;z-index:10;background:#0a1520;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:#3a5a7a;padding:6px 10px;text-align:center;border-bottom:1px solid #1a2a3a;border-right:1px solid #0d1821;white-space:nowrap;font-weight:400}
+.mth.sp{position:sticky;left:0;z-index:15;background:#0a1520;text-align:left;padding-left:14px}
+.mth.sp2{position:sticky;left:88px;z-index:15;background:#0a1520}
+.mth.sel-col{color:#00d4aa}
+.mth.month-hd{font-size:9px;letter-spacing:2px;color:#1e3a5f;border-right:1px solid #1a2a3a;text-align:center}
+.mth.month-hd-sel{color:#00d4aa44;border-right:1px solid #00d4aa22;border-left:1px solid #00d4aa22}
+
+td{padding:6px 10px;text-align:center;border-bottom:1px solid #0a1218;border-right:1px solid #0a1218;font-size:12px;font-weight:500;transition:filter .1s;cursor:default;white-space:nowrap}
+tr:hover td{filter:brightness(1.18)}
+td.fp{text-align:left;padding-left:14px;font-size:12px;color:#c8d8e8;background:#0a1520!important;position:sticky;left:0;z-index:5;border-right:1px solid #1a2a3a;min-width:88px}
+td.pct-col{font-size:11px;background:#0a1520!important;position:sticky;left:88px;z-index:5;border-right:1px solid #1a2a3a;min-width:48px}
+.atm-row td.fp{color:#fff;font-weight:700}
+.atm-tag{font-size:9px;color:#00d4aa;margin-left:3px}
+.be-tag{font-size:9px;color:#f5c842;background:#f5c84215;border:1px solid #f5c84244;border-radius:3px;padding:1px 4px;margin-left:3px}
+
+/* ATM row highlight */
+.atm-row td{
+  border-top:1px solid #00d4aa22!important;
+  border-bottom:1px solid #00d4aa22!important;
+}
+.atm-row td.fp,.atm-row td.pct-col{
+  background:linear-gradient(90deg,#00d4aa08,transparent)!important;
+  box-shadow:inset 3px 0 0 #00d4aa;
+}
+
+/* Breakeven row */
+.be-row td{border-top:1px dashed #f5c84255!important}
+
+/* P&L colors */
+.p4{background:rgba(0,212,170,.40);color:#c8ffe8}
+.p3{background:rgba(0,212,170,.28);color:#aaffda}
+.p2{background:rgba(0,212,170,.18);color:#00d4aa}
+.p1{background:rgba(0,212,170,.09);color:#00d4aa}
+.z0{background:transparent;color:#2a3a4a}
+.n1{background:rgba(226,75,74,.10);color:#ff8080}
+.n2{background:rgba(226,75,74,.20);color:#ff6b6b}
+.n3{background:rgba(226,75,74,.32);color:#ff4d6a}
+.n4{background:rgba(226,75,74,.47);color:#ffd0d0}
+
+/* Selected column highlight */
+td.sel-col{outline:1px solid #00d4aa33;outline-offset:-1px}
+
+/* ── Hover tooltip ── */
+.htip{
+  position:fixed;display:none;z-index:300;
+  background:#0d1821;border:1px solid #1a2a3a;border-radius:8px;
+  padding:10px 13px;box-shadow:0 8px 32px rgba(0,0,0,.6);
+  pointer-events:none;min-width:140px;
+}
+.htip.show{display:block}
+.htip-title{font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:#3a5a7a;margin-bottom:7px}
+.htip-row{display:flex;justify-content:space-between;gap:16px;margin-bottom:4px;font-size:11px}
+.htip-lbl{color:#5a7a9a}
+.htip-val{font-weight:600;color:#c8d8e8}
+.htip-pnl-pos{font-family:'Syne',sans-serif;font-size:15px;font-weight:800;color:#00d4aa;margin:5px 0 3px}
+.htip-pnl-neg{font-family:'Syne',sans-serif;font-size:15px;font-weight:800;color:#ff4d6a;margin:5px 0 3px}
+.htip-divider{height:1px;background:#1a2a3a;margin:6px 0}
+
+/* quick add preview */
+.quick-add{
+  position:fixed;bottom:20px;right:20px;z-index:200;
+  background:#0d1821;border:1px solid #00d4aa44;border-radius:10px;
+  padding:14px 16px;min-width:200px;
+  box-shadow:0 8px 32px rgba(0,0,0,.5);
+  display:none;
+}
+.quick-add.show{display:block}
+.qa-title{font-family:'Syne',sans-serif;font-size:13px;font-weight:700;color:#fff;margin-bottom:10px}
+.qa-row{display:flex;justify-content:space-between;margin-bottom:5px;font-size:11px}
+.qa-lbl{color:#5a7a9a}
+.qa-val{color:#c8d8e8;font-weight:500}
+.qa-btn{margin-top:10px;width:100%;background:#00d4aa;border:none;color:#080c10;font-family:'DM Mono',monospace;font-size:11px;font-weight:700;padding:8px;border-radius:5px;cursor:pointer;letter-spacing:.5px}
+</style>
+</head>
+<body>
+
+<!-- ══ HEADER ══ -->
+<div class="hdr">
+  <div class="logo">Option<span>Desk</span></div>
+  <div class="divider"></div>
+  <div class="ticker-badge">IBIT</div>
+  <div class="price-big">$34.14</div>
+  <div class="change-neg">▼ -5.22%&nbsp;-$1.88</div>
+  <div class="delayed-tag">Delayed ●</div>
+  <div class="hdr-right">
+    <select class="strat-select">
+      <option>Long Call</option>
+      <option>Long Put</option>
+      <option>Covered Call</option>
+      <option>Cash Secured Put</option>
+      <option>PMCC</option>
+      <option>Bull Call Spread</option>
+      <option>Bear Put Spread</option>
+      <option>Bull Put Spread</option>
+      <option>Bear Call Spread</option>
+      <option>Iron Condor</option>
+      <option>Straddle</option>
+      <option>Strangle</option>
+    </select>
+    <button class="btn">+ Portfolio</button>
+  </div>
+</div>
+
+<!-- ══ LAYOUT ══ -->
+<div class="layout">
+
+  <!-- ══ LEFT PANEL ══ -->
+  <div class="left">
+
+    <!-- Search -->
+    <div>
+      <div class="sec-lbl">Symbol</div>
+      <div class="search-row">
+        <input class="sym-input" value="IBIT" readonly/>
+        <button class="btn" style="padding:7px 10px;flex-shrink:0">↻</button>
+      </div>
+    </div>
+
+    <!-- Direction + Type -->
+    <div>
+      <div class="sec-lbl">Direction &amp; Type</div>
+      <div class="toggle-row">
+        <div class="tgl-group">
+          <button class="tgl ag" onclick="toggle(this,'ag','ar')">Buy</button>
+          <button class="tgl" onclick="toggle(this,'ar','ag')">Sell</button>
+        </div>
+        <div class="tgl-group">
+          <button class="tgl ab" onclick="toggle(this,'ab','ap')">Call</button>
+          <button class="tgl" onclick="toggle(this,'ap','ab')">Put</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── NEW STRIKE SELECTOR ── -->
+    <div>
+      <div class="sec-lbl">Strike</div>
+      <div class="strike-box">
+
+        <!-- Value + input side by side -->
+        <div class="strike-display">
+          <div class="strike-val">$34.00</div>
+          <div style="display:flex;flex-direction:column;gap:3px">
+            <div style="font-size:9px;color:#3a5a7a;letter-spacing:1px">DIGITAR</div>
+            <input class="strike-input" id="strikeInput" value="34.00"
+              oninput="onStrikeInput(this.value)"
+              onblur="snapStrike(this.value)"/>
+          </div>
+        </div>
+
+        <!-- Available strikes only — horizontal scroll -->
+        <div class="sec-lbl" style="margin-bottom:5px">Strikes disponíveis</div>
+        <div class="strikes-scroll">
+          <div class="strikes-row" id="strikesRow">
+            <button class="sk-chip" onclick="selectStrike(this,'30.00')">30.00</button>
+            <button class="sk-chip" onclick="selectStrike(this,'30.50')">30.50</button>
+            <button class="sk-chip" onclick="selectStrike(this,'31.00')">31.00</button>
+            <button class="sk-chip" onclick="selectStrike(this,'31.50')">31.50</button>
+            <button class="sk-chip" onclick="selectStrike(this,'32.00')">32.00</button>
+            <button class="sk-chip" onclick="selectStrike(this,'32.50')">32.50</button>
+            <button class="sk-chip" onclick="selectStrike(this,'33.00')">33.00</button>
+            <button class="sk-chip" onclick="selectStrike(this,'33.50')">33.50</button>
+            <button class="sk-chip sk-atm sk-active" id="chip3400" onclick="selectStrike(this,'34.00')">34.00 ◀</button>
+            <button class="sk-chip" onclick="selectStrike(this,'34.50')">34.50</button>
+            <button class="sk-chip" onclick="selectStrike(this,'35.00')">35.00</button>
+            <button class="sk-chip" onclick="selectStrike(this,'35.50')">35.50</button>
+            <button class="sk-chip" onclick="selectStrike(this,'36.00')">36.00</button>
+            <button class="sk-chip" onclick="selectStrike(this,'36.50')">36.50</button>
+            <button class="sk-chip" onclick="selectStrike(this,'37.00')">37.00</button>
+            <button class="sk-chip" onclick="selectStrike(this,'37.50')">37.50</button>
+            <button class="sk-chip" onclick="selectStrike(this,'38.00')">38.00</button>
+            <button class="sk-chip" onclick="selectStrike(this,'38.50')">38.50</button>
+            <button class="sk-chip" onclick="selectStrike(this,'39.00')">39.00</button>
+            <button class="sk-chip" onclick="selectStrike(this,'40.00')">40.00</button>
+          </div>
+        </div>
+
+        <!-- ATM distance info -->
+        <div class="atm-info">
+          <div class="atm-row">ATM &nbsp;<span>$34.14</span></div>
+          <div class="atm-row">Strike &nbsp;<span>$34.00</span></div>
+          <div class="atm-row">Dist &nbsp;<span class="neg" id="distVal">-$0.14</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Metrics -->
+    <div>
+      <div class="sec-lbl">Resumo</div>
+      <div class="metric-grid">
+        <div class="metric-card" style="--top:#ff4d6a;--vc:#ff4d6a">
+          <div class="metric-lbl">Net Debit</div>
+          <div class="metric-val">$214</div>
+          <div class="metric-sub">por contrato</div>
+        </div>
+        <div class="metric-card" style="--top:#ff4d6a;--vc:#ff4d6a">
+          <div class="metric-lbl">Max Loss</div>
+          <div class="metric-val">$214</div>
+          <div class="metric-sub">limitado</div>
+        </div>
+        <div class="metric-card" style="--top:#00d4aa;--vc:#00d4aa">
+          <div class="metric-lbl">Max Profit</div>
+          <div class="metric-val">∞</div>
+          <div class="metric-sub">ilimitado</div>
+        </div>
+        <div class="metric-card" style="--top:#f5c842;--vc:#f5c842">
+          <div class="metric-lbl">Breakeven</div>
+          <div class="metric-val">$36.14</div>
+          <div class="metric-sub">+5.9% de move</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Chance of Profit — expanded -->
+    <div>
+      <div class="sec-lbl">Probabilidades</div>
+      <div class="cop-card">
+        <div class="cop-main">
+          <div>
+            <div style="font-size:9px;color:#3a5a7a;margin-bottom:2px">Chance of Profit</div>
+            <div class="cop-val">45.2%</div>
+          </div>
+          <div style="text-align:right">
+            <div style="font-size:9px;color:#3a5a7a;margin-bottom:2px">Delta</div>
+            <div style="font-family:Syne;font-size:15px;font-weight:700;color:#3a8fff">0.452</div>
+          </div>
+        </div>
+        <div class="cop-bar" style="margin-bottom:9px"><div class="cop-fill"></div></div>
+        <div class="cop-sub-grid">
+          <div class="cop-sub">
+            <div class="cop-sub-lbl">Prob ITM</div>
+            <div class="cop-sub-val" style="color:#3a8fff">41.0%</div>
+          </div>
+          <div class="cop-sub">
+            <div class="cop-sub-lbl">Prob Touch</div>
+            <div class="cop-sub-val" style="color:#a78bfa">68.0%</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Greeks (dynamic badge) -->
+    <div>
+      <div class="sec-lbl" style="display:flex;align-items:center;gap:6px">
+        Greeks
+        <span style="font-size:8px;background:#00d4aa15;border:1px solid #00d4aa33;color:#00d4aa;padding:1px 6px;border-radius:3px;letter-spacing:.5px">dinâmico</span>
+      </div>
+      <div class="greeks-row">
+        <div class="greek"><div class="greek-lbl">Δ Delta</div><div class="greek-val" style="color:#3a8fff">0.45</div></div>
+        <div class="greek"><div class="greek-lbl">Θ Theta</div><div class="greek-val" style="color:#ff4d6a">-0.08</div></div>
+        <div class="greek"><div class="greek-lbl">Γ Gamma</div><div class="greek-val" style="color:#00d4aa">0.12</div></div>
+        <div class="greek"><div class="greek-lbl">V Vega</div><div class="greek-val" style="color:#a78bfa">0.03</div></div>
+      </div>
+    </div>
+
+    <!-- Expiration selected -->
+    <div style="background:#080c10;border:1px solid #00d4aa33;border-radius:6px;padding:10px 12px">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div style="font-family:Syne;font-size:14px;font-weight:700;color:#00d4aa">Jul 2, 2026</div>
+        <div style="font-size:9px;color:#3a5a7a;background:#0d1821;border:1px solid #1a2a3a;border-radius:4px;padding:2px 7px">26 DTE</div>
+      </div>
+      <div style="font-size:10px;color:#3a5a7a;margin-top:3px">Prêmio: <span style="color:#c8d8e8">$2.14 ask</span> &nbsp;·&nbsp; IV: <span style="color:#f5c842">62.4%</span></div>
+    </div>
+
+    <button class="add-btn" onclick="toggleQuickAdd()">+ Registrar Trade</button>
+  </div>
+
+  <!-- ══ RIGHT PANEL ══ -->
+  <div class="right">
+
+    <!-- Expiration Timeline -->
+    <div class="exp-timeline">
+      <div class="month-groups">
+        <div class="month-group">
+          <div class="month-label">── Jun 2026 ──</div>
+          <div class="exp-dates">
+            <button class="exp-btn">Jun 8<span class="dte">2d</span></button>
+            <button class="exp-btn">Jun 10<span class="dte">4d</span></button>
+            <button class="exp-btn">Jun 15<span class="dte">9d</span></button>
+            <button class="exp-btn">Jun 17<span class="dte">11d</span></button>
+            <button class="exp-btn">Jun 19<span class="dte">13d</span></button>
+            <button class="exp-btn">Jun 22<span class="dte">16d</span></button>
+            <button class="exp-btn">Jun 25<span class="dte">19d</span></button>
+            <button class="exp-btn">Jun 26<span class="dte">20d</span></button>
+          </div>
+        </div>
+        <div class="month-group">
+          <div class="month-label">── Jul 2026 ──</div>
+          <div class="exp-dates">
+            <button class="exp-btn active">Jul 2<span class="dte">26d</span></button>
+            <button class="exp-btn">Jul 10<span class="dte">34d</span></button>
+            <button class="exp-btn">Jul 17<span class="dte">41d</span></button>
+            <button class="exp-btn">Jul 24<span class="dte">48d</span></button>
+          </div>
+        </div>
+        <div class="month-group">
+          <div class="month-label">── Aug 2026 ──</div>
+          <div class="exp-dates">
+            <button class="exp-btn">Aug 21<span class="dte">76d</span></button>
+          </div>
+        </div>
+        <div class="month-group">
+          <div class="month-label">── Sep 2026 ──</div>
+          <div class="exp-dates">
+            <button class="exp-btn">Sep 18<span class="dte">104d</span></button>
+          </div>
+        </div>
+        <div class="month-group">
+          <div class="month-label">── Jan 2027 ──</div>
+          <div class="exp-dates">
+            <button class="exp-btn">Jan 15<span class="dte">223d</span></button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Toolbar: view mode + legend -->
+    <div class="matrix-toolbar">
+      <div style="font-size:9px;color:#3a5a7a;letter-spacing:1.5px;text-transform:uppercase;margin-right:4px">Exibir</div>
+      <div class="view-group">
+        <button class="view-btn active" onclick="setView(this,'dollar')">P&amp;L $</button>
+        <button class="view-btn" onclick="setView(this,'pct')">P&amp;L %</button>
+        <button class="view-btn" onclick="setView(this,'roi')">ROI</button>
+      </div>
+      <div class="divider"></div>
+      <div class="be-legend"><div class="be-line-demo"></div>Breakeven $36.14</div>
+      <div class="atm-legend"><div class="atm-line-demo"></div>ATM $34.14</div>
+      <div class="toolbar-hint">Passe o mouse sobre qualquer célula para ver detalhes</div>
+    </div>
+
+    <!-- P&L Matrix -->
+    <div class="matrix-wrap" id="matrixWrap">
+      <table id="matrixTable">
+        <thead>
+          <tr>
+            <th class="mth sp" rowspan="2" style="vertical-align:bottom">Preço</th>
+            <th class="mth sp2" rowspan="2" style="vertical-align:bottom">Chg%</th>
+            <th class="mth month-hd" colspan="8">── Jun 2026 ──</th>
+            <th class="mth month-hd-sel" colspan="4">── Jul 2026 ──</th>
+            <th class="mth month-hd" colspan="2">── Aug / Sep ──</th>
+          </tr>
+          <tr>
+            <th class="mth">8</th><th class="mth">10</th><th class="mth">15</th><th class="mth">17</th>
+            <th class="mth">19</th><th class="mth">22</th><th class="mth">25</th><th class="mth">26</th>
+            <th class="mth sel-col">2 ★</th>
+            <th class="mth">10</th><th class="mth">17</th><th class="mth">24</th>
+            <th class="mth">Aug 21</th><th class="mth">Sep 18</th>
+          </tr>
+        </thead>
+        <tbody id="matrixBody">
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Hover tooltip -->
+<div class="htip" id="htip">
+  <div class="htip-title" id="htip-title">Cenário</div>
+  <div id="htip-pnl" class="htip-pnl-pos">+$240</div>
+  <div class="htip-divider"></div>
+  <div class="htip-row"><span class="htip-lbl">Preço</span><span class="htip-val" id="htip-price">—</span></div>
+  <div class="htip-row"><span class="htip-lbl">Data</span><span class="htip-val" id="htip-date">—</span></div>
+  <div class="htip-row"><span class="htip-lbl">P&amp;L $</span><span class="htip-val" id="htip-dollar">—</span></div>
+  <div class="htip-row"><span class="htip-lbl">Retorno</span><span class="htip-val" id="htip-pct">—</span></div>
+  <div class="htip-row"><span class="htip-lbl">ROI</span><span class="htip-val" id="htip-roi">—</span></div>
+</div>
+
+<!-- Quick Add Preview -->
+<div class="quick-add" id="quickAdd">
+  <div class="qa-title">IBIT &nbsp;<span style="font-size:11px;color:#00d4aa;font-family:DM Mono">Long Call</span></div>
+  <div class="qa-row"><span class="qa-lbl">Strike</span><span class="qa-val">$34.00</span></div>
+  <div class="qa-row"><span class="qa-lbl">Expiração</span><span class="qa-val">Jul 2, 2026</span></div>
+  <div class="qa-row"><span class="qa-lbl">Prêmio</span><span class="qa-val" style="color:#ff4d6a">-$214</span></div>
+  <div class="qa-row"><span class="qa-lbl">Breakeven</span><span class="qa-val">$36.14</span></div>
+  <button class="qa-btn">Registrar Trade →</button>
+</div>
+
+<script>
+// ── Data ─────────────────────────────────────────────────────────────────────
+const ATM = 34.14;
+const COST = 214; // debit paid
+const STRIKE = 34.00;
+const DATES = ['8','10','15','17','19','22','25','26','2★','10','17','24','Aug21','Sep18'];
+const LABELS = ['Jun 8','Jun 10','Jun 15','Jun 17','Jun 19','Jun 22','Jun 25','Jun 26','Jul 2','Jul 10','Jul 17','Jul 24','Aug 21','Sep 18'];
+
+const PRICES = [39.10,38.60,38.10,37.60,37.10,36.60,36.10,35.60,35.10,34.60,34.20,33.70,33.20,32.70,32.20,31.70,30.70];
+const PCT    = ['+15%','+13%','+12%','+10%','+8.7%','+7.2%','+5.7%','+4.3%','+2.8%','+1.3%','+0.2%','-1.3%','-2.8%','-4.2%','-5.7%','-7.1%','-10%'];
+const POS    = [true,true,true,true,true,true,true,true,true,true,true,false,false,false,false,false,false];
+
+// Raw P&L matrix (mock data — dollar values)
+const MATRIX = [
+  [347,344,341,335,327,324,321,319,296,296,296,296,296,296],
+  [304,301,298,292,283,280,277,274,246,246,246,246,246,246],
+  [263,260,257,250,240,236,233,230,197,196,196,196,196,196],
+  [223,220,216,209,198,194,191,187,147,146,146,146,146,146],
+  [184,181,177,169,158,154,150,146, 98, 96, 96, 96, 96, 96],
+  [147,143,139,131,119,115,110,106, 49, 46, 46, 46, 46, 46],
+  [111,107,103, 95, 82, 78, 73, 68,  8, -3, -4, -4, -4, -4],  // BE row (~36.14)
+  [ 77, 73, 69, 61, 47, 43, 38, 33,-35,-43,-50,-54,-54,-54],
+  [ 45, 41, 37, 28, 14, 10,  5, -1,-74,-84,-95,-104,-104,-104],
+  [ 15, 11,  7, -2,-16,-21,-26,-31,-109,-120,-134,-151,-154,-154],
+  [ -8,-12,-16,-25,-39,-44,-49,-54,-133,-145,-160,-183,-194,-214], // ATM
+  [-34,-38,-43,-51,-65,-70,-75,-80,-158,-170,-184,-206,-214,-214],
+  [-59,-63,-67,-75,-89,-94,-99,-104,-177,-188,-200,-213,-214,-214],
+  [-81,-85,-89,-97,-110,-115,-119,-124,-192,-200,-208,-214,-214,-214],
+  [-101,-105,-109,-117,-129,-133,-138,-142,-201,-207,-212,-214,-214,-214],
+  [-120,-123,-127,-134,-145,-149,-153,-158,-207,-211,-214,-214,-214,-214],
+  [-150,-153,-156,-162,-171,-175,-178,-181,-206,-213,-214,-214,-214,-214],
+];
+
+const ATM_ROW = 10;  // index of ATM row
+const BE_ROW  = 6;   // index of breakeven row
+
+let viewMode = 'dollar';
+
+function pnlClass(v) {
+  if (v > 150) return 'p4';
+  if (v > 80)  return 'p3';
+  if (v > 20)  return 'p2';
+  if (v > 0)   return 'p1';
+  if (v === 0) return 'z0';
+  if (v > -80) return 'n1';
+  if (v > -150)return 'n2';
+  if (v > -200)return 'n3';
+  return 'n4';
+}
+
+function fmtCell(v) {
+  if (viewMode === 'dollar') return (v > 0 ? '+' : '') + v;
+  if (viewMode === 'pct')    return (v > 0 ? '+' : '') + (v / COST * 100).toFixed(0) + '%';
+  if (viewMode === 'roi')    return (1 + v / COST).toFixed(2) + 'x';
+  return v;
+}
+
+function buildMatrix() {
+  const tbody = document.getElementById('matrixBody');
+  tbody.innerHTML = '';
+  PRICES.forEach((price, ri) => {
+    const tr = document.createElement('tr');
+    if (ri === ATM_ROW) tr.classList.add('atm-row');
+    if (ri === BE_ROW)  tr.classList.add('be-row');
+
+    // Price cell
+    const tdp = document.createElement('td');
+    tdp.className = 'fp';
+    let priceHTML = `$${price.toFixed(2)}`;
+    if (ri === ATM_ROW) priceHTML += `<span class="atm-tag">◀ ATM</span>`;
+    if (ri === BE_ROW)  priceHTML += `<span class="be-tag">BE</span>`;
+    tdp.innerHTML = priceHTML;
+    tr.appendChild(tdp);
+
+    // % cell
+    const tdpct = document.createElement('td');
+    tdpct.className = 'pct-col';
+    tdpct.style.color = POS[ri] ? '#00d4aa' : '#ff4d6a';
+    tdpct.textContent = PCT[ri];
+    tr.appendChild(tdpct);
+
+    // P&L cells
+    MATRIX[ri].forEach((v, ci) => {
+      const td = document.createElement('td');
+      td.className = pnlClass(v) + (ci === 8 ? ' sel-col' : '');
+      td.textContent = fmtCell(v);
+      td.dataset.price  = price;
+      td.dataset.date   = LABELS[ci];
+      td.dataset.dollar = v;
+      td.dataset.pct    = (v / COST * 100).toFixed(1);
+      td.dataset.roi    = (1 + v / COST).toFixed(2);
+      td.addEventListener('mouseenter', showTip);
+      td.addEventListener('mouseleave', hideTip);
+      td.addEventListener('mousemove',  moveTip);
+      tr.appendChild(td);
+    });
+    tbody.appendChild(tr);
+  });
+}
+
+// ── Tooltip ───────────────────────────────────────────────────────────────────
+const tip = document.getElementById('htip');
+function showTip(e) {
+  const d = e.target.dataset;
+  const v = parseFloat(d.dollar);
+  tip.querySelector('#htip-title').textContent = `${d.date} · $${parseFloat(d.price).toFixed(2)}`;
+  const pnlEl = tip.querySelector('#htip-pnl');
+  pnlEl.textContent = (v >= 0 ? '+' : '') + '$' + Math.abs(v);
+  pnlEl.className   = v >= 0 ? 'htip-pnl-pos' : 'htip-pnl-neg';
+  tip.querySelector('#htip-price').textContent  = '$' + parseFloat(d.price).toFixed(2);
+  tip.querySelector('#htip-date').textContent   = d.date;
+  tip.querySelector('#htip-dollar').textContent = (v >= 0 ? '+' : '') + '$' + v;
+  tip.querySelector('#htip-pct').textContent    = (parseFloat(d.pct) >= 0 ? '+' : '') + d.pct + '%';
+  tip.querySelector('#htip-roi').textContent    = d.roi + 'x';
+  tip.classList.add('show');
+  moveTip(e);
+}
+function hideTip()  { tip.classList.remove('show'); }
+function moveTip(e) {
+  let x = e.clientX + 14, y = e.clientY + 14;
+  if (x + 160 > window.innerWidth)  x = e.clientX - 160;
+  if (y + 160 > window.innerHeight) y = e.clientY - 160;
+  tip.style.left = x + 'px';
+  tip.style.top  = y + 'px';
+}
+
+// ── Strike selector ───────────────────────────────────────────────────────────
+const VALID = [30.00,30.50,31.00,31.50,32.00,32.50,33.00,33.50,34.00,34.50,35.00,35.50,36.00,36.50,37.00,37.50,38.00,38.50,39.00,40.00];
+
+function selectStrike(btn, val) {
+  document.querySelectorAll('.sk-chip').forEach(b => b.classList.remove('sk-active'));
+  btn.classList.add('sk-active');
+  document.querySelector('.strike-val').textContent = '$' + val;
+  document.getElementById('strikeInput').value = val;
+  updateDist(parseFloat(val));
+}
+
+function onStrikeInput(val) {
+  // Just update display while typing — no snap yet
+  const n = parseFloat(val);
+  if (!isNaN(n)) {
+    document.querySelector('.strike-val').textContent = '$' + parseFloat(val).toFixed(2);
+  }
+}
+
+function snapStrike(val) {
+  const n = parseFloat(val);
+  if (isNaN(n)) return;
+  // Find closest valid strike
+  const closest = VALID.reduce((a, b) => Math.abs(b - n) < Math.abs(a - n) ? b : a);
+  document.getElementById('strikeInput').value = closest.toFixed(2);
+  document.querySelector('.strike-val').textContent = '$' + closest.toFixed(2);
+  // Update chip selection
+  document.querySelectorAll('.sk-chip').forEach(b => {
+    b.classList.remove('sk-active');
+    if (parseFloat(b.textContent) === closest || b.textContent.startsWith(closest.toFixed(2))) {
+      b.classList.add('sk-active');
+    }
+  });
+  updateDist(closest);
+}
+
+function updateDist(strike) {
+  const dist = (strike - ATM).toFixed(2);
+  const el = document.getElementById('distVal');
+  el.textContent = (parseFloat(dist) >= 0 ? '+' : '') + '$' + dist;
+  el.className   = parseFloat(dist) >= 0 ? 'pos' : 'neg';
+}
+
+// ── View mode ─────────────────────────────────────────────────────────────────
+function setView(btn, mode) {
+  document.querySelectorAll('.view-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  viewMode = mode;
+  buildMatrix();
+}
+
+// ── Toggles ──────────────────────────────────────────────────────────────────
+function toggle(btn, cls, rem) {
+  const grp = btn.closest('.tgl-group');
+  grp.querySelectorAll('.tgl').forEach(b => { b.className = 'tgl'; });
+  btn.classList.add(cls);
+}
+
+// ── Quick Add ─────────────────────────────────────────────────────────────────
+function toggleQuickAdd() {
+  const el = document.getElementById('quickAdd');
+  el.classList.toggle('show');
+}
+
+// Expiration tabs
+document.querySelectorAll('.exp-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.exp-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+  });
+});
+
+// Init
+buildMatrix();
+</script>
+</body>
+</html>

@@ -29,6 +29,22 @@ async function fetchSymbolSearch(query) {
 const fmt = (n, d=2) => Number(n||0).toFixed(d);
 const COLORS = ["#00d4aa","#f5c842","#3a8fff","#ff6b9d","#a78bfa","#fb923c"];
 
+// ── Black-Scholes ─────────────────────────────────────────────────────────────
+function normCDF(x) {
+  const a1=0.254829592,a2=-0.284496736,a3=1.421413741,a4=-1.453152027,a5=1.061405429,p=0.3275911;
+  const sign=x<0?-1:1;
+  const t=1/(1+p*Math.abs(x)/Math.sqrt(2));
+  const y=1-(((((a5*t+a4)*t)+a3)*t+a2)*t+a1)*t*Math.exp(-(x*x)/2);
+  return 0.5*(1+sign*y);
+}
+function bsPrice(S,K,T,r,sigma,type){
+  if(T<=0) return type==="call"?Math.max(S-K,0):Math.max(K-S,0);
+  const d1=(Math.log(S/K)+(r+sigma*sigma/2)*T)/(sigma*Math.sqrt(T));
+  const d2=d1-sigma*Math.sqrt(T);
+  if(type==="call") return S*normCDF(d1)-K*Math.exp(-r*T)*normCDF(d2);
+  return K*Math.exp(-r*T)*normCDF(-d2)-S*normCDF(-d1);
+}
+
 const STRATEGIES = {
   INCOME: [
     { id:"PMCC", label:"PMCC", desc:"Buy a LEAP, sell short calls to collect premium and reduce cost basis.", tracks:["Premium collected","Cost basis recovery bar","Roll / close workflow"], no:["P&L unrealized"] },
@@ -49,6 +65,7 @@ const STRATEGIES = {
 };
 
 const isPremiumStrategy = (s) => ["PMCC","Covered Call","Cash Secured Put","Iron Condor"].includes(s);
+const SIM_STRATEGIES = ["Long Call","Long Put","Covered Call","Cash Secured Put","PMCC","Bull Call Spread","Bear Put Spread","Bull Put Spread","Bear Call Spread","Iron Condor","Straddle","Strangle"];
 
 const exportCSV = (trades, ticker) => {
   const header = "Date,Action,Strike,Expiration,Premium,Contracts,Value $,Status\n";
@@ -187,7 +204,45 @@ tr:hover td{background:#101e2c}
 @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
 .pulse{display:inline-block;width:7px;height:7px;border-radius:50%;background:#00d4aa;margin-right:6px;animation:pulse 1.8s infinite}
 @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(0,212,170,0.5)}70%{box-shadow:0 0 0 7px rgba(0,212,170,0)}100%{box-shadow:0 0 0 0 rgba(0,212,170,0)}}
+/* ── Simulator ── */
+.sim-wrap{display:flex;border:1px solid #1a2a3a;border-radius:8px;overflow:hidden;margin-top:0}
+.sim-left{width:262px;flex-shrink:0;border-right:1px solid #1a2a3a;background:#0a1520;overflow-y:auto;padding:13px 11px;display:flex;flex-direction:column;gap:11px}
+.sim-right{flex:1;overflow:hidden;display:flex;flex-direction:column;min-width:0}
+.sim-slbl{font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#3a5a7a;margin-bottom:5px}
+.sim-strike-box{background:#080c10;border:1px solid #1a2a3a;border-radius:7px;padding:10px 11px}
+.sim-strike-big{font-family:'Syne',sans-serif;font-size:23px;font-weight:800;color:#f5c842;flex:1}
+.sim-strike-input{background:#0d1821;border:1px solid #f5c84244;color:#f5c842;font-family:'DM Mono',monospace;font-size:12px;padding:4px 8px;border-radius:4px;width:76px;text-align:center}
+.sim-strike-input:focus{outline:none;border-color:#f5c842aa}
+.sim-chip{background:none;border:1px solid #1a2a3a;color:#5a7a9a;padding:3px 7px;border-radius:13px;cursor:pointer;font-family:'DM Mono',monospace;font-size:10px;white-space:nowrap;flex-shrink:0;transition:all .12s}
+.sim-chip:hover{border-color:#3a5a7a;color:#c8d8e8}
+.sim-chip.sel{background:#f5c842;border-color:#f5c842;color:#080c10;font-weight:700}
+.sim-chip.atm{border-color:#00d4aa55;color:#00d4aa}
+.sim-metric{background:#080c10;border:1px solid #1a2a3a;border-radius:6px;padding:8px 10px;position:relative;overflow:hidden}
+.sim-metric::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--mt);border-radius:6px 6px 0 0}
+.sim-metric-lbl{font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:#3a5a7a;margin-bottom:3px}
+.sim-metric-val{font-family:'Syne',sans-serif;font-size:13px;font-weight:700;color:var(--mc)}
+.sim-timeline{border-bottom:1px solid #1a2a3a;background:#0a1520;padding:8px 13px 0;flex-shrink:0;overflow-x:auto}
+.sim-exp-btn{background:none;border:1px solid #1a2a3a;color:#5a7a9a;padding:4px 9px;border-radius:15px;cursor:pointer;font-family:'DM Mono',monospace;font-size:10px;white-space:nowrap;flex-shrink:0;transition:all .12s}
+.sim-exp-btn.sel{background:#00d4aa;border-color:#00d4aa;color:#080c10;font-weight:700}
+.sim-toolbar{display:flex;align-items:center;gap:10px;padding:7px 13px;border-bottom:1px solid #1a2a3a;background:#090f18;flex-shrink:0;flex-wrap:wrap}
+.sim-view-group{display:flex;background:#0d1821;border:1px solid #1a2a3a;border-radius:7px;padding:2px;gap:2px}
+.sim-view-btn{background:none;border:none;padding:4px 11px;border-radius:5px;cursor:pointer;font-family:'DM Mono',monospace;font-size:10px;font-weight:600;color:#5a7a9a;letter-spacing:.5px;transition:all .12s}
+.sim-view-btn.sel{background:#1a2a3a;color:#c8d8e8}
+.sim-matrix{flex:1;overflow:auto}
+.sim-th{position:sticky;top:0;z-index:10;background:#0a1520;font-size:9px;letter-spacing:1px;color:#3a5a7a;padding:6px 9px;text-align:center;border-bottom:1px solid #1a2a3a;border-right:1px solid #0d1821;white-space:nowrap;font-weight:400;font-family:'DM Mono',monospace}
+.sim-th.sp1{position:sticky;left:0;z-index:15;text-align:left;padding-left:13px;min-width:84px;background:#0a1520;border-right:1px solid #1a2a3a}
+.sim-th.sp2{position:sticky;left:84px;z-index:15;min-width:46px;background:#0a1520;border-right:1px solid #1a2a3a}
+.sim-th.sel-exp{color:#00d4aa}
+.sim-td{padding:6px 9px;text-align:center;font-size:12px;font-weight:500;border-bottom:1px solid #0a1218;border-right:1px solid #0a1218;white-space:nowrap}
+.sim-td-price{text-align:left;padding-left:13px;font-size:12px;background:#0a1520!important;position:sticky;left:0;z-index:5;border-right:1px solid #1a2a3a;border-bottom:1px solid #0a1218;white-space:nowrap}
+.sim-td-pct{font-size:11px;background:#0a1520!important;position:sticky;left:84px;z-index:5;border-right:1px solid #1a2a3a;border-bottom:1px solid #0a1218;text-align:center;padding:6px 9px}
+.sim-row-atm .sim-td-price{color:#fff!important;font-weight:700;background:linear-gradient(90deg,#00d4aa08,transparent)!important;box-shadow:inset 3px 0 0 #00d4aa}
+.sim-row-atm .sim-td-pct{background:linear-gradient(90deg,#00d4aa05,transparent)!important}
+.sim-row-atm{border-top:1px solid #00d4aa22!important;border-bottom:1px solid #00d4aa22!important}
+.sim-row-be{border-top:1px dashed #f5c84244!important}
+tr:hover .sim-td,.sim-row-atm:hover .sim-td-price,.sim-row-atm:hover .sim-td-pct{filter:brightness(1.15)}
 `;
+
 
 // ── Tooltip ───────────────────────────────────────────────────────────────────
 function Tooltip({ text }) {
@@ -892,22 +947,512 @@ function AssetDashboard({ asset, onClose, onSaveTrade, onUpdateTrade, onDeleteTr
   );
 }
 
+// ── Simulator Panel ───────────────────────────────────────────────────────────
+function SimulatorPanel({ onSaveManualTrade }) {
+  const [searchInput, setSearchInput] = useState("IBIT");
+  const [sym, setSym]         = useState("");
+  const [side, setSide]       = useState("buy");
+  const [optType, setOptType] = useState("call");
+  const [strategy, setStrategy] = useState("Long Call");
+  const [exps, setExps]       = useState([]);
+  const [selExp, setSelExp]   = useState("");
+  const [chain, setChain]     = useState([]);
+  const [quote, setQuote]     = useState(null);
+  const [selStrike, setSelStrike] = useState(null);
+  const [strikeInputVal, setStrikeInputVal] = useState("");
+  const [viewMode, setViewMode] = useState("dollar");
+  const [loading, setLoading] = useState(false);
+  const [error, setError]     = useState(null);
+  const [showQuickAdd, setShowQuickAdd] = useState(false);
+  const [tooltip, setTooltip] = useState(null);
+  const [tipPos, setTipPos]   = useState({x:0,y:0});
+
+  const spot = quote?.last || 0;
+
+  const filteredChain = useMemo(()=>
+    chain.filter(o=>o.option_type===optType).sort((a,b)=>a.strike-b.strike),
+    [chain, optType]
+  );
+  const availableStrikes = useMemo(()=>filteredChain.map(o=>o.strike),[filteredChain]);
+
+  // Auto-select ATM when chain changes
+  useEffect(()=>{
+    if(!filteredChain.length||!spot) return;
+    if(selStrike&&availableStrikes.includes(selStrike)) return;
+    const atm=filteredChain.reduce((a,b)=>Math.abs(b.strike-spot)<Math.abs(a.strike-spot)?b:a);
+    setSelStrike(atm.strike);
+    setStrikeInputVal(atm.strike.toFixed(2));
+  },[filteredChain, spot]);
+
+  const selOption = useMemo(()=>filteredChain.find(o=>o.strike===selStrike),[filteredChain,selStrike]);
+
+  const premium  = selOption?.ask||selOption?.last||0;
+  const iv       = Math.max(selOption?.greeks?.smv_vol||0.3, 0.05);
+  const delta    = selOption?.greeks?.delta||0;
+  const theta    = selOption?.greeks?.theta||0;
+  const gamma    = selOption?.greeks?.gamma||0;
+  const vega     = selOption?.greeks?.vega||0;
+
+  const breakeven = useMemo(()=>{
+    if(!selStrike||!premium) return 0;
+    if(optType==="call") return side==="buy"?selStrike+premium:selStrike-premium;
+    return side==="buy"?selStrike-premium:selStrike+premium;
+  },[selStrike,premium,optType,side]);
+
+  const maxLoss   = side==="buy"?premium*100:(optType==="call"?Infinity:(selStrike-premium)*100);
+  const maxProfit = side==="buy"?(optType==="call"?Infinity:(selStrike-premium)*100):premium*100;
+  const probITM   = Math.abs(delta);
+  const probTouch = Math.min(probITM*2,0.99);
+  const chanceOfProfit = side==="buy"?probITM:(1-probITM);
+
+  const loadSym = useCallback(async(s)=>{
+    setLoading(true); setError(null); setChain([]); setQuote(null); setSelStrike(null);
+    try{
+      const e=await fetchExpirations(s);
+      if(!e?.length){setError(`No options for "${s}"`);setLoading(false);return;}
+      setExps(e); setSelExp(e[0]); setSym(s);
+      const[q,ch]=await Promise.all([fetchQuote(s),fetchOptionChain(s,e[0])]);
+      setQuote(q); setChain(ch);
+    }catch{setError("Error fetching data.");}
+    setLoading(false);
+  },[]);
+
+  const loadChain = useCallback(async(exp)=>{
+    setSelExp(exp); setLoading(true);
+    try{const ch=await fetchOptionChain(sym,exp);setChain(ch);}catch{}
+    setLoading(false);
+  },[sym]);
+
+  // Group expirations by month for timeline
+  const groupedExps = useMemo(()=>{
+    const g={};
+    exps.forEach(exp=>{
+      const d=new Date(exp+"T12:00:00");
+      const key=d.toLocaleString("en-US",{month:"short",year:"numeric"});
+      if(!g[key])g[key]=[];
+      g[key].push(exp);
+    });
+    return g;
+  },[exps]);
+
+  // Columns: expirations up to and including selExp
+  const colExps = useMemo(()=>exps.filter(e=>e<=selExp).slice(0,14),[exps,selExp]);
+
+  // P&L matrix using Black-Scholes
+  const matrixRows = useMemo(()=>{
+    if(!availableStrikes.length||!selExp||!selStrike||premium<=0) return [];
+    const K=selStrike, sigma=iv, r=0.05;
+    const expDate=new Date(selExp+"T16:00:00");
+    const priceRows=availableStrikes
+      .filter(s=>spot>0?(s>=spot*0.78&&s<=spot*1.22):true)
+      .slice().reverse();
+    return priceRows.map(rowPrice=>{
+      const pct=spot>0?((rowPrice-spot)/spot*100).toFixed(1):"0.0";
+      const cols=colExps.map(exp=>{
+        const colDate=new Date(exp+"T16:00:00");
+        const T=Math.max((expDate-colDate)/(365*24*3600*1000),0);
+        const optVal=bsPrice(rowPrice,K,T,r,sigma,optType);
+        const raw=side==="buy"?(optVal-premium)*100:(premium-optVal)*100;
+        return Math.round(raw);
+      });
+      return{price:rowPrice,pct:parseFloat(pct),cols};
+    });
+  },[availableStrikes,colExps,selExp,selStrike,premium,iv,optType,side,spot]);
+
+  const atmRowIdx = useMemo(()=>{
+    if(!matrixRows.length||!spot) return -1;
+    let best=0,bestD=Infinity;
+    matrixRows.forEach((r,i)=>{const d=Math.abs(r.price-spot);if(d<bestD){bestD=d;best=i;}});
+    return best;
+  },[matrixRows,spot]);
+
+  const beRowIdx = useMemo(()=>{
+    if(!matrixRows.length||!breakeven) return -1;
+    let best=0,bestD=Infinity;
+    matrixRows.forEach((r,i)=>{const d=Math.abs(r.price-breakeven);if(d<bestD){bestD=d;best=i;}});
+    return best;
+  },[matrixRows,breakeven]);
+
+  const selExpColIdx = useMemo(()=>colExps.findIndex(e=>e===selExp),[colExps,selExp]);
+
+  // Snap typed strike to nearest valid
+  const snapStrike = (val)=>{
+    const n=parseFloat(val);
+    if(isNaN(n)||!availableStrikes.length) return;
+    const closest=availableStrikes.reduce((a,b)=>Math.abs(b-n)<Math.abs(a-n)?b:a);
+    setSelStrike(closest);
+    setStrikeInputVal(closest.toFixed(2));
+  };
+
+  const pnlBg = (v)=>{
+    if(v>150) return"rgba(0,212,170,.40)";
+    if(v>80)  return"rgba(0,212,170,.26)";
+    if(v>20)  return"rgba(0,212,170,.16)";
+    if(v>0)   return"rgba(0,212,170,.08)";
+    if(v>=-5) return"transparent";
+    if(v>-80) return"rgba(226,75,74,.10)";
+    if(v>-150)return"rgba(226,75,74,.20)";
+    if(v>-200)return"rgba(226,75,74,.32)";
+    return"rgba(226,75,74,.46)";
+  };
+  const pnlColor=(v)=>v>0?"#00d4aa":v<-5?"#ff6b6b":"#2a3a4a";
+
+  const fmtCell=(v,cost)=>{
+    if(viewMode==="dollar") return(v>0?"+":"")+v;
+    if(viewMode==="pct")    return(v>0?"+":"")+(v/cost*100).toFixed(0)+"%";
+    return(1+v/cost).toFixed(2)+"x";
+  };
+
+  const distFromATM = selStrike&&spot?(selStrike-spot).toFixed(2):"0.00";
+  const dte = selExp?Math.max(Math.ceil((new Date(selExp)-new Date())/(1000*60*60*24)),0):0;
+
+  return(
+    <div className="sim-wrap">
+      {/* ── LEFT PANEL ── */}
+      <div className="sim-left">
+
+        {/* Symbol search */}
+        <div>
+          <div className="sim-slbl">Symbol</div>
+          <div style={{display:"flex",gap:6}}>
+            <input className="finput" style={{textTransform:"uppercase",letterSpacing:1,fontSize:14,fontWeight:500,color:"#00d4aa"}}
+              value={searchInput} onChange={e=>setSearchInput(e.target.value.toUpperCase())}
+              onKeyDown={e=>e.key==="Enter"&&loadSym(searchInput)}
+              placeholder="AAPL, TSLA..."/>
+            <button className="btn bsm" onClick={()=>loadSym(searchInput)} disabled={loading} style={{flexShrink:0}}>{loading?"…":"↻"}</button>
+          </div>
+          {error&&<div style={{fontSize:10,color:"#ff4d6a",marginTop:4}}>{error}</div>}
+        </div>
+
+        {/* Strategy */}
+        <div>
+          <div className="sim-slbl">Strategy</div>
+          <select className="fsel" value={strategy} onChange={e=>setStrategy(e.target.value)} style={{width:"100%",fontSize:12}}>
+            {SIM_STRATEGIES.map(s=><option key={s} value={s}>{s}</option>)}
+          </select>
+        </div>
+
+        {/* Buy/Sell + Call/Put */}
+        <div>
+          <div className="sim-slbl">Direction & Type</div>
+          <div style={{display:"flex",gap:6}}>
+            <div className="toggle-group" style={{flex:1}}>
+              <button className="tgl" onClick={()=>setSide("buy")} style={{background:side==="buy"?"#00d4aa":"transparent",color:side==="buy"?"#080c10":"#5a7a9a",flex:1}}>Buy</button>
+              <button className="tgl" onClick={()=>setSide("sell")} style={{background:side==="sell"?"#ff4d6a":"transparent",color:side==="sell"?"#fff":"#5a7a9a",flex:1}}>Sell</button>
+            </div>
+            <div className="toggle-group" style={{flex:1}}>
+              <button className="tgl" onClick={()=>setOptType("call")} style={{background:optType==="call"?"#3a8fff":"transparent",color:optType==="call"?"#fff":"#5a7a9a",flex:1}}>Call</button>
+              <button className="tgl" onClick={()=>setOptType("put")} style={{background:optType==="put"?"#a78bfa":"transparent",color:optType==="put"?"#fff":"#5a7a9a",flex:1}}>Put</button>
+            </div>
+          </div>
+        </div>
+
+        {/* Strike selector */}
+        {availableStrikes.length>0&&(
+          <div>
+            <div className="sim-slbl">Strike</div>
+            <div className="sim-strike-box">
+              <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
+                <div className="sim-strike-big">${selStrike?.toFixed(2)||"—"}</div>
+                <div style={{display:"flex",flexDirection:"column",gap:2}}>
+                  <div style={{fontSize:8,color:"#3a5a7a",letterSpacing:1,textTransform:"uppercase"}}>Digitar</div>
+                  <input className="sim-strike-input" value={strikeInputVal}
+                    onChange={e=>setStrikeInputVal(e.target.value)}
+                    onBlur={e=>snapStrike(e.target.value)}
+                    onKeyDown={e=>e.key==="Enter"&&snapStrike(e.target.value)}/>
+                </div>
+              </div>
+              <div style={{fontSize:8,letterSpacing:1.5,textTransform:"uppercase",color:"#3a5a7a",marginBottom:5}}>Strikes disponíveis</div>
+              <div style={{overflowX:"auto",paddingBottom:3}}>
+                <div style={{display:"flex",gap:3,minWidth:"max-content"}}>
+                  {availableStrikes.map(s=>{
+                    const isAtm=spot>0&&s===availableStrikes.reduce((a,b)=>Math.abs(b-spot)<Math.abs(a-spot)?b:a);
+                    const isSel=s===selStrike;
+                    return(
+                      <button key={s} className={`sim-chip${isSel?" sel":""}${isAtm&&!isSel?" atm":""}`}
+                        onClick={()=>{setSelStrike(s);setStrikeInputVal(s.toFixed(2));}}>
+                        {s.toFixed(2)}{isAtm&&!isSel?" ◀":""}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+              <div style={{display:"flex",gap:12,marginTop:8,paddingTop:7,borderTop:"1px solid #1a2a3a",fontSize:10}}>
+                <span style={{color:"#3a5a7a"}}>ATM <span style={{color:"#c8d8e8"}}>${spot.toFixed(2)}</span></span>
+                <span style={{color:"#3a5a7a"}}>Strike <span style={{color:"#f5c842"}}>${(selStrike||0).toFixed(2)}</span></span>
+                <span style={{color:"#3a5a7a"}}>Dist <span style={{color:parseFloat(distFromATM)>=0?"#00d4aa":"#ff4d6a"}}>{parseFloat(distFromATM)>=0?"+":""}{distFromATM}</span></span>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Summary metrics */}
+        {premium>0&&(
+          <div>
+            <div className="sim-slbl">Resumo</div>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:5}}>
+              {[
+                ["Net "+(side==="buy"?"Debit":"Credit"),(side==="buy"?"-":"+")+`$${(premium*100).toFixed(0)}`,side==="buy"?"#ff4d6a":"#00d4aa"],
+                ["Max Loss",maxLoss===Infinity?"Unlimited":"$"+maxLoss.toFixed(0),"#ff4d6a"],
+                ["Max Profit",maxProfit===Infinity?"Unlimited":"$"+maxProfit.toFixed(0),"#00d4aa"],
+                ["Breakeven",`$${breakeven.toFixed(2)}`,"#f5c842"],
+              ].map(([l,v,c])=>(
+                <div key={l} className="sim-metric" style={{"--mt":c,"--mc":c}}>
+                  <div className="sim-metric-lbl">{l}</div>
+                  <div className="sim-metric-val">{v}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Probabilidades */}
+        {selOption&&(
+          <div>
+            <div className="sim-slbl">Probabilidades</div>
+            <div style={{background:"#080c10",border:"1px solid #1a2a3a",borderRadius:6,padding:"10px 11px"}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:7}}>
+                <div>
+                  <div style={{fontSize:9,color:"#3a5a7a",marginBottom:2}}>Chance of Profit</div>
+                  <div style={{fontFamily:"Syne,sans-serif",fontSize:18,fontWeight:800,color:"#3a8fff"}}>{(chanceOfProfit*100).toFixed(1)}%</div>
+                </div>
+                <div style={{textAlign:"right"}}>
+                  <div style={{fontSize:9,color:"#3a5a7a",marginBottom:2}}>Delta</div>
+                  <div style={{fontFamily:"Syne,sans-serif",fontSize:14,fontWeight:700,color:"#3a8fff"}}>{fmt(delta,3)}</div>
+                </div>
+              </div>
+              <div style={{height:4,background:"#1a2a3a",borderRadius:2,overflow:"hidden",marginBottom:8}}>
+                <div style={{height:"100%",width:`${chanceOfProfit*100}%`,background:"linear-gradient(90deg,#3a8fff,#00d4aa)",borderRadius:2}}/>
+              </div>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:5}}>
+                {[["Prob ITM",(probITM*100).toFixed(1)+"%","#3a8fff"],["Prob Touch",(probTouch*100).toFixed(1)+"%","#a78bfa"]].map(([l,v,c])=>(
+                  <div key={l} style={{background:"#0d1821",border:"1px solid #1a2a3a",borderRadius:5,padding:"6px 8px"}}>
+                    <div style={{fontSize:9,color:"#3a5a7a",marginBottom:2,letterSpacing:1}}>{l}</div>
+                    <div style={{fontSize:12,fontWeight:500,color:c}}>{v}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Greeks */}
+        {selOption&&(
+          <div>
+            <div className="sim-slbl" style={{display:"flex",alignItems:"center",gap:6}}>
+              Greeks
+              <span style={{fontSize:8,background:"#00d4aa15",border:"1px solid #00d4aa33",color:"#00d4aa",padding:"1px 5px",borderRadius:3,letterSpacing:.5}}>live</span>
+            </div>
+            <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:4}}>
+              {[["Δ","Delta",fmt(delta,3),"#3a8fff"],["Θ","Theta",fmt(theta,3),"#ff4d6a"],["Γ","Gamma",fmt(gamma,4),"#00d4aa"],["V","Vega",fmt(vega,3),"#a78bfa"]].map(([sym,name,val,c])=>(
+                <div key={name} style={{background:"#080c10",border:"1px solid #1a2a3a",borderRadius:5,padding:"6px 7px",textAlign:"center"}}>
+                  <div style={{fontSize:9,color:"#3a5a7a",marginBottom:2}}>{sym} {name}</div>
+                  <div style={{fontSize:11,fontWeight:500,color:c}}>{val}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Selected expiration info */}
+        {selExp&&premium>0&&(
+          <div style={{background:"#080c10",border:"1px solid #00d4aa33",borderRadius:6,padding:"9px 11px"}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+              <div style={{fontFamily:"Syne,sans-serif",fontSize:13,fontWeight:700,color:"#00d4aa"}}>{selExp}</div>
+              <div style={{fontSize:9,color:"#3a5a7a",background:"#0d1821",border:"1px solid #1a2a3a",borderRadius:4,padding:"2px 6px"}}>{dte} DTE</div>
+            </div>
+            <div style={{fontSize:10,color:"#3a5a7a",marginTop:3}}>
+              Prêmio: <span style={{color:"#c8d8e8"}}>${fmt(premium)} ask</span>
+              {iv>0&&<> &nbsp;·&nbsp; IV: <span style={{color:"#f5c842"}}>{(iv*100).toFixed(1)}%</span></>}
+            </div>
+          </div>
+        )}
+
+        {premium>0&&(
+          <button className="btn" style={{width:"100%",padding:9,fontSize:11,fontWeight:600}} onClick={()=>setShowQuickAdd(p=>!p)}>
+            {showQuickAdd?"✕ Cancelar":"+ Registrar Trade"}
+          </button>
+        )}
+      </div>
+
+      {/* ── RIGHT PANEL ── */}
+      <div className="sim-right">
+
+        {/* Expiration timeline */}
+        {exps.length>0&&(
+          <div className="sim-timeline">
+            <div style={{display:"flex",gap:0}}>
+              {Object.entries(groupedExps).map(([month,dates])=>(
+                <div key={month} style={{flexShrink:0}}>
+                  <div style={{fontSize:9,letterSpacing:1.5,textTransform:"uppercase",color:"#3a5a7a",textAlign:"center",borderRight:"1px solid #1a2a3a",padding:"0 10px 4px",marginBottom:4}}>{month}</div>
+                  <div style={{display:"flex",gap:3,padding:"0 6px 8px"}}>
+                    {dates.map(exp=>{
+                      const d=new Date(exp+"T12:00:00");
+                      const expDte=Math.max(Math.ceil((new Date(exp)-new Date())/(1000*60*60*24)),0);
+                      return(
+                        <button key={exp} className={`sim-exp-btn${selExp===exp?" sel":""}`} onClick={()=>loadChain(exp)}>
+                          {d.getDate()}
+                          <span style={{display:"block",fontSize:8,opacity:.7,marginTop:1,textAlign:"center"}}>{expDte}d</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Toolbar */}
+        {matrixRows.length>0&&(
+          <div className="sim-toolbar">
+            <div style={{fontSize:9,color:"#3a5a7a",letterSpacing:1.5,textTransform:"uppercase"}}>Exibir</div>
+            <div className="sim-view-group">
+              {[["dollar","P&L $"],["pct","P&L %"],["roi","ROI"]].map(([m,l])=>(
+                <button key={m} className={`sim-view-btn${viewMode===m?" sel":""}`} onClick={()=>setViewMode(m)}>{l}</button>
+              ))}
+            </div>
+            {breakeven>0&&<div style={{display:"flex",alignItems:"center",gap:5,fontSize:10,color:"#f5c842"}}>
+              <div style={{width:20,height:0,borderTop:"1px dashed #f5c842"}}/> BE ${breakeven.toFixed(2)}
+            </div>}
+            <div style={{display:"flex",alignItems:"center",gap:5,fontSize:10,color:"#00d4aa"}}>
+              <div style={{width:20,height:2,background:"#00d4aa33",boxShadow:"0 0 4px #00d4aa44"}}/> ATM ${spot.toFixed(2)}
+            </div>
+            <div style={{marginLeft:"auto",fontSize:9,color:"#3a5a7a"}}>Passe o mouse sobre qualquer célula</div>
+          </div>
+        )}
+
+        {/* P&L Matrix */}
+        {matrixRows.length>0?(
+          <div className="sim-matrix">
+            <table style={{width:"100%",borderCollapse:"collapse"}}>
+              <thead>
+                <tr>
+                  <th className="sim-th sp1">Preço</th>
+                  <th className="sim-th sp2">Chg%</th>
+                  {colExps.map((exp,ci)=>{
+                    const d=new Date(exp+"T12:00:00");
+                    const isSel=exp===selExp;
+                    return(
+                      <th key={exp} className={`sim-th${isSel?" sel-exp":""}`}>
+                        {d.toLocaleDateString("en-US",{month:"short",day:"numeric"})}{isSel?" ★":""}
+                      </th>
+                    );
+                  })}
+                </tr>
+              </thead>
+              <tbody>
+                {matrixRows.map((row,ri)=>{
+                  const isAtm=ri===atmRowIdx;
+                  const isBe=ri===beRowIdx&&ri!==atmRowIdx;
+                  const cost=premium*100;
+                  return(
+                    <tr key={row.price}
+                      className={isAtm?"sim-row-atm":isBe?"sim-row-be":""}
+                      style={{borderTop:isAtm?"1px solid #00d4aa22":isBe?"1px dashed #f5c84244":undefined,
+                              borderBottom:isAtm?"1px solid #00d4aa22":undefined}}>
+                      <td className="sim-td-price" style={{color:isAtm?"#fff":"#c8d8e8",fontWeight:isAtm?700:400,
+                          background:isAtm?"linear-gradient(90deg,#00d4aa08,transparent)":"",
+                          boxShadow:isAtm?"inset 3px 0 0 #00d4aa":"none"}}>
+                        ${row.price.toFixed(2)}
+                        {isAtm&&<span style={{fontSize:9,color:"#00d4aa",marginLeft:4}}>◀ ATM</span>}
+                        {isBe&&<span style={{fontSize:9,color:"#f5c842",background:"#f5c84215",border:"1px solid #f5c84244",borderRadius:3,padding:"1px 4px",marginLeft:4}}>BE</span>}
+                      </td>
+                      <td className="sim-td-pct" style={{color:row.pct>=0?"#00d4aa":"#ff4d6a"}}>
+                        {row.pct>=0?"+":""}{row.pct}%
+                      </td>
+                      {row.cols.map((v,ci)=>{
+                        const isSel=colExps[ci]===selExp;
+                        const exp=colExps[ci];
+                        const colLabel=new Date(exp+"T12:00:00").toLocaleDateString("en-US",{month:"short",day:"numeric"});
+                        return(
+                          <td key={ci} className="sim-td"
+                            style={{background:pnlBg(v),color:pnlColor(v),
+                              outline:isSel?"1px solid #00d4aa22":"none",outlineOffset:"-1px",
+                              fontWeight:Math.abs(v)>100?600:400}}
+                            onMouseEnter={e=>{
+                              setTooltip({price:row.price,pct:row.pct,date:colLabel,dollar:v,
+                                pctStr:(v/cost*100).toFixed(1),roi:(1+v/cost).toFixed(2)});
+                              setTipPos({x:e.clientX,y:e.clientY});
+                            }}
+                            onMouseLeave={()=>setTooltip(null)}
+                            onMouseMove={e=>setTipPos({x:e.clientX,y:e.clientY})}>
+                            {fmtCell(v,cost)}
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        ):(
+          <div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",color:"#3a5a7a",fontSize:12,flexDirection:"column",gap:8}}>
+            {loading?"Carregando dados...":sym?"Selecione um strike para ver o heatmap":"Digite um símbolo e pressione ↻ para começar"}
+          </div>
+        )}
+      </div>
+
+      {/* Hover Tooltip */}
+      {tooltip&&(
+        <div style={{position:"fixed",
+          left:tipPos.x+(tipPos.x>window.innerWidth-175?-170:14),
+          top:tipPos.y+(tipPos.y>window.innerHeight-175?-165:14),
+          zIndex:999,background:"#0d1821",border:"1px solid #1a2a3a",borderRadius:8,
+          padding:"10px 13px",boxShadow:"0 8px 32px rgba(0,0,0,.6)",
+          pointerEvents:"none",minWidth:150,
+        }}>
+          <div style={{fontSize:9,letterSpacing:1.5,textTransform:"uppercase",color:"#3a5a7a",marginBottom:5}}>{tooltip.date} · ${tooltip.price.toFixed(2)}</div>
+          <div style={{fontFamily:"Syne,sans-serif",fontSize:15,fontWeight:800,color:tooltip.dollar>=0?"#00d4aa":"#ff4d6a",marginBottom:6}}>
+            {tooltip.dollar>=0?"+":""}{viewMode==="dollar"?`$${tooltip.dollar}`:viewMode==="pct"?`${tooltip.pctStr}%`:`${tooltip.roi}x`}
+          </div>
+          <div style={{height:1,background:"#1a2a3a",margin:"5px 0"}}/>
+          {[["P&L $",(tooltip.dollar>=0?"+":"")+"$"+tooltip.dollar,tooltip.dollar>=0?"#00d4aa":"#ff4d6a"],
+            ["Retorno",(parseFloat(tooltip.pctStr)>=0?"+":"")+tooltip.pctStr+"%","#c8d8e8"],
+            ["ROI",tooltip.roi+"x","#c8d8e8"]].map(([l,v,c])=>(
+            <div key={l} style={{display:"flex",justifyContent:"space-between",gap:16,marginBottom:3,fontSize:11}}>
+              <span style={{color:"#5a7a9a"}}>{l}</span><span style={{fontWeight:600,color:c}}>{v}</span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Quick Add preview */}
+      {showQuickAdd&&sym&&premium>0&&(
+        <div style={{position:"fixed",bottom:20,right:80,zIndex:200,background:"#0d1821",border:"1px solid #00d4aa44",borderRadius:10,padding:"14px 16px",minWidth:210,boxShadow:"0 8px 32px rgba(0,0,0,.5)"}}>
+          <div style={{fontFamily:"Syne,sans-serif",fontSize:13,fontWeight:700,color:"#fff",marginBottom:10}}>
+            {sym} <span style={{fontSize:11,color:"#00d4aa",fontFamily:"DM Mono,monospace"}}>{strategy}</span>
+          </div>
+          {[["Strike",`$${(selStrike||0).toFixed(2)}`],["Expiração",selExp],
+            ["Prêmio",(side==="buy"?"-":"+")+`$${(premium*100).toFixed(0)}`],
+            ["Breakeven",`$${breakeven.toFixed(2)}`]].map(([l,v])=>(
+            <div key={l} style={{display:"flex",justifyContent:"space-between",marginBottom:5,fontSize:11}}>
+              <span style={{color:"#5a7a9a"}}>{l}</span><span style={{color:"#c8d8e8",fontWeight:500}}>{v}</span>
+            </div>
+          ))}
+          <div style={{display:"flex",gap:6,marginTop:10}}>
+            <button className="btn bneutral bsm" style={{flex:1}} onClick={()=>setShowQuickAdd(false)}>✕</button>
+            <button className="btn bsm" style={{flex:2}} onClick={()=>{
+              setShowQuickAdd(false);
+              onSaveManualTrade&&onSaveManualTrade(sym,{
+                date:new Date().toISOString().slice(0,10),
+                action:side.toUpperCase(),
+                strike:selStrike,expiration:selExp,
+                premium,contracts:1,status:"open",option_type:optType,
+              });
+            }}>Registrar Trade →</button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Home ──────────────────────────────────────────────────────────────────────
 function Home({ assets, onSelectAsset, onShowPositions, onSaveManualTrade }) {
-  const [searchInput, setSearchInput] = useState("NDAQ");
-  const [sym, setSym] = useState("NDAQ");
-  const [quote, setQuote] = useState(null);
-  const [exps, setExps] = useState([]);
-  const [selExp, setSelExp] = useState("");
-  const [chain, setChain] = useState([]);
-  const [side, setSide] = useState("buy");
-  const [optType, setOptType] = useState("call");
-  const [strikeInput, setStrikeInput] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
   const [stratFilter, setStratFilter] = useState("all");
   const [sortBy, setSortBy] = useState("expiration");
-  const [showManualTrade, setShowManualTrade] = useState(false);
 
   const totals = useMemo(()=>assets.filter(a=>a.active).map(a=>{
     const leaps = a.leaps||[];
@@ -941,35 +1486,6 @@ function Home({ assets, onSelectAsset, onShowPositions, onSaveManualTrade }) {
       return 0;
     }),[totals,stratFilter,sortBy]);
 
-  const doSearch=useCallback(async(ticker)=>{
-    const s=(ticker||searchInput).trim().toUpperCase();if(!s)return;
-    setLoading(true);setError(null);setSym(s);setQuote(null);setChain([]);
-    try{
-      const e=await fetchExpirations(s);
-      if(!e||!e.length){setError(`No options found for "${s}"`);setLoading(false);return;}
-      setExps(e);setSelExp(e[0]);
-      const [q,ch]=await Promise.all([fetchQuote(s),fetchOptionChain(s,e[0])]);
-      setQuote(q);setChain(ch);
-      if(q?.last)setStrikeInput(q.last.toFixed(1));
-    }catch{setError("Error fetching data.");}
-    setLoading(false);
-  },[searchInput]);
-
-  useEffect(()=>{ doSearch("NDAQ"); },[]);
-
-  const loadChain=async(exp)=>{setSelExp(exp);setLoading(true);try{const ch=await fetchOptionChain(sym,exp);setChain(ch);}catch{}setLoading(false)};
-  const etfPrice=quote?.last||0;
-  const strike=parseFloat(strikeInput)||etfPrice;
-  const filteredChain=chain.filter(o=>o.option_type===optType).sort((a,b)=>a.strike-b.strike);
-  const closestOpt=filteredChain.reduce((a,b)=>Math.abs(b.strike-strike)<Math.abs(a.strike-strike)?b:a,filteredChain[0]||{});
-  const premium=closestOpt?.ask||closestOpt?.last||0;
-  const breakeven=optType==="call"?(side==="buy"?strike+premium:strike-premium):(side==="buy"?strike-premium:strike+premium);
-  const maxLoss=side==="buy"?("$"+(premium*100).toFixed(0)):optType==="call"?"Unlimited":("$"+((strike-premium)*100).toFixed(0));
-  const maxProfit=side==="buy"?(optType==="call"?"Unlimited":("$"+((strike-premium)*100).toFixed(0))):("$"+(premium*100).toFixed(0));
-  const priceRows=filteredChain
-    .filter(o=>etfPrice>0?o.strike>=etfPrice*0.85&&o.strike<=etfPrice*1.15:true)
-    .map(o=>o.strike)
-    .sort((a,b)=>b-a);
   return (
     <div className="main fade-in">
       {/* KPI Cards */}
@@ -1120,105 +1636,7 @@ function Home({ assets, onSelectAsset, onShowPositions, onSaveManualTrade }) {
         <div style={{fontSize:11,letterSpacing:2,textTransform:"uppercase",color:"#3a5a7a"}}>Simulator</div>
         <div style={{flex:1,height:1,background:"#1a2a3a"}}/>
       </div>
-      <div style={{display:"flex",gap:12,marginBottom:16,alignItems:"center",flexWrap:"wrap"}}>
-        <input className="finput" style={{maxWidth:150,fontSize:14,letterSpacing:1,textTransform:"uppercase"}} placeholder="AAPL, TSLA..."
-          value={searchInput} onChange={e=>setSearchInput(e.target.value.toUpperCase())} onKeyDown={e=>e.key==="Enter"&&doSearch()}/>
-        <button className="btn" onClick={()=>doSearch()} disabled={loading} style={{padding:"8px 18px"}}>{loading?"Searching...":"Search"}</button>
-        <div className="toggle-group">
-          <button className="tgl" onClick={()=>setSide("buy")} style={{background:side==="buy"?"#00d4aa":"transparent",color:side==="buy"?"#080c10":"#5a7a9a"}}>Buy</button>
-          <button className="tgl" onClick={()=>setSide("sell")} style={{background:side==="sell"?"#ff4d6a":"transparent",color:side==="sell"?"#fff":"#5a7a9a"}}>Sell</button>
-        </div>
-        <div className="toggle-group">
-          <button className="tgl" onClick={()=>setOptType("call")} style={{background:optType==="call"?"#3a8fff":"transparent",color:optType==="call"?"#fff":"#5a7a9a"}}>Call</button>
-          <button className="tgl" onClick={()=>setOptType("put")} style={{background:optType==="put"?"#a78bfa":"transparent",color:optType==="put"?"#fff":"#5a7a9a"}}>Put</button>
-        </div>
-        {error&&<span style={{fontSize:11,color:"#ff4d6a"}}>{error}</span>}
-      </div>
-
-      {sym&&(
-        <>
-          {quote&&(
-            <div className="pbar" style={{marginBottom:14,marginLeft:0,marginRight:0}}>
-              <div className="tlbl" style={{color:"#00d4aa"}}>{sym}</div>
-              <div className="dvdr"/>
-              <div style={{fontFamily:"Syne",fontSize:24,fontWeight:800,color:"#fff"}}>${fmt(quote.last||0)}</div>
-              <div className="dvdr"/>
-              <div className="sml">open <span>${quote.open||"—"}</span></div>
-              <div className="dvdr"/>
-              <div className="sml">high <span style={{color:"#00d4aa"}}>${quote.high||"—"}</span></div>
-              <div className="dvdr"/>
-              <div className="sml">low <span style={{color:"#ff4d6a"}}>${quote.low||"—"}</span></div>
-              <div className="dvdr"/>
-              <div className="sml">vol <span>{quote.volume?.toLocaleString()||"—"}</span></div>
-            </div>
-          )}
-          <div style={{display:"flex",gap:12,marginBottom:16,alignItems:"center",flexWrap:"wrap"}}>
-            <div style={{fontSize:11,letterSpacing:1.5,textTransform:"uppercase",color:"#5a7a9a"}}>Strike:</div>
-            <input className="finput" type="number" step="0.5" style={{width:120,fontSize:18,fontFamily:"Syne",fontWeight:700,color:"#f5c842",textAlign:"center"}}
-              value={strikeInput} onChange={e=>setStrikeInput(e.target.value)}/>
-            <div style={{fontSize:12,color:"#5a7a9a"}}>Premium: <span style={{color:"#00d4aa",fontWeight:600}}>${fmt(premium)}</span></div>
-            <div style={{marginLeft:"auto",display:"flex",gap:6,flexWrap:"wrap"}}>
-              {exps.slice(0,6).map((e)=>(
-                <button key={e} onClick={()=>loadChain(e)} style={{background:selExp===e?"#00d4aa":"#0d1821",border:`1px solid ${selExp===e?"#00d4aa":"#1a2a3a"}`,color:selExp===e?"#080c10":"#5a7a9a",padding:"5px 12px",borderRadius:20,cursor:"pointer",fontFamily:"DM Mono,monospace",fontSize:11,whiteSpace:"nowrap"}}>{e}</button>
-              ))}
-            </div>
-          </div>
-          <div className="cards" style={{gridTemplateColumns:"repeat(4,1fr)",marginBottom:16}}>
-            {[[side==="buy"?"Net Debit":"Net Credit",side==="buy"?`-$${(premium*100).toFixed(0)}`:`+$${(premium*100).toFixed(0)}`,side==="buy"?"#ff4d6a":"#00d4aa"],["Max Loss",maxLoss,"#ff4d6a"],["Max Profit",maxProfit,"#00d4aa"],["Breakeven",`$${fmt(breakeven)}`,"#f5c842"]].map(([l,v,c])=>(
-              <div className="card" key={l} style={{"--top":c}}><div className="clbl">{l}</div><div className="cval" style={{color:c,fontSize:18}}>{v}</div></div>
-            ))}
-          </div>
-          {priceRows.length>0&&(
-            <div className="sec">
-              <div className="sechdr"><div className="sectitle">P&L by price and expiration</div><button className="btn" onClick={()=>setShowManualTrade(true)}>+ Add to portfolio</button></div>
-              <div style={{overflowX:"auto"}}>
-                <table>
-                  <thead><tr><th>Price</th><th>%</th>{exps.slice(0,6).map(e=><th key={e} style={{textAlign:"center"}}>{e}</th>)}</tr></thead>
-                  <tbody>
-                    {priceRows.map(price=>{
-                      const ppct=((price-etfPrice)/etfPrice*100).toFixed(1);
-                      const isCur=price===filteredChain.reduce((a,b)=>Math.abs(b.strike-etfPrice)<Math.abs(a.strike-etfPrice)?b:a,filteredChain[0]||{strike:0}).strike;
-                      // Get real option data for this strike
-                      const rowOpt=chain.filter(o=>o.option_type===optType).find(o=>o.strike===price);
-                      const rowPrem=rowOpt?.ask||rowOpt?.last||0;
-                      return (
-                        <tr key={price} style={{background:isCur?"#ffffff08":undefined}}>
-                          <td style={{color:isCur?"#fff":"#c8d8e8",fontWeight:isCur?700:400}}>${price.toFixed(2)}{isCur&&<span style={{marginLeft:5,fontSize:9,color:"#00d4aa"}}>◀ ATM</span>}</td>
-                          <td style={{color:parseFloat(ppct)>=0?"#00d4aa":"#ff4d6a",fontSize:11}}>{parseFloat(ppct)>=0?"+":""}{ppct}%</td>
-                          {exps.slice(0,6).map((e,ei)=>{
-                            const intrinsic=optType==="call"?Math.max(price-price,0):Math.max(price-price,0);
-                            const tv=Math.max(rowPrem*(1-ei/7),0);
-                            const optVal=Math.max(intrinsic,tv*0.2);
-                            const pnl=side==="buy"?Math.round((optVal-rowPrem)*100):Math.round((rowPrem-optVal)*100);
-                            const intensity=Math.min(Math.abs(pnl)/300,1);
-                            const bg=pnl>0?`rgba(0,212,170,${intensity*0.35})`:pnl<0?`rgba(226,75,74,${intensity*0.35})`:"transparent";
-                            return <td key={e} style={{textAlign:"center",background:bg,color:pnl>0?"#00d4aa":pnl<0?"#ff6b6b":"#5a7a9a",fontWeight:Math.abs(pnl)>100?600:400}}>{pnl>0?"+":""}{pnl}</td>;
-                          })}
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
-        </>
-      )}
-      {!sym&&loading&&(<div style={{textAlign:"center",padding:"20px 0",color:"#3a5a7a",fontSize:12}}>Loading...</div>)}
-      {showManualTrade&&(
-        <ManualTradeModal
-          onClose={()=>setShowManualTrade(false)}
-          onSave={onSaveManualTrade}
-          defaultData={{
-            symbol:     sym,
-            side,
-            optType,
-            strike:     closestOpt?.strike,
-            expiration: selExp,
-            premium,
-          }}
-        />
-      )}
+      <SimulatorPanel onSaveManualTrade={onSaveManualTrade}/>
     </div>
   );
 }
