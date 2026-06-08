@@ -452,10 +452,15 @@ function UnifiedTradeModal({ title="Add Trade", initial={}, asset=null, isEdit=f
 
   async function handleSave(){
     if(!form.strike||!form.expiration||!form.premium) return;
-    const d={...form,strike:parseFloat(form.strike),premium:parseFloat(form.premium),
-      contracts:Math.max(1,parseInt(form.contracts)||1),fees:parseFloat(form.fees)||0,
+    const d={
+      date:form.date, action:form.action, option_type:form.option_type,
+      strike:parseFloat(form.strike), expiration:form.expiration,
+      premium:parseFloat(form.premium), contracts:Math.max(1,parseInt(form.contracts)||1),
+      fees:parseFloat(form.fees)||0, notes:form.notes||null,
+      status:form.status||"open",
       trade_group:form.action==="SELL"?(form.trade_group||null):null,
-      typeLabel};
+      typeLabel,
+    };
     if(!isEdit&&isLeapEntry&&onSaveLeap){
       await onSaveLeap({id:`${asset?.id||"t"}_${Date.now()}`,date:d.date,strike:d.strike,expiration:d.expiration,cost:d.premium,contracts:d.contracts});
       onClose(); return;
@@ -2739,7 +2744,9 @@ function App() {
         let migrated=false;
         for(const a of data){
           for(const t of a.trades){
-            if(t.action==="BUY"&&t.status==="open"&&t.expiration&&t.date&&
+            const noMigrate = (() => { try { return localStorage.getItem(`no-migrate-${a.id}-${t.id}`)==='1'; } catch(e){ return false; } })();
+            if(!noMigrate&&t.action==="BUY"&&t.status==="open"&&t.expiration&&t.date&&
+              !t.strategy&&
               (new Date(t.expiration)-new Date(t.date))>180*24*60*60*1000){
               await addLeap(a.id,{id:`${a.id}_${Date.now()}`,date:t.date,strike:parseFloat(t.strike),expiration:t.expiration,cost:parseFloat(t.premium),contracts:parseInt(t.contracts||1)});
               await deleteTrade(t.id);
@@ -2855,24 +2862,23 @@ function App() {
   };
 
   const handleUpdateTrade = async (assetId, tradeId, changes) => {
-    try {
-      await updateTrade(tradeId, changes);
-      setAssets(p=>p.map(a=>a.id===assetId?{...a,trades:a.trades.map(t=>t.id===tradeId?{...t,...changes}:t)}:a));
-    } catch(e){ console.error(e); }
+    const safe={date:changes.date,action:changes.action,option_type:changes.option_type,
+      strike:changes.strike,expiration:changes.expiration,premium:changes.premium,
+      contracts:changes.contracts,status:changes.status||"open",
+      fees:changes.fees??0,notes:changes.notes??null,
+      trade_group:changes.trade_group??null,strategy:changes.strategy??null};
+    await updateTrade(tradeId, safe);
+    setAssets(p=>p.map(a=>a.id===assetId?{...a,trades:a.trades.map(t=>t.id===tradeId?{...t,...safe}:t)}:a));
   };
 
   const handleDeleteLeap = async (assetId, leapId) => {
-    try {
-      await deleteLeap(leapId);
-      setAssets(p=>p.map(a=>a.id===assetId?{...a,leaps:a.leaps.filter(l=>l.id!==leapId)}:a));
-    } catch(e){ console.error(e); }
+    await deleteLeap(leapId);
+    setAssets(p=>p.map(a=>a.id===assetId?{...a,leaps:a.leaps.filter(l=>l.id!==leapId)}:a));
   };
 
   const handleUpdateLeap = async (assetId, leapId, changes) => {
-    try {
-      await updateLeap(leapId, changes);
-      setAssets(p=>p.map(a=>a.id===assetId?{...a,leaps:a.leaps.map(l=>l.id===leapId?{...l,...changes}:l)}:a));
-    } catch(e){ console.error(e); }
+    await updateLeap(leapId, changes);
+    setAssets(p=>p.map(a=>a.id===assetId?{...a,leaps:a.leaps.map(l=>l.id===leapId?{...l,...changes}:l)}:a));
   };
 
   const handleDeleteTrade = async (assetId, tradeId) => {
@@ -2982,20 +2988,27 @@ function App() {
           asset={editTrade.asset}
           isEdit={true}
           onSave={async(changes)=>{
-            const wasLeap=editTrade.r.isLeap, nowLeap=changes.typeLabel==="LEAP";
-            if(wasLeap&&nowLeap){
-              await handleUpdateLeap(editTrade.r.assetId,editTrade.r.id,{date:changes.date,strike:changes.strike,expiration:changes.expiration,cost:changes.premium,contracts:changes.contracts});
-            } else if(wasLeap&&!nowLeap){
-              await handleDeleteLeap(editTrade.r.assetId,editTrade.r.id);
-              await handleSaveTrade(editTrade.r.assetId,{date:changes.date,action:changes.action,option_type:changes.option_type,strike:changes.strike,expiration:changes.expiration,premium:changes.premium,contracts:changes.contracts,status:"open",fees:changes.fees||0,notes:changes.notes||null,trade_group:changes.trade_group||null});
-            } else if(!wasLeap&&nowLeap){
-              await handleDeleteTrade(editTrade.r.assetId,editTrade.r.id);
-              await handleSaveLeap(editTrade.r.assetId,{id:`${editTrade.r.assetId}_${Date.now()}`,date:changes.date,strike:changes.strike,expiration:changes.expiration,cost:changes.premium,contracts:changes.contracts});
-            } else {
-              await handleUpdateTrade(editTrade.r.assetId,editTrade.r.id,changes);
+            try{
+              const wasLeap=editTrade.r.isLeap, nowLeap=changes.typeLabel==="LEAP";
+              if(wasLeap&&nowLeap){
+                await updateLeap(editTrade.r.id,{date:changes.date,strike:changes.strike,expiration:changes.expiration,cost:changes.premium,contracts:changes.contracts});
+              } else if(wasLeap&&!nowLeap){
+                await deleteLeap(editTrade.r.id);
+                const newT=await addTrade(editTrade.r.assetId,{date:changes.date,action:changes.action,option_type:changes.option_type,strike:changes.strike,expiration:changes.expiration,premium:changes.premium,contracts:changes.contracts,status:"open",fees:changes.fees||0,notes:changes.notes||null,trade_group:changes.trade_group||null,strategy:changes.typeLabel});
+                try{if(newT?.id)localStorage.setItem(`no-migrate-${editTrade.r.assetId}-${newT.id}`,'1');}catch(e){}
+              } else if(!wasLeap&&nowLeap){
+                await deleteTrade(editTrade.r.id);
+                await addLeap(editTrade.r.assetId,{id:`${editTrade.r.assetId}_${Date.now()}`,date:changes.date,strike:changes.strike,expiration:changes.expiration,cost:changes.premium,contracts:changes.contracts});
+              } else {
+                await updateTrade(editTrade.r.id,{date:changes.date,action:changes.action,option_type:changes.option_type,strike:changes.strike,expiration:changes.expiration,premium:changes.premium,contracts:changes.contracts,status:changes.status||"open",fees:changes.fees??0,notes:changes.notes??null,trade_group:changes.trade_group??null});
+              }
+              await reloadAssets();
+              showToast(`Position updated: ${editTrade.r.ticker}`);
+              setEditTrade(null);
+            }catch(e){
+              console.error("edit save error:",e);
+              showToast(`Save failed: ${e?.message||e?.code||String(e)}`,false);
             }
-            showToast(`Position updated: ${editTrade.r.ticker}`);
-            setEditTrade(null);
           }}
           onClose={()=>setEditTrade(null)}
         />

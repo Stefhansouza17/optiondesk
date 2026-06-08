@@ -103,7 +103,7 @@ function extendedTradePayload(assetId, trade) {
     fees:        trade.fees        ?? 0,
     notes:       trade.notes       ?? null,
     tags:        trade.tags        ?? null,
-    trade_group: trade.tradeGroup  ?? null,
+    trade_group: trade.trade_group ?? trade.tradeGroup ?? null,
     strategy:    trade.strategy    ?? null,
   };
 }
@@ -145,7 +145,15 @@ export async function addTrade(assetId, trade) {
 
 export async function updateTrade(id, changes) {
   const { error } = await supabase.from('trades').update(changes).eq('id', id);
-  if (error) throw error;
+  if (!error) return;
+  if (error.code === '42703' || error.message?.toLowerCase().includes('column')) {
+    // Extended columns missing — retry with only core columns
+    const {option_type, fees, notes, tags, trade_group, strategy, ...core} = changes;
+    const { error: e2 } = await supabase.from('trades').update(core).eq('id', id);
+    if (e2) throw e2;
+  } else {
+    throw error;
+  }
 }
 
 export async function deleteTrade(id) {
