@@ -1318,16 +1318,6 @@ function SimulatorPanel({ onSaveManualTrade }) {
   const gamma    = selOption?.greeks?.gamma||0;
   const vega     = selOption?.greeks?.vega||0;
 
-  const thetaScore = useMemo(()=>{
-    if(!selStrike||!activePremium||!dte||!theta||!delta) return null;
-    const thetaEff  = Math.min(Math.abs(theta)/Math.max(activePremium,0.01)/0.03,1);
-    const dteS      = Math.exp(-Math.pow((dte-33)/18,2));
-    const deltaS    = Math.exp(-Math.pow((Math.abs(delta)-0.27)/0.15,2));
-    const ivS       = Math.min(iv/0.35,1);
-    const dist      = activeSpot>0?Math.abs(selStrike-activeSpot)/activeSpot:0;
-    const distS     = Math.exp(-Math.pow((dist-0.05)/0.04,2));
-    return Math.round((thetaEff*0.35+dteS*0.25+deltaS*0.20+ivS*0.15+distS*0.10)*100);
-  },[selStrike,activePremium,dte,theta,delta,iv,activeSpot]);
 
   // Combined payoff across all legs (at expiration) — declared early so breakeven/maxProfit can use it
   const combinedPnlAt = useCallback((price)=>legs.reduce((sum,leg)=>{
@@ -1501,6 +1491,17 @@ function SimulatorPanel({ onSaveManualTrade }) {
 
   const distFromATM = selStrike&&spot?(selStrike-spot).toFixed(2):"0.00";
   const dte = selExp?Math.max(Math.ceil((new Date(selExp)-new Date())/(1000*60*60*24)),0):0;
+
+  const thetaScore = useMemo(()=>{
+    if(!selStrike||!activePremium||!dte||!theta||!delta) return null;
+    const thetaEff = Math.min(Math.abs(theta)/Math.max(activePremium,0.01)/0.03,1);
+    const dteS     = Math.exp(-Math.pow((dte-33)/18,2));
+    const deltaS   = Math.exp(-Math.pow((Math.abs(delta)-0.27)/0.15,2));
+    const ivS      = Math.min(iv/0.35,1);
+    const dist     = activeSpot>0?Math.abs(selStrike-activeSpot)/activeSpot:0;
+    const distS    = Math.exp(-Math.pow((dist-0.05)/0.04,2));
+    return Math.round((thetaEff*0.35+dteS*0.25+deltaS*0.20+ivS*0.15+distS*0.10)*100);
+  },[selStrike,activePremium,dte,theta,delta,iv,activeSpot]);
 
   return(
     <div className="sim-wrap">
