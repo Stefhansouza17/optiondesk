@@ -1122,20 +1122,16 @@ function AssetDashboard({ asset, onClose, onSaveTrade, onUpdateTrade, onDeleteTr
 }
 
 // ── Payoff Chart ─────────────────────────────────────────────────────────────
-function PayoffChart({ spot, strike, premium, breakeven, optType, side }) {
-  if (!spot || !strike || premium <= 0) return null;
+function PayoffChart({ spot, pnlAt, breakeven, singleLeg }) {
+  if (!spot || !pnlAt) return null;
+  const isUnlimited = singleLeg?.side==="buy" && singleLeg?.optType==="call";
+  const isUnlimitedLoss = singleLeg?.side==="sell" && singleLeg?.optType==="call";
   const W = 600, H = 185;
   const PAD = { l: 44, r: 18, t: 28, b: 26 };
   const cW = W - PAD.l - PAD.r, cH = H - PAD.t - PAD.b;
   const pMin = spot * 0.76, pMax = spot * 1.24;
 
-  const pnlAt = p => {
-    const intr = optType === "call" ? Math.max(p - strike, 0) : Math.max(strike - p, 0);
-    const raw = (intr - premium) * 100;
-    return side === "buy" ? raw : -raw;
-  };
-
-  const absMax = Math.max(Math.abs(pnlAt(pMax)), Math.abs(pnlAt(pMin)), premium * 100) * 1.3;
+  const absMax = Math.max(Math.abs(pnlAt(pMax)), Math.abs(pnlAt(pMin)), 10) * 1.3;
   const yMin = -absMax, yMax = absMax;
   const xOf = p => PAD.l + ((p - pMin) / (pMax - pMin)) * cW;
   const yOf = v => PAD.t + ((yMax - v) / (yMax - yMin)) * cH;
@@ -1152,10 +1148,8 @@ function PayoffChart({ spot, strike, premium, breakeven, optType, side }) {
   for (let v = Math.ceil(yMin / step) * step; v <= yMax + 0.01; v += step) gridVals.push(Math.round(v));
 
   const xLabels = Array.from({ length: 7 }, (_, i) => pMin + (i / 6) * (pMax - pMin));
-  const uid = strike + "-" + premium.toFixed(2);
+  const uid = spot.toFixed(0) + "-" + (breakeven||0).toFixed(0);
   const beVisible = breakeven > pMin && breakeven < pMax;
-  const isUnlimited = optType === "call" && side === "buy";
-  const isUnlimitedLoss = optType === "call" && side === "sell";
 
   const clampLabel = (x, w) => Math.min(Math.max(x, PAD.l + w / 2), W - PAD.r - w / 2);
 
@@ -1204,7 +1198,6 @@ function PayoffChart({ spot, strike, premium, breakeven, optType, side }) {
       <polyline points={curvePts} fill="none" stroke="#00d4aa" strokeWidth={2} strokeLinejoin="round" />
 
       {/* Annotations */}
-      {side === "buy" && <text x={PAD.l + 8} y={Math.min(yOf(-premium * 100) - 5, H - PAD.b - 4)} fontSize={8.5} fill="#ff6b6b99" fontFamily="DM Mono,monospace">Max loss: -${(premium * 100).toFixed(0)}</text>}
       {isUnlimited && <text x={W - PAD.r - 6} y={PAD.t + 18} textAnchor="end" fontSize={9} fill="#00d4aa66" fontFamily="DM Mono,monospace">Unlimited profit ↗</text>}
       {isUnlimitedLoss && <text x={W - PAD.r - 6} y={PAD.t + 18} textAnchor="end" fontSize={9} fill="#ff6b6b66" fontFamily="DM Mono,monospace">Unlimited risk ↗</text>}
 
@@ -1221,15 +1214,26 @@ function PayoffChart({ spot, strike, premium, breakeven, optType, side }) {
 function SimulatorPanel({ onSaveManualTrade }) {
   const [searchInput, setSearchInput] = useState("IBIT");
   const [sym, setSym]         = useState("");
-  const [side, setSide]       = useState("buy");
-  const [optType, setOptType] = useState("call");
-  const [strategy, setStrategy] = useState("");
-  const [exps, setExps]       = useState([]);
+  const [legs, setLegs] = useState([{id:1,side:"buy",optType:"call",strike:null,strikeInput:"",customPremium:null,premInput:""}]);
+  const updateLeg = (id,patch) => setLegs(p=>p.map(l=>l.id===id?{...l,...patch}:l));
+  const primaryLeg = legs[0];
+  // Aliases + wrapper setters — all downstream code stays unchanged
+  const side    = primaryLeg.side;
+  const optType = primaryLeg.optType;
+  const selStrike = primaryLeg.strike;
+  const customPremium = primaryLeg.customPremium;
+  const premiumInput  = primaryLeg.premInput;
+  const strikeInputVal = primaryLeg.strikeInput;
+  const setSide           = (v) => updateLeg(primaryLeg.id, {side:v});
+  const setOptType        = (v) => updateLeg(primaryLeg.id, {optType:v});
+  const setSelStrike      = (v) => updateLeg(primaryLeg.id, {strike:v});
+  const setStrikeInputVal = (v) => updateLeg(primaryLeg.id, {strikeInput:v});
+  const setCustomPremium  = (v) => updateLeg(primaryLeg.id, {customPremium:v});
+  const setPremiumInput   = (v) => updateLeg(primaryLeg.id, {premInput:v});
+  const [exps, setExps]   = useState([]);
   const [selExp, setSelExp]   = useState("");
   const [chain, setChain]     = useState([]);
   const [quote, setQuote]     = useState(null);
-  const [selStrike, setSelStrike] = useState(null);
-  const [strikeInputVal, setStrikeInputVal] = useState("");
   const [viewMode, setViewMode] = useState("dollar");
   const [loading, setLoading] = useState(false);
   const [error, setError]     = useState(null);
@@ -1240,8 +1244,6 @@ function SimulatorPanel({ onSaveManualTrade }) {
   const [qaExp,       setQaExp]         = useState("");
   const [tooltip, setTooltip] = useState(null);
   const [tipPos, setTipPos]   = useState({x:0,y:0});
-  const [customPremium, setCustomPremium] = useState(null);
-  const [premiumInput, setPremiumInput]   = useState("");
   const [simSpot, setSimSpot]             = useState(null);
   const [simSpotInput, setSimSpotInput]   = useState("");
 
@@ -1253,6 +1255,36 @@ function SimulatorPanel({ onSaveManualTrade }) {
     [chain, optType]
   );
   const availableStrikes = useMemo(()=>filteredChain.map(o=>o.strike),[filteredChain]);
+
+  // Multi-leg helpers
+  const getLegStrikes = useCallback((leg)=>
+    [...new Set(chain.filter(o=>o.option_type===leg.optType).map(o=>o.strike))].sort((a,b)=>a-b),
+    [chain]
+  );
+  const getLegOption  = useCallback((leg)=>chain.find(o=>o.option_type===leg.optType&&o.strike===leg.strike),[chain]);
+  const getLegPremium = useCallback((leg)=>{
+    if(leg.customPremium!==null) return leg.customPremium;
+    const o=getLegOption(leg); return o?.ask||o?.last||0;
+  },[getLegOption]);
+  const getLegIV = useCallback((leg)=>{
+    const o=getLegOption(leg); return Math.max(o?.greeks?.smv_vol||0.3,0.05);
+  },[getLegOption]);
+
+  const addLeg = ()=>{
+    const last=legs[legs.length-1];
+    const newSide=last.side==="buy"?"sell":"buy";
+    const stk=getLegStrikes({optType:last.optType});
+    const atm=stk.length&&spot?stk.reduce((a,b)=>Math.abs(b-spot)<Math.abs(a-spot)?b:a):null;
+    setLegs(p=>[...p,{id:Date.now(),side:newSide,optType:last.optType,strike:atm,strikeInput:atm?.toFixed(2)||"",customPremium:null,premInput:""}]);
+  };
+
+  const snapStrikeLeg=(id,val)=>{
+    const n=parseFloat(val); if(isNaN(n)) return;
+    const leg=legs.find(l=>l.id===id); if(!leg) return;
+    const stk=getLegStrikes(leg); if(!stk.length) return;
+    const c=stk.reduce((a,b)=>Math.abs(b-n)<Math.abs(a-n)?b:a);
+    updateLeg(id,{strike:c,strikeInput:c.toFixed(2)});
+  };
 
   // Auto-select ATM when chain changes
   useEffect(()=>{
@@ -1286,19 +1318,27 @@ function SimulatorPanel({ onSaveManualTrade }) {
   const vega     = selOption?.greeks?.vega||0;
 
   const breakeven = useMemo(()=>{
-    if(!selStrike||!activePremium) return 0;
-    if(optType==="call") return side==="buy"?selStrike+activePremium:selStrike-activePremium;
-    return side==="buy"?selStrike-activePremium:selStrike+activePremium;
-  },[selStrike,activePremium,optType,side]);
+    if(legs.length===1&&selStrike&&activePremium){
+      if(optType==="call") return side==="buy"?selStrike+activePremium:selStrike-activePremium;
+      return side==="buy"?selStrike-activePremium:selStrike+activePremium;
+    }
+    // Multi-leg: find first zero crossing
+    for(let i=1;i<priceSamples.length;i++){
+      const prev=payoffSamples[i-1],curr=payoffSamples[i];
+      if((prev<0&&curr>=0)||(prev>0&&curr<=0)) return (priceSamples[i-1]+priceSamples[i])/2;
+    }
+    return 0;
+  },[legs,selStrike,activePremium,optType,side,priceSamples,payoffSamples]);
 
-  const maxLoss   = side==="buy"?activePremium*100:(optType==="call"?Infinity:(selStrike-activePremium)*100);
-  const maxProfit = side==="buy"?(optType==="call"?Infinity:(selStrike-activePremium)*100):activePremium*100;
+  const maxProfit = useMemo(()=>{ if(!payoffSamples.length) return 0; const m=Math.max(...payoffSamples); const rising=payoffSamples.slice(-5); return rising[4]>rising[0]?Infinity:m; },[payoffSamples]);
+  const maxLoss   = useMemo(()=>{ if(!payoffSamples.length) return 0; const m=Math.min(...payoffSamples); const fall=payoffSamples.slice(0,5); return fall[0]<fall[4]?-Infinity:m; },[payoffSamples]);
   const probITM   = Math.abs(delta);
   const probTouch = Math.min(probITM*2,0.99);
   const chanceOfProfit = side==="buy"?probITM:(1-probITM);
 
   const loadSym = useCallback(async(s)=>{
-    setLoading(true); setError(null); setChain([]); setQuote(null); setSelStrike(null); setCustomPremium(null);
+    setLoading(true); setError(null); setChain([]); setQuote(null);
+    setLegs([{id:1,side:"buy",optType:"call",strike:null,strikeInput:"",customPremium:null,premInput:""}]);
     try{
       const e=await fetchExpirations(s);
       if(!e?.length){setError(`No options for "${s}"`);setLoading(false);return;}
@@ -1311,7 +1351,8 @@ function SimulatorPanel({ onSaveManualTrade }) {
   },[]);
 
   const loadChain = useCallback(async(exp)=>{
-    setSelExp(exp); setLoading(true); setCustomPremium(null);
+    setSelExp(exp); setLoading(true);
+    setLegs(p=>p.map(l=>({...l,customPremium:null,premInput:""})));
     try{const ch=await fetchOptionChain(sym,exp);setChain(ch);}catch{}
     setLoading(false);
   },[sym]);
@@ -1350,26 +1391,45 @@ function SimulatorPanel({ onSaveManualTrade }) {
     return [...monthly.slice(0,11), selExp];
   },[exps,selExp]);
 
-  // P&L matrix using Black-Scholes
+  // Combined payoff across all legs (at expiration)
+  const combinedPnlAt = useCallback((price)=>legs.reduce((sum,leg)=>{
+    if(!leg.strike) return sum;
+    const prem=getLegPremium(leg); if(prem<=0) return sum;
+    const intr=leg.optType==="call"?Math.max(price-leg.strike,0):Math.max(leg.strike-price,0);
+    const raw=(intr-prem)*100;
+    return sum+(leg.side==="buy"?raw:-raw);
+  },0),[legs,getLegPremium]);
+
+  // Sampled payoffs used for max profit / max loss / breakeven
+  const priceSamples = useMemo(()=>Array.from({length:400},(_,i)=>activeSpot*0.4+(i/399)*activeSpot*1.2),[activeSpot]);
+  const payoffSamples = useMemo(()=>priceSamples.map(p=>combinedPnlAt(p)),[priceSamples,combinedPnlAt]);
+
+  // P&L matrix using Black-Scholes — sums all legs
+  const allChainStrikes = useMemo(()=>[...new Set(chain.map(o=>o.strike))].sort((a,b)=>a-b),[chain]);
   const matrixRows = useMemo(()=>{
-    if(!availableStrikes.length||!selExp||!selStrike||activePremium<=0) return [];
-    const K=selStrike, sigma=iv, r=0.05;
+    if(!chain.length||!selExp||!legs.some(l=>l.strike&&getLegPremium(l)>0)) return [];
+    const r=0.05;
     const expDate=new Date(selExp+"T16:00:00");
-    const priceRows=availableStrikes
+    const priceRows=allChainStrikes
       .filter(s=>activeSpot>0?(s>=activeSpot*0.78&&s<=activeSpot*1.22):true)
       .slice().reverse();
     return priceRows.map(rowPrice=>{
       const pct=activeSpot>0?((rowPrice-activeSpot)/activeSpot*100).toFixed(1):"0.0";
       const cols=colExps.map(exp=>{
         const colDate=new Date(exp+"T16:00:00");
-        const T=Math.max((expDate-colDate)/(365*24*3600*1000),0);
-        const optVal=bsPrice(rowPrice,K,T,r,sigma,optType);
-        const raw=side==="buy"?(optVal-activePremium)*100:(activePremium-optVal)*100;
-        return Math.round(raw);
+        const combined=legs.reduce((sum,leg)=>{
+          if(!leg.strike) return sum;
+          const prem=getLegPremium(leg); if(prem<=0) return sum;
+          const T=Math.max((expDate-colDate)/(365*24*3600*1000),0);
+          const optVal=bsPrice(rowPrice,leg.strike,T,r,getLegIV(leg),leg.optType);
+          const raw=leg.side==="buy"?(optVal-prem)*100:(prem-optVal)*100;
+          return sum+raw;
+        },0);
+        return Math.round(combined);
       });
       return{price:rowPrice,pct:parseFloat(pct),cols};
     });
-  },[availableStrikes,colExps,selExp,selStrike,activePremium,iv,optType,side,activeSpot]);
+  },[chain,allChainStrikes,colExps,selExp,legs,getLegPremium,getLegIV,activeSpot]);
 
   const atmRowIdx = useMemo(()=>{
     if(!matrixRows.length||!activeSpot) return -1;
@@ -1438,96 +1498,94 @@ function SimulatorPanel({ onSaveManualTrade }) {
         </div>
 
 
-        {/* Buy/Sell + Call/Put */}
+        {/* Legs */}
         <div>
-          <div className="sim-slbl">Direction & Type</div>
-          <div className="sim-dir-row">
-            <div className="toggle-group" style={{flex:1}}>
-              <button className="tgl" onClick={()=>setSide("buy")} style={{background:side==="buy"?"#00d4aa":"transparent",color:side==="buy"?"#080c10":"#5a7a9a",flex:1}}>Buy</button>
-              <button className="tgl" onClick={()=>setSide("sell")} style={{background:side==="sell"?"#ff4d6a":"transparent",color:side==="sell"?"#fff":"#5a7a9a",flex:1}}>Sell</button>
-            </div>
-            <div className="toggle-group" style={{flex:1}}>
-              <button className="tgl" onClick={()=>setOptType("call")} style={{background:optType==="call"?"#3a8fff":"transparent",color:optType==="call"?"#fff":"#5a7a9a",flex:1}}>Call</button>
-              <button className="tgl" onClick={()=>setOptType("put")} style={{background:optType==="put"?"#a78bfa":"transparent",color:optType==="put"?"#fff":"#5a7a9a",flex:1}}>Put</button>
-            </div>
+          <div className="sim-slbl" style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+            Legs
+            <button onClick={addLeg} style={{fontSize:9,color:"#00d4aa",background:"#00d4aa12",border:"1px solid #00d4aa33",borderRadius:4,padding:"2px 8px",cursor:"pointer",fontFamily:"DM Mono,monospace",letterSpacing:.5}}>+ Add leg</button>
+          </div>
+          <div style={{display:"flex",flexDirection:"column",gap:6}}>
+            {legs.map((leg)=>{
+              const legStrikes=getLegStrikes(leg);
+              const legOpt=getLegOption(leg);
+              const legMktPrem=legOpt?.ask||legOpt?.last||0;
+              const legAtm=legStrikes.length&&spot?legStrikes.reduce((a,b)=>Math.abs(b-spot)<Math.abs(a-spot)?b:a):null;
+              return(
+                <div key={leg.id} style={{background:"#0d1821",border:"1px solid #1a2a3a",borderRadius:7,padding:"8px 10px"}}>
+                  <div style={{display:"flex",gap:5,alignItems:"center",marginBottom:7}}>
+                    <div className="toggle-group" style={{flex:1}}>
+                      <button className="tgl" onClick={()=>updateLeg(leg.id,{side:"buy"})} style={{background:leg.side==="buy"?"#00d4aa":"transparent",color:leg.side==="buy"?"#080c10":"#5a7a9a",flex:1}}>Buy</button>
+                      <button className="tgl" onClick={()=>updateLeg(leg.id,{side:"sell"})} style={{background:leg.side==="sell"?"#ff4d6a":"transparent",color:leg.side==="sell"?"#fff":"#5a7a9a",flex:1}}>Sell</button>
+                    </div>
+                    <div className="toggle-group" style={{flex:1}}>
+                      <button className="tgl" onClick={()=>updateLeg(leg.id,{optType:"call",strike:null,strikeInput:""})} style={{background:leg.optType==="call"?"#3a8fff":"transparent",color:leg.optType==="call"?"#fff":"#5a7a9a",flex:1}}>Call</button>
+                      <button className="tgl" onClick={()=>updateLeg(leg.id,{optType:"put",strike:null,strikeInput:""})} style={{background:leg.optType==="put"?"#a78bfa":"transparent",color:leg.optType==="put"?"#fff":"#5a7a9a",flex:1}}>Put</button>
+                    </div>
+                    {legs.length>1&&(
+                      <button onClick={()=>setLegs(p=>p.filter(l=>l.id!==leg.id))}
+                        style={{background:"none",border:"1px solid #ff4d6a44",borderRadius:4,color:"#ff4d6a",cursor:"pointer",fontSize:11,padding:"2px 6px",lineHeight:1}}>✕</button>
+                    )}
+                  </div>
+                  {legStrikes.length>0&&(
+                    <div style={{overflowX:"auto",paddingBottom:4,marginBottom:5}}>
+                      <div style={{display:"flex",gap:3,minWidth:"max-content"}}>
+                        {legStrikes.map(s=>{
+                          const isAtm=s===legAtm;
+                          const isSel=s===leg.strike;
+                          return(
+                            <button key={s} className={`sim-chip${isSel?" sel":""}${isAtm&&!isSel?" atm":""}`}
+                              onClick={()=>updateLeg(leg.id,{strike:s,strikeInput:s.toFixed(2)})}>
+                              {s.toFixed(2)}{isAtm&&!isSel?" ◀":""}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                  <div style={{display:"flex",gap:6,alignItems:"center"}}>
+                    <div style={{display:"flex",alignItems:"center",gap:4,flex:1,background:"#080c10",border:"1px solid #1a2a3a",borderRadius:5,padding:"4px 7px"}}>
+                      <span style={{fontSize:10,color:"#5a7a9a",fontFamily:"DM Mono,monospace"}}>K</span>
+                      <input value={leg.strikeInput}
+                        onChange={e=>updateLeg(leg.id,{strikeInput:e.target.value})}
+                        onBlur={e=>snapStrikeLeg(leg.id,e.target.value)}
+                        onKeyDown={e=>e.key==="Enter"&&snapStrikeLeg(leg.id,leg.strikeInput)}
+                        placeholder="strike"
+                        style={{background:"transparent",border:"none",outline:"none",color:"#c8d8e8",fontFamily:"DM Mono,monospace",fontSize:13,width:58}}/>
+                    </div>
+                    <div style={{display:"flex",alignItems:"center",gap:4,flex:1,background:"#080c10",border:`1px solid ${leg.customPremium!==null?"#f5c84266":"#1a2a3a"}`,borderRadius:5,padding:"4px 7px"}}>
+                      <span style={{fontSize:10,color:"#5a7a9a",fontFamily:"DM Mono,monospace"}}>$</span>
+                      <input value={leg.premInput||legMktPrem.toFixed(2)}
+                        onChange={e=>updateLeg(leg.id,{premInput:e.target.value})}
+                        onBlur={e=>{const v=parseFloat(e.target.value);if(!isNaN(v)&&v>0){updateLeg(leg.id,{customPremium:v,premInput:v.toFixed(2)});}else{updateLeg(leg.id,{customPremium:null,premInput:legMktPrem>0?legMktPrem.toFixed(2):"0.00"});}}}
+                        onKeyDown={e=>{if(e.key==="Enter"){const v=parseFloat(leg.premInput);if(!isNaN(v)&&v>0)updateLeg(leg.id,{customPremium:v,premInput:v.toFixed(2)});}}}
+                        style={{background:"transparent",border:"none",outline:"none",color:leg.customPremium!==null?"#f5c842":"#c8d8e8",fontFamily:"DM Mono,monospace",fontSize:13,width:55}}/>
+                      {leg.customPremium!==null&&(
+                        <button onClick={()=>updateLeg(leg.id,{customPremium:null,premInput:legMktPrem>0?legMktPrem.toFixed(2):"0.00"})}
+                          title="Reset to market" style={{background:"none",border:"none",cursor:"pointer",color:"#3a8fff",fontSize:9,padding:0,fontFamily:"DM Mono,monospace"}}>↺</button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
 
-        {/* Strike selector */}
-        {availableStrikes.length>0&&(
-          <div>
-            <div className="sim-slbl">Strike</div>
-            <div className="sim-strike-box">
-              <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
-                <div className="sim-strike-big">${selStrike?.toFixed(2)||"—"}</div>
-                <div style={{display:"flex",flexDirection:"column",gap:2}}>
-                  <div style={{fontSize:8,color:"#3a5a7a",letterSpacing:1,textTransform:"uppercase"}}>Type</div>
-                  <input className="sim-strike-input" value={strikeInputVal}
-                    onChange={e=>setStrikeInputVal(e.target.value)}
-                    onBlur={e=>snapStrike(e.target.value)}
-                    onKeyDown={e=>e.key==="Enter"&&snapStrike(e.target.value)}/>
-                </div>
-              </div>
-              <div style={{fontSize:8,letterSpacing:1.5,textTransform:"uppercase",color:"#3a5a7a",marginBottom:5}}>Available strikes</div>
-              <div style={{overflowX:"auto",paddingBottom:3}}>
-                <div style={{display:"flex",gap:3,minWidth:"max-content"}}>
-                  {availableStrikes.map(s=>{
-                    const isAtm=spot>0&&s===availableStrikes.reduce((a,b)=>Math.abs(b-spot)<Math.abs(a-spot)?b:a);
-                    const isSel=s===selStrike;
-                    return(
-                      <button key={s} className={`sim-chip${isSel?" sel":""}${isAtm&&!isSel?" atm":""}`}
-                        onClick={()=>{setSelStrike(s);setStrikeInputVal(s.toFixed(2));}}>
-                        {s.toFixed(2)}{isAtm&&!isSel?" ◀":""}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-              <div style={{display:"flex",gap:12,marginTop:8,paddingTop:7,borderTop:"1px solid #1a2a3a",fontSize:10}}>
-                <span style={{color:"#3a5a7a"}}>ATM <span style={{color:"#c8d8e8"}}>${spot.toFixed(2)}</span></span>
-                <span style={{color:"#3a5a7a"}}>Strike <span style={{color:"#f5c842"}}>${(selStrike||0).toFixed(2)}</span></span>
-                <span style={{color:"#3a5a7a"}}>Dist <span style={{color:parseFloat(distFromATM)>=0?"#00d4aa":"#ff4d6a"}}>{parseFloat(distFromATM)>=0?"+":""}{distFromATM}</span></span>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Premium editor */}
-        {premium>0&&(
-          <div>
-            <div className="sim-slbl" style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-              Price Paid
-              {customPremium!==null&&(
-                <button onClick={()=>{setCustomPremium(null);setPremiumInput(premium.toFixed(2));}}
-                  style={{fontSize:9,color:"#3a8fff",background:"none",border:"none",cursor:"pointer",padding:0,fontFamily:"DM Mono,monospace"}}>
-                  ↺ use market (${premium.toFixed(2)})
-                </button>
-              )}
-            </div>
-            <div style={{display:"flex",alignItems:"center",gap:6,background:"#080c10",border:`1px solid ${customPremium!==null?"#f5c84266":"#1a2a3a"}`,borderRadius:6,padding:"7px 10px"}}>
-              <span style={{color:"#5a7a9a",fontSize:12,fontFamily:"DM Mono,monospace"}}>$</span>
-              <input value={premiumInput}
-                onChange={e=>setPremiumInput(e.target.value)}
-                onBlur={e=>{const v=parseFloat(e.target.value);if(!isNaN(v)&&v>0){setCustomPremium(v);setPremiumInput(v.toFixed(2));}else{setCustomPremium(null);setPremiumInput(premium.toFixed(2));}}}
-                onKeyDown={e=>{if(e.key==="Enter"){const v=parseFloat(premiumInput);if(!isNaN(v)&&v>0){setCustomPremium(v);setPremiumInput(v.toFixed(2));}}}}
-                style={{background:"transparent",border:"none",outline:"none",color:customPremium!==null?"#f5c842":"#c8d8e8",fontFamily:"DM Mono,monospace",fontSize:16,fontWeight:600,width:"70px"}}/>
-              {customPremium!==null&&<span style={{fontSize:8,color:"#f5c842",background:"#f5c84215",border:"1px solid #f5c84233",borderRadius:3,padding:"1px 5px",letterSpacing:.5}}>custom</span>}
-              {customPremium===null&&<span style={{fontSize:9,color:"#3a5a7a",marginLeft:"auto"}}>ask</span>}
-            </div>
-          </div>
-        )}
-
         {/* Summary metrics */}
-        {activePremium>0&&(
+        {legs.some(l=>l.strike&&getLegPremium(l)>0)&&(
           <div>
             <div className="sim-slbl">Summary</div>
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:5}}>
-              {[
-                ["Net "+(side==="buy"?"Debit":"Credit"),(side==="buy"?"-":"+")+`$${(activePremium*100).toFixed(0)}`,side==="buy"?"#ff4d6a":"#00d4aa"],
-                ["Max Loss",maxLoss===Infinity?"Unlimited":"$"+maxLoss.toFixed(0),"#ff4d6a"],
-                ["Max Profit",maxProfit===Infinity?"Unlimited":"$"+maxProfit.toFixed(0),"#00d4aa"],
-                ["Breakeven",`$${breakeven.toFixed(2)}`,"#f5c842"],
-              ].map(([l,v,c])=>(
+              {(()=>{
+                const netDebit=legs.reduce((s,l)=>{const p=getLegPremium(l);if(!l.strike||p<=0)return s;return s+(l.side==="buy"?p:-p);},0);
+                const isDebit=netDebit>=0;
+                return[
+                  ["Net "+(isDebit?"Debit":"Credit"),(isDebit?"-":"+")+`$${(Math.abs(netDebit)*100).toFixed(0)}`,isDebit?"#ff4d6a":"#00d4aa"],
+                  ["Max Loss",maxLoss===-Infinity?"Unlimited":"$"+Math.abs(maxLoss).toFixed(0),"#ff4d6a"],
+                  ["Max Profit",maxProfit===Infinity?"Unlimited":"$"+maxProfit.toFixed(0),"#00d4aa"],
+                  ["Breakeven",breakeven>0?`$${breakeven.toFixed(2)}`:"—","#f5c842"],
+                ];
+              })().map(([l,v,c])=>(
                 <div key={l} className="sim-metric" style={{"--mt":c,"--mc":c}}>
                   <div className="sim-metric-lbl">{l}</div>
                   <div className="sim-metric-val">{v}</div>
@@ -1640,7 +1698,7 @@ function SimulatorPanel({ onSaveManualTrade }) {
             <div style={{fontSize:9,letterSpacing:1.5,textTransform:"uppercase",color:"#3a5a7a",marginBottom:6}}>
               Payoff at Expiration — {strategy}
             </div>
-            <PayoffChart spot={spot} strike={selStrike} premium={activePremium} breakeven={breakeven} optType={optType} side={side}/>
+            <PayoffChart spot={activeSpot||spot} pnlAt={combinedPnlAt} breakeven={breakeven} singleLeg={legs.length===1?primaryLeg:null}/>
           </div>
         )}
 
