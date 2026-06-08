@@ -224,6 +224,7 @@ tr:hover td{background:#101e2c}
 .sim-timeline{border-bottom:1px solid #1a2a3a;background:#0a1520;padding:8px 13px 0;flex-shrink:0;overflow-x:auto}
 .sim-exp-btn{background:none;border:1px solid #1a2a3a;color:#5a7a9a;padding:4px 9px;border-radius:15px;cursor:pointer;font-family:'DM Mono',monospace;font-size:10px;white-space:nowrap;flex-shrink:0;transition:all .12s}
 .sim-exp-btn.sel{background:#00d4aa;border-color:#00d4aa;color:#080c10;font-weight:700}
+.sim-dir-row{display:flex;gap:6px}
 .sim-toolbar{display:flex;align-items:center;gap:10px;padding:7px 13px;border-bottom:1px solid #1a2a3a;background:#090f18;flex-shrink:0;flex-wrap:wrap}
 .sim-view-group{display:flex;background:#0d1821;border:1px solid #1a2a3a;border-radius:7px;padding:2px;gap:2px}
 .sim-view-btn{background:none;border:none;padding:4px 11px;border-radius:5px;cursor:pointer;font-family:'DM Mono',monospace;font-size:10px;font-weight:600;color:#5a7a9a;letter-spacing:.5px;transition:all .12s}
@@ -241,6 +242,19 @@ tr:hover td{background:#101e2c}
 .sim-row-atm{border-top:1px solid #00d4aa22!important;border-bottom:1px solid #00d4aa22!important}
 .sim-row-be{border-top:1px dashed #f5c84244!important}
 tr:hover .sim-td,.sim-row-atm:hover .sim-td-price,.sim-row-atm:hover .sim-td-pct{filter:brightness(1.15)}
+@media(max-width:768px){
+  body{overflow-x:hidden}
+  .sim-wrap{flex-direction:column;overflow-x:hidden;max-width:100%}
+  .sim-left{width:100%!important;flex-shrink:unset;border-right:none!important;border-bottom:1px solid #1a2a3a;box-sizing:border-box;max-width:100%}
+  .sim-right{width:100%;max-width:100%;overflow-x:hidden;box-sizing:border-box}
+  .sim-timeline{overflow-x:auto;max-width:100%}
+  .sim-toolbar{flex-wrap:wrap;max-width:100%;overflow-x:hidden}
+  .sim-matrix{overflow-x:auto;max-width:100%}
+  .sim-dir-row{flex-wrap:wrap}
+  .sim-dir-row .toggle-group{flex:1 1 calc(50% - 3px);min-width:0}
+  .tgl{padding:7px 10px;font-size:10px}
+  .toggle-group{min-width:0}
+}
 `;
 
 
@@ -1413,7 +1427,7 @@ function SimulatorPanel({ onSaveManualTrade }) {
         {/* Buy/Sell + Call/Put */}
         <div>
           <div className="sim-slbl">Direction & Type</div>
-          <div style={{display:"flex",gap:6}}>
+          <div className="sim-dir-row">
             <div className="toggle-group" style={{flex:1}}>
               <button className="tgl" onClick={()=>setSide("buy")} style={{background:side==="buy"?"#00d4aa":"transparent",color:side==="buy"?"#080c10":"#5a7a9a",flex:1}}>Buy</button>
               <button className="tgl" onClick={()=>setSide("sell")} style={{background:side==="sell"?"#ff4d6a":"transparent",color:side==="sell"?"#fff":"#5a7a9a",flex:1}}>Sell</button>
