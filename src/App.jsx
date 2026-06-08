@@ -1738,12 +1738,12 @@ function SimulatorPanel({ onSaveManualTrade }) {
         {matrixRows.length>0&&(
           <div style={{display:"flex",alignItems:"center",gap:8,padding:"7px 12px",borderBottom:"1px solid #1a2a3a",background:"#080c10"}}>
             <span style={{fontSize:9,letterSpacing:1.2,textTransform:"uppercase",color:"#3a5a7a",flexShrink:0}}>Range</span>
-            <button onClick={()=>setRangeShift(v=>Math.max(-30,+(v-0.5).toFixed(1)))}
+            <button onClick={()=>setRangeShift(v=>Math.max(-75,+(v-0.5).toFixed(1)))}
               style={{background:"none",border:"none",color:"#5a7a9a",cursor:"pointer",fontSize:13,padding:"0 2px",lineHeight:1}}>◀</button>
-            <input type="range" min={-30} max={30} step={0.5} value={rangeShift}
+            <input type="range" min={-75} max={75} step={0.5} value={rangeShift}
               onChange={e=>setRangeShift(parseFloat(e.target.value))}
               style={{flex:1,accentColor:"#3a8fff",cursor:"pointer"}}/>
-            <button onClick={()=>setRangeShift(v=>Math.min(30,+(v+0.5).toFixed(1)))}
+            <button onClick={()=>setRangeShift(v=>Math.min(75,+(v+0.5).toFixed(1)))}
               style={{background:"none",border:"none",color:"#5a7a9a",cursor:"pointer",fontSize:13,padding:"0 2px",lineHeight:1}}>▶</button>
             <span style={{fontFamily:"DM Mono,monospace",fontSize:10,color:rangeShift===0?"#3a5a7a":rangeShift>0?"#00d4aa":"#ff4d6a",minWidth:42,textAlign:"right"}}>
               {rangeShift===0?"0.0%":(rangeShift>0?"+":"")+rangeShift.toFixed(1)+"%"}
