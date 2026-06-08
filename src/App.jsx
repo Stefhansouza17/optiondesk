@@ -1188,7 +1188,9 @@ function PayoffChart({ spot, pnlAt, breakeven, singleLeg }) {
       </>}
 
       {/* Strike dot */}
-      <circle cx={xOf(strike)} cy={yOf(pnlAt(strike))} r={4} fill="#3a8fff" stroke="#080c10" strokeWidth={1.5} />
+      {singleLeg?.strike&&singleLeg.strike>pMin&&singleLeg.strike<pMax&&(
+        <circle cx={xOf(singleLeg.strike)} cy={yOf(pnlAt(singleLeg.strike))} r={4} fill="#3a8fff" stroke="#080c10" strokeWidth={1.5} />
+      )}
 
       {/* ATM label */}
       <rect x={clampLabel(xOf(spot), 80) - 40} y={PAD.t} width={80} height={16} rx={3} fill="#3a8fff18" stroke="#3a8fff44" />
