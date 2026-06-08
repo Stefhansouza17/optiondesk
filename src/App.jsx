@@ -1242,8 +1242,11 @@ function SimulatorPanel({ onSaveManualTrade }) {
   const [tipPos, setTipPos]   = useState({x:0,y:0});
   const [customPremium, setCustomPremium] = useState(null);
   const [premiumInput, setPremiumInput]   = useState("");
+  const [simSpot, setSimSpot]             = useState(null);
+  const [simSpotInput, setSimSpotInput]   = useState("");
 
   const spot = quote?.last || 0;
+  const activeSpot = simSpot !== null ? simSpot : spot;
 
   const filteredChain = useMemo(()=>
     chain.filter(o=>o.option_type===optType).sort((a,b)=>a.strike-b.strike),
@@ -1267,6 +1270,10 @@ function SimulatorPanel({ onSaveManualTrade }) {
 
   // Sync premium input when market price changes (new chain load)
   useEffect(()=>{ if(premium>0) setPremiumInput(premium.toFixed(2)); },[premium]);
+
+  // Sync simSpot input with real spot; reset override on new symbol
+  useEffect(()=>{ if(spot>0){ setSimSpot(null); setSimSpotInput(spot.toFixed(2)); } },[sym]);
+  useEffect(()=>{ if(spot>0 && simSpot===null) setSimSpotInput(spot.toFixed(2)); },[spot]);
 
   // Populate Add Trade modal fields when opened
   useEffect(()=>{
@@ -1349,10 +1356,10 @@ function SimulatorPanel({ onSaveManualTrade }) {
     const K=selStrike, sigma=iv, r=0.05;
     const expDate=new Date(selExp+"T16:00:00");
     const priceRows=availableStrikes
-      .filter(s=>spot>0?(s>=spot*0.78&&s<=spot*1.22):true)
+      .filter(s=>activeSpot>0?(s>=activeSpot*0.78&&s<=activeSpot*1.22):true)
       .slice().reverse();
     return priceRows.map(rowPrice=>{
-      const pct=spot>0?((rowPrice-spot)/spot*100).toFixed(1):"0.0";
+      const pct=activeSpot>0?((rowPrice-activeSpot)/activeSpot*100).toFixed(1):"0.0";
       const cols=colExps.map(exp=>{
         const colDate=new Date(exp+"T16:00:00");
         const T=Math.max((expDate-colDate)/(365*24*3600*1000),0);
@@ -1362,14 +1369,14 @@ function SimulatorPanel({ onSaveManualTrade }) {
       });
       return{price:rowPrice,pct:parseFloat(pct),cols};
     });
-  },[availableStrikes,colExps,selExp,selStrike,activePremium,iv,optType,side,spot]);
+  },[availableStrikes,colExps,selExp,selStrike,activePremium,iv,optType,side,activeSpot]);
 
   const atmRowIdx = useMemo(()=>{
-    if(!matrixRows.length||!spot) return -1;
+    if(!matrixRows.length||!activeSpot) return -1;
     let best=0,bestD=Infinity;
-    matrixRows.forEach((r,i)=>{const d=Math.abs(r.price-spot);if(d<bestD){bestD=d;best=i;}});
+    matrixRows.forEach((r,i)=>{const d=Math.abs(r.price-activeSpot);if(d<bestD){bestD=d;best=i;}});
     return best;
-  },[matrixRows,spot]);
+  },[matrixRows,activeSpot]);
 
   const beRowIdx = useMemo(()=>{
     if(!matrixRows.length||!breakeven) return -1;
@@ -1650,7 +1657,32 @@ function SimulatorPanel({ onSaveManualTrade }) {
               <div style={{width:20,height:0,borderTop:"1px dashed #f5c842"}}/> BE ${breakeven.toFixed(2)}
             </div>}
             <div style={{display:"flex",alignItems:"center",gap:5,fontSize:10,color:"#00d4aa"}}>
-              <div style={{width:20,height:2,background:"#00d4aa33",boxShadow:"0 0 4px #00d4aa44"}}/> ATM ${spot.toFixed(2)}
+              <div style={{width:20,height:2,background:"#00d4aa33",boxShadow:"0 0 4px #00d4aa44"}}/>
+              <span style={{opacity:.7}}>ATM</span>
+              <span style={{color:"#3a5a7a",fontSize:9}}>$</span>
+              <input
+                type="number" step="0.01"
+                value={simSpotInput}
+                onChange={e=>{
+                  setSimSpotInput(e.target.value);
+                  const v=parseFloat(e.target.value);
+                  if(!isNaN(v)&&v>0) setSimSpot(v);
+                }}
+                onBlur={()=>{
+                  const v=parseFloat(simSpotInput);
+                  if(!isNaN(v)&&v>0){ setSimSpot(v); setSimSpotInput(v.toFixed(2)); }
+                  else{ setSimSpot(null); setSimSpotInput(spot.toFixed(2)); }
+                }}
+                style={{width:58,background:"#0d1821",border:"1px solid #00d4aa44",borderRadius:4,
+                  color:"#00d4aa",fontSize:10,padding:"2px 5px",fontFamily:"DM Mono,monospace",
+                  outline:"none",MozAppearance:"textfield"}}
+              />
+              {simSpot!==null&&Math.abs(simSpot-spot)>0.01&&(
+                <button onClick={()=>{setSimSpot(null);setSimSpotInput(spot.toFixed(2));}}
+                  title="Reset to market price"
+                  style={{fontSize:9,color:"#3a5a7a",cursor:"pointer",background:"none",border:"none",
+                    padding:"1px 4px",borderRadius:3,lineHeight:1,fontFamily:"DM Mono,monospace"}}>↺</button>
+              )}
             </div>
             <div style={{marginLeft:"auto",fontSize:9,color:"#3a5a7a"}}>Hover any cell for details</div>
           </div>
