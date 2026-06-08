@@ -263,7 +263,7 @@ tr:hover .sim-td,.sim-row-atm:hover .sim-td-price,.sim-row-atm:hover .sim-td-pct
   .tgl{padding:7px 10px;font-size:10px}
   .toggle-group{min-width:0}
 }
-.ts-tooltip{display:none;position:absolute;left:18px;top:-4px;z-index:99;background:#0d1821;border:1px solid #2a4a6a;border-radius:6px;padding:9px 11px;width:200px;font-size:9px;color:#8aaac8;line-height:1.7;white-space:pre-line;pointer-events:none}
+.ts-tooltip{display:none;position:absolute;left:18px;top:-4px;z-index:99;background:#0d1821;border:1px solid #3a6a9a;border-radius:6px;padding:9px 11px;width:210px;font-size:9.5px;color:#c0d8f0;line-height:1.8;white-space:pre-line;pointer-events:none}
 .ts-tooltip b{color:#c8d8e8;display:block;margin-bottom:4px;font-size:10px}
 div:hover>.ts-tooltip{display:block}
 `;
@@ -1145,10 +1145,7 @@ function PayoffChart({ spot, pnlAt, breakeven, singleLeg, height=185 }) {
   const curvePts = pts.map(p => `${xOf(p).toFixed(1)},${yOf(pnlAt(p)).toFixed(1)}`).join(" ");
   const polyPts = `${PAD.l},${yZero} ${curvePts} ${W - PAD.r},${yZero}`;
 
-  const rawStep = (yMax - yMin) / 5;
-  const step = Math.max(Math.pow(10, Math.floor(Math.log10(rawStep))), 5);
-  const gridVals = [];
-  for (let v = Math.ceil(yMin / step) * step; v <= yMax + 0.01; v += step) gridVals.push(Math.round(v));
+  const gridVals = [-200, -100, 0, 100, 200].filter(v => v >= yMin - 1 && v <= yMax + 1);
 
   const xLabels = Array.from({ length: 7 }, (_, i) => pMin + (i / 6) * (pMax - pMin));
   const uid = spot.toFixed(0) + "-" + (breakeven||0).toFixed(0);
@@ -1352,6 +1349,13 @@ function SimulatorPanel({ onSaveManualTrade }) {
   const probITM   = Math.abs(delta);
   const probTouch = Math.min(probITM*2,0.99);
   const chanceOfProfit = side==="buy"?probITM:(1-probITM);
+  const assignmentRisk = useMemo(()=>{
+    if(side!=="sell"||!selStrike||!activeSpot) return "—";
+    const dist=Math.abs(selStrike-activeSpot)/activeSpot;
+    if(dist<0.03) return "High";
+    if(dist<0.07) return "Med";
+    return "Low";
+  },[side,selStrike,activeSpot]);
 
   const strategy = useMemo(()=>{
     if(legs.length===1){
@@ -1632,8 +1636,8 @@ function SimulatorPanel({ onSaveManualTrade }) {
         {selOption&&(
           <div style={{display:"flex",flexDirection:"column",gap:8}}>
             <div className="sim-slbl">Greeks</div>
-            <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:5}}>
-              {[["Theta",fmt(theta,3),"#ff4d6a"],["Gamma",fmt(gamma,4),"#00d4aa"],["Vega",fmt(vega,3),"#a78bfa"]].map(([name,val,c])=>(
+            <div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:5}}>
+              {[["Theta",fmt(theta,3),"#ff4d6a"],["Gamma",fmt(gamma,4),"#00d4aa"],["Vega",fmt(vega,3),"#a78bfa"],["Delta",fmt(delta,3),"#3a8fff"]].map(([name,val,c])=>(
                 <div key={name} style={{background:"#080c10",border:"1px solid #1a2a3a",borderRadius:5,padding:"8px 7px",textAlign:"center"}}>
                   <div style={{fontSize:10,color:"#3a5a7a",marginBottom:4,letterSpacing:.5}}>{name}</div>
                   <div style={{fontSize:14,fontWeight:500,color:c}}>{val}</div>
@@ -1654,16 +1658,16 @@ function SimulatorPanel({ onSaveManualTrade }) {
                           color:"#5a7a9a",fontSize:8,cursor:"default",display:"flex",alignItems:"center",justifyContent:"center",
                           fontFamily:"DM Mono,monospace",padding:0}}>?</button>
                         <div className="ts-tooltip">
-                          Theta Efficiency (35%) — decay por dólar de prêmio{"\n"}
-                          DTE sweet spot (25%) — ideal 21–45 dias{"\n"}
+                          Theta Efficiency (35%) — decay per dollar of premium{"\n"}
+                          DTE sweet spot (25%) — ideal 21–45 days{"\n"}
                           Delta positioning (20%) — ideal 0.20–0.35{"\n"}
-                          IV level (15%) — prêmio disponível{"\n"}
+                          IV level (15%) — premium available{"\n"}
                           Strike Distance (10%) — ideal 3–7% OTM
                         </div>
                       </div>
                     </div>
                     <div style={{textAlign:"right"}}>
-                      <div style={{fontFamily:"Syne,sans-serif",fontSize:22,fontWeight:800,color:col,lineHeight:1}}>{sc}</div>
+                      <div style={{fontFamily:"Syne,sans-serif",fontSize:30,fontWeight:800,color:col,lineHeight:1}}>{sc}</div>
                       <div style={{fontSize:9,color:col,letterSpacing:.5,marginTop:2}}>{lbl}</div>
                     </div>
                   </div>
@@ -1726,20 +1730,27 @@ function SimulatorPanel({ onSaveManualTrade }) {
         )}
 
         {/* Probabilities + Payoff Chart side by side */}
-        {selOption&&selStrike&&activePremium>0&&(
+        {selOption&&selStrike&&activePremium>0&&(()=>{
+          const arColor=assignmentRisk==="High"?"#ff4d6a":assignmentRisk==="Med"?"#f5c842":"#00d4aa";
+          const ivRankVal=iv30>0?Math.round(iv30*100):null;
+          const ivRankLbl=ivRankVal===null?"—":ivRankVal>60?"High":ivRankVal>30?"Med":"Low";
+          const ivRankColor=ivRankVal===null?"#3a5a7a":ivRankVal>60?"#ff4d6a":ivRankVal>30?"#f5c842":"#00d4aa";
+          return(
           <div style={{display:"flex",gap:0,borderBottom:"1px solid #1a2a3a",background:"#0d1821"}}>
-            {/* LEFT: Probabilities */}
-            <div style={{flex:1,minWidth:0,padding:"10px 11px",borderRight:"1px solid #1a2a3a",display:"flex",flexDirection:"column",gap:7}}>
+            {/* LEFT: Probabilities (narrower) */}
+            <div style={{width:"38%",flexShrink:0,padding:"10px 11px",borderRight:"1px solid #1a2a3a",display:"flex",flexDirection:"column",gap:7}}>
               <div className="sim-slbl">Probabilities</div>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
                 <div>
                   <div style={{fontSize:9,color:"#3a5a7a",marginBottom:2}}>Chance of Profit</div>
                   <div style={{fontFamily:"Syne,sans-serif",fontSize:17,fontWeight:800,color:"#3a8fff"}}>{(chanceOfProfit*100).toFixed(1)}%</div>
                 </div>
-                <div style={{textAlign:"right"}}>
-                  <div style={{fontSize:9,color:"#3a5a7a",marginBottom:2}}>Delta</div>
-                  <div style={{fontFamily:"Syne,sans-serif",fontSize:13,fontWeight:700,color:"#3a8fff"}}>{fmt(delta,3)}</div>
-                </div>
+                {side==="sell"&&(
+                  <div style={{textAlign:"right"}}>
+                    <div style={{fontSize:9,color:"#3a5a7a",marginBottom:2}}>Assignment Risk</div>
+                    <div style={{fontSize:12,fontWeight:700,color:arColor}}>{assignmentRisk}</div>
+                  </div>
+                )}
               </div>
               <div style={{height:4,background:"#1a2a3a",borderRadius:2,overflow:"hidden"}}>
                 <div style={{height:"100%",width:`${chanceOfProfit*100}%`,background:"linear-gradient(90deg,#3a8fff,#00d4aa)",borderRadius:2}}/>
@@ -1757,23 +1768,25 @@ function SimulatorPanel({ onSaveManualTrade }) {
                   <div style={{fontSize:8,color:"#3a5a7a",marginBottom:2,letterSpacing:1}}>IV (option)</div>
                   <div style={{fontSize:11,fontWeight:500,color:"#f5c842"}}>{(iv*100).toFixed(1)}%</div>
                 </div>
-                {iv30>0&&(
-                  <div style={{background:"#080c10",border:"1px solid #1a2a3a",borderRadius:5,padding:"5px 7px"}}>
-                    <div style={{fontSize:8,color:"#3a5a7a",marginBottom:2,letterSpacing:1}}>IV30 (stock)</div>
-                    <div style={{fontSize:11,fontWeight:500,color:"#f5c842"}}>{(iv30*100).toFixed(1)}%</div>
+                <div style={{background:"#080c10",border:"1px solid #1a2a3a",borderRadius:5,padding:"5px 7px"}}>
+                  <div style={{fontSize:8,color:"#3a5a7a",marginBottom:2,letterSpacing:1}}>IV Rank (stock)</div>
+                  <div style={{fontSize:11,fontWeight:500,color:ivRankColor,display:"flex",alignItems:"baseline",gap:3}}>
+                    {ivRankVal!==null?ivRankVal:"—"}
+                    {ivRankVal!==null&&<span style={{fontSize:8,color:ivRankColor}}>({ivRankLbl})</span>}
                   </div>
-                )}
+                </div>
               </div>
             </div>
-            {/* RIGHT: Payoff Chart (33% smaller) */}
-            <div style={{width:"52%",flexShrink:0,padding:"10px 11px 0"}}>
+            {/* RIGHT: Payoff Chart (larger) */}
+            <div style={{flex:1,minWidth:0,padding:"10px 11px 0"}}>
               <div style={{fontSize:8,letterSpacing:1.2,textTransform:"uppercase",color:"#3a5a7a",marginBottom:5}}>
-                Payoff — {strategy}
+                Payoff at Expiration — {strategy}
               </div>
-              <PayoffChart spot={activeSpot||spot} pnlAt={combinedPnlAt} breakeven={breakeven} singleLeg={legs.length===1?primaryLeg:null} height={124}/>
+              <PayoffChart spot={activeSpot||spot} pnlAt={combinedPnlAt} breakeven={breakeven} singleLeg={legs.length===1?primaryLeg:null} height={155}/>
             </div>
           </div>
-        )}
+          );
+        })()}
 
         {/* Toolbar */}
         {matrixRows.length>0&&(
