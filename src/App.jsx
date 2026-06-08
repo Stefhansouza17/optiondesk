@@ -1246,11 +1246,10 @@ function SimulatorPanel({ onSaveManualTrade }) {
   const [qaExp,       setQaExp]         = useState("");
   const [tooltip, setTooltip] = useState(null);
   const [tipPos, setTipPos]   = useState({x:0,y:0});
-  const [simSpot, setSimSpot]             = useState(null);
-  const [simSpotInput, setSimSpotInput]   = useState("");
+  const [rangeShift, setRangeShift] = useState(0); // percentage offset for matrix center
 
   const spot = quote?.last || 0;
-  const activeSpot = simSpot !== null ? simSpot : spot;
+  const activeSpot = rangeShift !== 0 ? spot * (1 + rangeShift / 100) : spot;
 
   const filteredChain = useMemo(()=>
     chain.filter(o=>o.option_type===optType).sort((a,b)=>a.strike-b.strike),
@@ -1305,9 +1304,8 @@ function SimulatorPanel({ onSaveManualTrade }) {
   // Sync premium input when market price changes (new chain load)
   useEffect(()=>{ if(premium>0) setPremiumInput(premium.toFixed(2)); },[premium]);
 
-  // Sync simSpot input with real spot; reset override on new symbol
-  useEffect(()=>{ if(spot>0){ setSimSpot(null); setSimSpotInput(spot.toFixed(2)); } },[sym]);
-  useEffect(()=>{ if(spot>0 && simSpot===null) setSimSpotInput(spot.toFixed(2)); },[spot]);
+  // Reset range shift on new symbol
+  useEffect(()=>{ setRangeShift(0); },[sym]);
 
   // Populate Add Trade modal fields when opened
   useEffect(()=>{
@@ -1730,32 +1728,31 @@ function SimulatorPanel({ onSaveManualTrade }) {
             <div style={{display:"flex",alignItems:"center",gap:5,fontSize:10,color:"#00d4aa"}}>
               <div style={{width:20,height:2,background:"#00d4aa33",boxShadow:"0 0 4px #00d4aa44"}}/>
               <span style={{opacity:.7}}>ATM</span>
-              <span style={{color:"#3a5a7a",fontSize:9}}>$</span>
-              <input
-                type="number" step="0.01"
-                value={simSpotInput}
-                onChange={e=>{
-                  setSimSpotInput(e.target.value);
-                  const v=parseFloat(e.target.value);
-                  if(!isNaN(v)&&v>0) setSimSpot(v);
-                }}
-                onBlur={()=>{
-                  const v=parseFloat(simSpotInput);
-                  if(!isNaN(v)&&v>0){ setSimSpot(v); setSimSpotInput(v.toFixed(2)); }
-                  else{ setSimSpot(null); setSimSpotInput(spot.toFixed(2)); }
-                }}
-                style={{width:58,background:"#0d1821",border:"1px solid #00d4aa44",borderRadius:4,
-                  color:"#00d4aa",fontSize:10,padding:"2px 5px",fontFamily:"DM Mono,monospace",
-                  outline:"none",MozAppearance:"textfield"}}
-              />
-              {simSpot!==null&&Math.abs(simSpot-spot)>0.01&&(
-                <button onClick={()=>{setSimSpot(null);setSimSpotInput(spot.toFixed(2));}}
-                  title="Reset to market price"
-                  style={{fontSize:9,color:"#3a5a7a",cursor:"pointer",background:"none",border:"none",
-                    padding:"1px 4px",borderRadius:3,lineHeight:1,fontFamily:"DM Mono,monospace"}}>↺</button>
-              )}
+              <span style={{color:"#c8d8e8",fontFamily:"DM Mono,monospace"}}>${spot.toFixed(2)}</span>
             </div>
             <div style={{marginLeft:"auto",fontSize:9,color:"#3a5a7a"}}>Hover any cell for details</div>
+          </div>
+        )}
+
+        {/* Range slider */}
+        {matrixRows.length>0&&(
+          <div style={{display:"flex",alignItems:"center",gap:8,padding:"7px 12px",borderBottom:"1px solid #1a2a3a",background:"#080c10"}}>
+            <span style={{fontSize:9,letterSpacing:1.2,textTransform:"uppercase",color:"#3a5a7a",flexShrink:0}}>Range</span>
+            <button onClick={()=>setRangeShift(v=>Math.max(-30,+(v-0.5).toFixed(1)))}
+              style={{background:"none",border:"none",color:"#5a7a9a",cursor:"pointer",fontSize:13,padding:"0 2px",lineHeight:1}}>◀</button>
+            <input type="range" min={-30} max={30} step={0.5} value={rangeShift}
+              onChange={e=>setRangeShift(parseFloat(e.target.value))}
+              style={{flex:1,accentColor:"#3a8fff",cursor:"pointer"}}/>
+            <button onClick={()=>setRangeShift(v=>Math.min(30,+(v+0.5).toFixed(1)))}
+              style={{background:"none",border:"none",color:"#5a7a9a",cursor:"pointer",fontSize:13,padding:"0 2px",lineHeight:1}}>▶</button>
+            <span style={{fontFamily:"DM Mono,monospace",fontSize:10,color:rangeShift===0?"#3a5a7a":rangeShift>0?"#00d4aa":"#ff4d6a",minWidth:42,textAlign:"right"}}>
+              {rangeShift===0?"0.0%":(rangeShift>0?"+":"")+rangeShift.toFixed(1)+"%"}
+            </span>
+            {rangeShift!==0&&(
+              <button onClick={()=>setRangeShift(0)}
+                title="Reset to market price"
+                style={{fontSize:9,color:"#3a8fff",background:"none",border:"1px solid #3a8fff44",borderRadius:3,cursor:"pointer",padding:"1px 5px",fontFamily:"DM Mono,monospace"}}>↺</button>
+            )}
           </div>
         )}
 
