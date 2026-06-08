@@ -1319,6 +1319,18 @@ function SimulatorPanel({ onSaveManualTrade }) {
   const gamma    = selOption?.greeks?.gamma||0;
   const vega     = selOption?.greeks?.vega||0;
 
+  // Combined payoff across all legs (at expiration) — declared early so breakeven/maxProfit can use it
+  const combinedPnlAt = useCallback((price)=>legs.reduce((sum,leg)=>{
+    if(!leg.strike) return sum;
+    const prem=getLegPremium(leg); if(prem<=0) return sum;
+    const intr=leg.optType==="call"?Math.max(price-leg.strike,0):Math.max(leg.strike-price,0);
+    const raw=(intr-prem)*100;
+    return sum+(leg.side==="buy"?raw:-raw);
+  },0),[legs,getLegPremium]);
+
+  const priceSamples = useMemo(()=>Array.from({length:400},(_,i)=>activeSpot*0.4+(i/399)*activeSpot*1.2),[activeSpot]);
+  const payoffSamples = useMemo(()=>priceSamples.map(p=>combinedPnlAt(p)),[priceSamples,combinedPnlAt]);
+
   const breakeven = useMemo(()=>{
     if(legs.length===1&&selStrike&&activePremium){
       if(optType==="call") return side==="buy"?selStrike+activePremium:selStrike-activePremium;
@@ -1404,18 +1416,6 @@ function SimulatorPanel({ onSaveManualTrade }) {
     return [...monthly.slice(0,11), selExp];
   },[exps,selExp]);
 
-  // Combined payoff across all legs (at expiration)
-  const combinedPnlAt = useCallback((price)=>legs.reduce((sum,leg)=>{
-    if(!leg.strike) return sum;
-    const prem=getLegPremium(leg); if(prem<=0) return sum;
-    const intr=leg.optType==="call"?Math.max(price-leg.strike,0):Math.max(leg.strike-price,0);
-    const raw=(intr-prem)*100;
-    return sum+(leg.side==="buy"?raw:-raw);
-  },0),[legs,getLegPremium]);
-
-  // Sampled payoffs used for max profit / max loss / breakeven
-  const priceSamples = useMemo(()=>Array.from({length:400},(_,i)=>activeSpot*0.4+(i/399)*activeSpot*1.2),[activeSpot]);
-  const payoffSamples = useMemo(()=>priceSamples.map(p=>combinedPnlAt(p)),[priceSamples,combinedPnlAt]);
 
   // P&L matrix using Black-Scholes — sums all legs
   const allChainStrikes = useMemo(()=>[...new Set(chain.map(o=>o.strike))].sort((a,b)=>a-b),[chain]);
