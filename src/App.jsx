@@ -575,7 +575,7 @@ function UnifiedTradeModal({ title="Add Trade", initial={}, asset=null, isEdit=f
 
 // ── Asset Dashboard ───────────────────────────────────────────────────────────
 function AssetDashboard({ asset, onClose, onSaveTrade, onUpdateTrade, onDeleteTrade, onDeleteLeap, onUpdateLeap, onDeleteAsset, onSaveLeap }) {
-  const [trades, setTrades] = useState(asset.trades);
+  const trades = asset.trades;
   const [etfPrice, setEtfPrice] = useState(asset.initialPrice||0);
   const [liveData, setLiveData] = useState(null);
   const [loadingLive, setLoadingLive] = useState(false);
@@ -605,8 +605,6 @@ function AssetDashboard({ asset, onClose, onSaveTrade, onUpdateTrade, onDeleteTr
     setLoadingLive(false);
   },[asset.ticker]);
   useEffect(()=>{fetchLive();},[fetchLive]);
-  // Keep local trades in sync when parent state updates (e.g. trade added from simulator or ClaudeChat)
-  useEffect(()=>{setTrades(asset.trades);},[asset.trades]);
 
   const leaps = asset.leaps||[];
   const totalLeapCost = leaps.reduce((s,l)=>s+l.cost*l.contracts*100,0);
@@ -632,20 +630,13 @@ function AssetDashboard({ asset, onClose, onSaveTrade, onUpdateTrade, onDeleteTr
   async function saveTrade(tradeData){
     if(editId){
       await onUpdateTrade(editId,tradeData);
-      setTrades(p=>p.map(t=>t.id===editId?{...t,...tradeData}:t));
     } else {
-      const saved=await onSaveTrade(tradeData);
-      if(saved){
-        const opp=tradeData.action==="BUY"?"SELL":"BUY";
-        const toClose=trades.filter(t=>t.status==="open"&&t.action===opp&&parseFloat(t.strike)===parseFloat(tradeData.strike)&&t.expiration===tradeData.expiration);
-        setTrades(p=>[...p.map(t=>toClose.some(c=>c.id===t.id)?{...t,status:"closed"}:t),saved]);
-      }
+      await onSaveTrade(tradeData);
     }
     setShowForm(false);
   }
   async function removeTrade(id){
     await onDeleteTrade(id);
-    setTrades(p=>p.filter(t=>t.id!==id));
   }
   function openCR(t){
     const group=openTrades.filter(o=>parseFloat(o.strike)===parseFloat(t.strike)&&o.expiration===t.expiration);
@@ -670,31 +661,23 @@ function AssetDashboard({ asset, onClose, onSaveTrade, onUpdateTrade, onDeleteTr
       if(crForm.mode==="expired"){
         if(keeping>0){
           await onUpdateTrade(trade.id,{contracts:keeping});
-          setTrades(p=>p.map(t=>t.id===trade.id?{...t,contracts:keeping}:t));
-          const saved=await onSaveTrade({date:trade.date||today,action:"SELL",strike:trade.strike,expiration:trade.expiration,premium:trade.premium,contracts:closing,status:"expired"});
-          if(saved)setTrades(p=>[...p,saved]);
+          await onSaveTrade({date:trade.date||today,action:"SELL",strike:trade.strike,expiration:trade.expiration,premium:trade.premium,contracts:closing,status:"expired"});
         }else{
           await onUpdateTrade(trade.id,{status:"expired"});
-          setTrades(p=>p.map(t=>t.id===trade.id?{...t,status:"expired"}:t));
         }
       }else{
         if(keeping>0){
           await onUpdateTrade(trade.id,{contracts:keeping});
-          setTrades(p=>p.map(t=>t.id===trade.id?{...t,contracts:keeping}:t));
-          const saved=await onSaveTrade({date:trade.date||today,action:"SELL",strike:trade.strike,expiration:trade.expiration,premium:trade.premium,contracts:closing,status:"closed"});
-          if(saved)setTrades(p=>[...p,saved]);
+          await onSaveTrade({date:trade.date||today,action:"SELL",strike:trade.strike,expiration:trade.expiration,premium:trade.premium,contracts:closing,status:"closed"});
         }else{
           await onUpdateTrade(trade.id,{status:"closed"});
-          setTrades(p=>p.map(t=>t.id===trade.id?{...t,status:"closed"}:t));
         }
       }
     }
     if(crForm.mode!=="expired"){
-      const savedBuy=await onSaveTrade({date:today,action:"BUY",strike:showCR.strike,expiration:showCR.expiration,premium:parseFloat(crForm.closePrem),contracts:closingTotal,status:"closed"});
-      if(savedBuy)setTrades(p=>[...p,savedBuy]);
+      await onSaveTrade({date:today,action:"BUY",strike:showCR.strike,expiration:showCR.expiration,premium:parseFloat(crForm.closePrem),contracts:closingTotal,status:"closed"});
       if(crForm.mode==="roll"&&crForm.newExp&&crForm.newPrem){
-        const savedRoll=await onSaveTrade({date:today,action:"SELL",strike:parseFloat(crForm.newStrike||showCR.strike),expiration:crForm.newExp,premium:parseFloat(crForm.newPrem),contracts:closingTotal,status:"open"});
-        if(savedRoll)setTrades(p=>[...p,savedRoll]);
+        await onSaveTrade({date:today,action:"SELL",strike:parseFloat(crForm.newStrike||showCR.strike),expiration:crForm.newExp,premium:parseFloat(crForm.newPrem),contracts:closingTotal,status:"open"});
       }
     }
     setShowCR(null);
@@ -707,7 +690,6 @@ function AssetDashboard({ asset, onClose, onSaveTrade, onUpdateTrade, onDeleteTr
       expiration:closeLeap.expiration, premium:parseFloat(closeLeapPrem),
       contracts:closeLeap.contracts||1, status:"closed"
     });
-    if(saved) setTrades(p=>[...p,saved]);
     await onDeleteLeap(closeLeap.id);
     setCloseLeap(null);
     setCloseLeapPrem("");
@@ -720,7 +702,6 @@ function AssetDashboard({ asset, onClose, onSaveTrade, onUpdateTrade, onDeleteTr
       await onUpdateTrade(t.id,{status:"closed"});
     }
     const upd=trades.map(t=>t.status==="open"?{...t,status:"closed"}:t);
-    setTrades(upd);
     onClose(asset.id,upd,parseFloat(closeForm.closePrem));
     setShowClose(false);
   }
