@@ -807,6 +807,37 @@ function AssetDashboard({ asset, onClose, onSaveTrade, onUpdateTrade, onDeleteTr
               </>
             )}
 
+            {!isPremium&&leaps.length>0&&(
+              <div className="sec">
+                <div className="sechdr">
+                  <div className="sectitle">Long positions</div>
+                  <div style={{display:"flex",gap:8,alignItems:"center"}}>
+                    {leapContracts>1&&<span style={{fontSize:11,color:"#f5c842"}}>{leapContracts} contracts</span>}
+                    <div className="badge" style={{color,borderColor:color+"44",background:color+"15"}}>LONG</div>
+                  </div>
+                </div>
+                <table>
+                  <thead><tr><th>Date</th><th>Strike</th><th>Expiration</th><th>Cost</th><th>Contracts</th><th>Total</th><th></th></tr></thead>
+                  <tbody>
+                    {leaps.map((l,i)=>(
+                      <tr key={l.id||i}>
+                        <td style={{color:"#5a7a9a"}}>{l.date}</td>
+                        <td style={{color:"#f5c842"}}>${l.strike}</td>
+                        <td>{l.expiration}</td>
+                        <td style={{color}}>${fmt(l.cost)}</td>
+                        <td style={{color:"#8aaac8"}}>{l.contracts}</td>
+                        <td style={{color}}>${fmt(l.cost*l.contracts*100)}</td>
+                        <td><div style={{display:"flex",gap:5}}>
+                          <button className="btn bsm bneutral" onClick={()=>setEditLeapData(l)}>Edit</button>
+                          <button className="btn bsm bdanger" onClick={()=>onDeleteLeap(l.id)}>✕</button>
+                        </div></td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
             <div className="sec">
               <div className="sechdr">
                 <div className="sectitle">{isPremium?"Short calls open":"Open positions"}</div>
@@ -2710,6 +2741,7 @@ function App() {
       .then(async data=>{
         let migrated=false;
         for(const a of data){
+          if(!isPremiumStrategy(a.strategy||'')) continue;
           for(const t of a.trades){
             if(t.action==="BUY"&&t.status==="open"&&t.expiration&&t.date&&
               (new Date(t.expiration)-new Date(t.date))>180*24*60*60*1000){
