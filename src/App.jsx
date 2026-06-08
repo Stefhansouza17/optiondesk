@@ -263,7 +263,7 @@ tr:hover .sim-td,.sim-row-atm:hover .sim-td-price,.sim-row-atm:hover .sim-td-pct
   .tgl{padding:7px 10px;font-size:10px}
   .toggle-group{min-width:0}
 }
-.ts-tooltip{display:none;position:absolute;left:18px;top:-4px;z-index:99;background:#0d1821;border:1px solid #3a6a9a;border-radius:6px;padding:9px 11px;width:210px;font-size:9.5px;color:#c0d8f0;line-height:1.8;white-space:pre-line;pointer-events:none}
+.ts-tooltip{display:none;position:absolute;bottom:22px;left:-90px;z-index:99;background:#0d1821;border:1px solid #3a6a9a;border-radius:8px;padding:13px 15px;width:250px;font-size:11.5px;color:#c0d8f0;line-height:2;white-space:pre-line;pointer-events:none;box-shadow:0 4px 20px rgba(0,0,0,.6)}
 .ts-tooltip b{color:#c8d8e8;display:block;margin-bottom:4px;font-size:10px}
 div:hover>.ts-tooltip{display:block}
 `;
@@ -1637,10 +1637,10 @@ function SimulatorPanel({ onSaveManualTrade }) {
           <div style={{display:"flex",flexDirection:"column",gap:8}}>
             <div className="sim-slbl">Greeks</div>
             <div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:5}}>
-              {[["Theta",fmt(theta,3),"#ff4d6a"],["Gamma",fmt(gamma,4),"#00d4aa"],["Vega",fmt(vega,3),"#a78bfa"],["Delta",fmt(delta,3),"#3a8fff"]].map(([name,val,c])=>(
+              {[["Delta",fmt(delta,3),"#3a8fff"],["Gamma",fmt(gamma,4),"#00d4aa"],["Theta",fmt(theta,3),"#ff4d6a"],["Vega",fmt(vega,3),"#a78bfa"]].map(([name,val,c])=>(
                 <div key={name} style={{background:"#080c10",border:"1px solid #1a2a3a",borderRadius:5,padding:"8px 7px",textAlign:"center"}}>
-                  <div style={{fontSize:10,color:"#3a5a7a",marginBottom:4,letterSpacing:.5}}>{name}</div>
-                  <div style={{fontSize:14,fontWeight:500,color:c}}>{val}</div>
+                  <div style={{fontSize:12,color:"#3a5a7a",marginBottom:4,letterSpacing:.5}}>{name}</div>
+                  <div style={{fontSize:15,fontWeight:600,color:c}}>{val}</div>
                 </div>
               ))}
             </div>
@@ -1651,11 +1651,11 @@ function SimulatorPanel({ onSaveManualTrade }) {
               return(
                 <div style={{background:"#080c10",border:`1px solid ${col}33`,borderRadius:6,padding:"9px 10px"}}>
                   <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
-                    <div style={{display:"flex",alignItems:"center",gap:5}}>
-                      <div style={{fontSize:9,color:"#3a5a7a",letterSpacing:1}}>Theta Score</div>
+                    <div style={{display:"flex",alignItems:"center",gap:6}}>
+                      <div style={{fontSize:13,fontWeight:600,color:"#8aaac8",letterSpacing:.5}}>Theta Score</div>
                       <div style={{position:"relative",display:"inline-block"}}>
-                        <button style={{width:14,height:14,borderRadius:"50%",background:"#1a2a3a",border:"1px solid #2a3a4a",
-                          color:"#5a7a9a",fontSize:8,cursor:"default",display:"flex",alignItems:"center",justifyContent:"center",
+                        <button style={{width:15,height:15,borderRadius:"50%",background:"#1a2a3a",border:"1px solid #2a3a4a",
+                          color:"#6a8aaa",fontSize:9,cursor:"default",display:"flex",alignItems:"center",justifyContent:"center",
                           fontFamily:"DM Mono,monospace",padding:0}}>?</button>
                         <div className="ts-tooltip">
                           Theta Efficiency (35%) — decay per dollar of premium{"\n"}
@@ -1667,8 +1667,8 @@ function SimulatorPanel({ onSaveManualTrade }) {
                       </div>
                     </div>
                     <div style={{textAlign:"right"}}>
-                      <div style={{fontFamily:"Syne,sans-serif",fontSize:30,fontWeight:800,color:col,lineHeight:1}}>{sc}</div>
-                      <div style={{fontSize:9,color:col,letterSpacing:.5,marginTop:2}}>{lbl}</div>
+                      <div style={{fontFamily:"Syne,sans-serif",fontSize:20,fontWeight:800,color:col,lineHeight:1}}>{sc}</div>
+                      <div style={{fontSize:10,color:col,letterSpacing:.5,marginTop:2}}>{lbl}</div>
                     </div>
                   </div>
                   <div style={{height:5,background:"#1a2a3a",borderRadius:3,overflow:"hidden"}}>
