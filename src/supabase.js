@@ -55,11 +55,11 @@ export async function addAsset(asset) {
   const { data, error } = await supabase.from('assets').upsert({
     id: asset.id,
     ticker: asset.ticker,
-    strategy: asset.strategy,
+    strategy: asset.strategy || null,
     color: asset.color,
-    leap_strike: asset.leapStrike,
-    leap_expiration: asset.leapExpiration,
-    leap_delta: asset.leapDelta,
+    leap_strike: asset.leapStrike || null,
+    leap_expiration: asset.leapExpiration || null,   // empty string → null (DATE column)
+    leap_delta: asset.leapDelta || null,
     initial_price: asset.initialPrice || 0,
     active: true,
   }, {onConflict: 'id'}).select().single();

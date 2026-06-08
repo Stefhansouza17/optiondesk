@@ -510,7 +510,7 @@ function UnifiedTradeModal({ title="Add Trade", initial={}, asset=null, isEdit=f
             </div>
             <div style={col}><label style={lbl}>Strategy</label>
               <select style={{...inp}} value={form.strategy} onChange={e=>upd("strategy",e.target.value)}>
-                <option value="">— Standalone —</option>
+                <option value="">— Auto-detect —</option>
                 {SIM_STRATEGIES.map(s=><option key={s} value={s}>{s}</option>)}
               </select>
             </div>
@@ -1219,7 +1219,7 @@ function SimulatorPanel({ onSaveManualTrade }) {
   const [sym, setSym]         = useState("");
   const [side, setSide]       = useState("buy");
   const [optType, setOptType] = useState("call");
-  const [strategy, setStrategy] = useState("Long Call");
+  const [strategy, setStrategy] = useState("");
   const [exps, setExps]       = useState([]);
   const [selExp, setSelExp]   = useState("");
   const [chain, setChain]     = useState([]);
@@ -1430,6 +1430,7 @@ function SimulatorPanel({ onSaveManualTrade }) {
         <div>
           <div className="sim-slbl">Strategy</div>
           <select className="fsel" value={strategy} onChange={e=>setStrategy(e.target.value)} style={{width:"100%",fontSize:12}}>
+            <option value="">— Auto-detect —</option>
             {SIM_STRATEGIES.map(s=><option key={s} value={s}>{s}</option>)}
           </select>
         </div>
@@ -1836,7 +1837,7 @@ function SimulatorPanel({ onSaveManualTrade }) {
                   <div style={{fontSize:9,letterSpacing:1.5,textTransform:"uppercase",color:"#3a5a7a",marginBottom:4}}>Strategy <span style={{opacity:.5}}>(optional)</span></div>
                   <select value={strategy} onChange={e=>setStrategy(e.target.value)}
                     className="fsel" style={{width:"100%",fontSize:13}}>
-                    <option value="">— Standalone —</option>
+                    <option value="">— Auto-detect —</option>
                     {SIM_STRATEGIES.map(s=><option key={s} value={s}>{s}</option>)}
                   </select>
                 </div>
@@ -2886,16 +2887,25 @@ function App() {
     try { const fresh = await fetchAssets(); setAssets(fresh); } catch(e){ console.error(e); }
   };
 
+  const autoStrategy = (action, optType) => {
+    if(action==="BUY"  && optType==="call") return "Long Call";
+    if(action==="BUY"  && optType==="put")  return "Long Put";
+    if(action==="SELL" && optType==="call") return "Short Call";
+    if(action==="SELL" && optType==="put")  return "Short Put";
+    return "Long Call";
+  };
+
   const handleSaveManualTrade = async (symbol, trade) => {
     const ticker = symbol.toUpperCase();
     const existing = assets.find(a=>a.ticker===ticker);
     let assetId;
+    const detectedStrategy = trade.strategy || autoStrategy(trade.action, trade.option_type);
     if (!existing) {
       const usedColors = assets.map(a=>a.color);
       const color = COLORS.find(c=>!usedColors.includes(c)) || "#a78bfa";
       const newAsset = {
-        id:ticker, ticker, strategy:trade.strategy||"Long Call", color,
-        leapStrike:0, leapExpiration:"", leapCost:0, leapDelta:0,
+        id:ticker, ticker, strategy:detectedStrategy, color,
+        leapStrike:null, leapExpiration:null, leapCost:null, leapDelta:null,
         initialPrice:0, active:true, trades:[],
       };
       await addAssetSilent(newAsset);
@@ -2903,8 +2913,7 @@ function App() {
     } else {
       assetId = existing.id;
     }
-    await handleSaveTrade(assetId, trade);
-    // Re-fetch from Supabase to guarantee UI reflects saved state
+    await handleSaveTrade(assetId, {...trade, strategy: detectedStrategy});
     await reloadAssets();
   };
 
@@ -3079,11 +3088,15 @@ function ClaudeChat({ assets, onSaveTrade, onUpdateTrade, onSaveLeap, onAddAsset
       let asset = assets.find(a=>a.id===assetId) || createdAssets[assetId];
 
       if(!asset){
-        // Auto-create the asset
+        // Auto-create the asset with detected strategy
+        const tStrat = t.action==="BUY" && t.option_type==="put" ? "Long Put"
+          : t.action==="SELL" && t.option_type==="call" ? "Short Call"
+          : t.action==="SELL" && t.option_type==="put"  ? "Short Put"
+          : "Long Call";
         const newAsset = {
           id: assetId,
           ticker: assetId,
-          strategy: "PMCC",
+          strategy: tStrat,
           color: "#00d4aa",
           leapStrike: null,
           leapExpiration: null,
@@ -3160,11 +3173,17 @@ function ClaudeChat({ assets, onSaveTrade, onUpdateTrade, onSaveLeap, onAddAsset
         }
       } catch(e){ console.error("Error matching trade:", e); }
 
-      // Save the new trade — use status from Claude response, not assumed
+      // Save the new trade — auto-detect strategy from action+option_type if not set
+      const detectedStrat = t.strategy || (
+        t.action==="BUY"  && t.option_type==="put"  ? "Long Put"   :
+        t.action==="SELL" && t.option_type==="call"  ? "Short Call" :
+        t.action==="SELL" && t.option_type==="put"   ? "Short Put"  : "Long Call"
+      );
       await onSaveTrade(assetId, {
         date:fixedDate, action:t.action, strike:t.strike,
         expiration:fixedExp, premium:normalizedPremium,
-        contracts:t.contracts||1, status: t.status||"open"
+        contracts:t.contracts||1, status: t.status||"open",
+        option_type: t.option_type||"call", strategy: detectedStrat,
       });
       saved++;
     }
@@ -3313,7 +3332,7 @@ function ClaudeChat({ assets, onSaveTrade, onUpdateTrade, onSaveLeap, onAddAsset
                       <div style={{fontSize:9,color:"#5a7a9a",marginBottom:2}}>STRATEGY</div>
                       <select style={{width:"100%",background:"#080c10",border:"1px solid #1a2a3a",color:"#a78bfa",fontFamily:"DM Mono,monospace",fontSize:11,padding:"4px 8px",borderRadius:4,outline:"none"}}
                         value={t.strategy||""} onChange={e=>{const v=[...pendingTrades];v[i]={...v[i],strategy:e.target.value};setPendingTrades(v);}}>
-                        <option value="">— Standalone —</option>
+                        <option value="">— Auto-detect —</option>
                         {SIM_STRATEGIES.map(s=><option key={s} value={s}>{s}</option>)}
                       </select>
                     </div>
