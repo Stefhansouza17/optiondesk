@@ -445,7 +445,7 @@ function UnifiedTradeModal({ title="Add Trade", initial={}, asset=null, isEdit=f
   const typeToForm = t=>t==="Long Call"?{action:"BUY",option_type:"call"}:t==="Long Put"?{action:"BUY",option_type:"put"}:t==="Short Call"?{action:"SELL",option_type:"call"}:t==="Short Put"?{action:"SELL",option_type:"put"}:{action:"BUY",option_type:"call"};
   const initTypeLabel = initial.isLeap?"LEAP":form.action==="BUY"&&form.option_type==="call"?"Long Call":form.action==="BUY"&&form.option_type==="put"?"Long Put":form.action==="SELL"&&form.option_type==="call"?"Short Call":"Short Put";
   const [typeLabel, setTypeLabel] = useState(initTypeLabel);
-  const showLeapSelector = typeLabel!=="LEAP" && form.action==="SELL" && leaps.length>0;
+  const showLeapSelector = typeLabel==="Short Call" || typeLabel==="Short Put";
   const isLeapEntry = !isEdit && (typeLabel==="LEAP" || (form.action==="BUY" && form.expiration && form.date && (new Date(form.expiration)-new Date(form.date))>180*24*60*60*1000));
 
   const totalVal = ((parseFloat(form.premium)||0)*(parseInt(form.contracts)||1)*100);
@@ -513,11 +513,15 @@ function UnifiedTradeModal({ title="Add Trade", initial={}, asset=null, isEdit=f
 
           {showLeapSelector&&(
             <div style={col}>
-              <label style={{...lbl,color:"#f5c842"}}>Associated LEAP <span style={{opacity:.4,fontWeight:400}}>optional</span></label>
-              <select style={{...inp,borderColor:"#f5c84244",color:"#f5c842"}} value={form.trade_group||"none"} onChange={e=>upd("trade_group",e.target.value==="none"?null:e.target.value)}>
-                <option value="none">— None —</option>
-                {leaps.map(l=><option key={l.id} value={l.id}>${l.strike} · {l.expiration} · {l.contracts} contract{l.contracts!==1?"s":""}</option>)}
-              </select>
+              <label style={{...lbl,color:"#f5c842"}}>Associated LEAP <span style={{opacity:.4,fontWeight:400,textTransform:"none",letterSpacing:0}}>— optional</span></label>
+              {leaps.length===0?(
+                <div style={{fontSize:11,color:"#3a5a7a",padding:"8px 10px",background:"#080c10",border:"1px solid #1a2a3a",borderRadius:5}}>No LEAPs found for this asset</div>
+              ):(
+                <select style={{...inp,borderColor:"#f5c84244",color:"#f5c842"}} value={form.trade_group||"none"} onChange={e=>upd("trade_group",e.target.value==="none"?null:e.target.value)}>
+                  <option value="none">— None —</option>
+                  {leaps.map(l=><option key={l.id} value={l.id}>${l.strike} · {l.expiration} · {l.contracts} contract{l.contracts!==1?"s":""}</option>)}
+                </select>
+              )}
             </div>
           )}
 
