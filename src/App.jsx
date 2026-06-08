@@ -443,11 +443,10 @@ function UnifiedTradeModal({ title="Add Trade", initial={}, asset=null, isEdit=f
   const [selLeapId, setSelLeapId] = useState(leaps[0]?.id||"none");
   const color = asset?.color||"#00d4aa";
 
-  const isPMCC = form.strategy==="PMCC";
+  const isPMCC = asset?.strategy==="PMCC" || asset?.strategy==="Covered Call";
   const showLeapSelector = isPMCC && form.action==="SELL" && leaps.length>0;
   const isLeapEntry = !isEdit && form.action==="BUY" && form.expiration && form.date &&
-    (new Date(form.expiration)-new Date(form.date))>180*24*60*60*1000 &&
-    (form.strategy==="PMCC"||form.strategy==="Covered Call");
+    (new Date(form.expiration)-new Date(form.date))>180*24*60*60*1000;
 
   const totalVal = ((parseFloat(form.premium)||0)*(parseInt(form.contracts)||1)*100);
 
@@ -507,12 +506,6 @@ function UnifiedTradeModal({ title="Add Trade", initial={}, asset=null, isEdit=f
                   </button>
                 ))}
               </div>
-            </div>
-            <div style={col}><label style={lbl}>Strategy</label>
-              <select style={{...inp}} value={form.strategy} onChange={e=>upd("strategy",e.target.value)}>
-                <option value="">— Auto-detect —</option>
-                {SIM_STRATEGIES.map(s=><option key={s} value={s}>{s}</option>)}
-              </select>
             </div>
           </div>
 
@@ -1426,14 +1419,6 @@ function SimulatorPanel({ onSaveManualTrade }) {
           {error&&<div style={{fontSize:10,color:"#ff4d6a",marginTop:4}}>{error}</div>}
         </div>
 
-        {/* Strategy */}
-        <div>
-          <div className="sim-slbl">Strategy</div>
-          <select className="fsel" value={strategy} onChange={e=>setStrategy(e.target.value)} style={{width:"100%",fontSize:12}}>
-            <option value="">— Auto-detect —</option>
-            {SIM_STRATEGIES.map(s=><option key={s} value={s}>{s}</option>)}
-          </select>
-        </div>
 
         {/* Buy/Sell + Call/Put */}
         <div>
@@ -1832,15 +1817,6 @@ function SimulatorPanel({ onSaveManualTrade }) {
                   </select>
                 </div>
 
-                {/* Strategy (optional) */}
-                <div>
-                  <div style={{fontSize:9,letterSpacing:1.5,textTransform:"uppercase",color:"#3a5a7a",marginBottom:4}}>Strategy <span style={{opacity:.5}}>(optional)</span></div>
-                  <select value={strategy} onChange={e=>setStrategy(e.target.value)}
-                    className="fsel" style={{width:"100%",fontSize:13}}>
-                    <option value="">— Auto-detect —</option>
-                    {SIM_STRATEGIES.map(s=><option key={s} value={s}>{s}</option>)}
-                  </select>
-                </div>
               </div>
 
               {/* Summary strip */}
@@ -1919,6 +1895,22 @@ function Home({ assets, onSelectAsset, onShowPositions, onSaveManualTrade }) {
       if(sortBy==="recovery")return(b.col/b.leapAvg)-(a.col/a.leapAvg);
       return 0;
     }),[totals,stratFilter,sortBy]);
+
+  const allOpenRows = useMemo(()=>totals.flatMap(t=>[
+    ...(t.leaps||[]).map(l=>({
+      ticker:t.ticker, color:t.color, assetId:t.id,
+      label:"LEAP", action:"BUY",
+      strike:l.strike, premium:l.cost, contracts:l.contracts,
+      expiration:l.expiration, date:l.date,
+    })),
+    ...t.openTrades.map(tr=>({
+      ticker:t.ticker, color:t.color, assetId:t.id,
+      label:tr.action==="BUY"?(tr.option_type==="put"?"Long Put":"Long Call"):(tr.option_type==="put"?"Short Put":"Short Call"),
+      action:tr.action,
+      strike:tr.strike, premium:tr.premium, contracts:tr.contracts||1,
+      expiration:tr.expiration, date:tr.date,
+    })),
+  ]).sort((a,b)=>new Date(a.expiration)-new Date(b.expiration)),[totals]);
 
   return (
     <div className="main fade-in">
@@ -2021,53 +2013,39 @@ function Home({ assets, onSelectAsset, onShowPositions, onSaveManualTrade }) {
         </div>
       )}
 
-      {/* Active Positions */}
-      {totals.length>0&&(
-        <div className="sec" style={{marginBottom:24}}>
-          <div className="sechdr">
-            <div className="sectitle">Active positions</div>
-            <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}>
-              <select className="fsel sm" value={stratFilter} onChange={e=>setStratFilter(e.target.value)}>
-                <option value="all">All strategies</option>
-                <option value="PMCC">PMCC</option>
-                <option value="Long Call">Long Call</option>
-                <option value="Covered Call">Covered Call</option>
-              </select>
-              <select className="fsel sm" value={sortBy} onChange={e=>setSortBy(e.target.value)}>
-                <option value="expiration">Sort: expiration</option>
-                <option value="ticker">Sort: ticker</option>
-                <option value="recovery">Sort: recovery</option>
-              </select>
-            </div>
-          </div>
+      {/* Open Positions — flat per-trade table */}
+      <div className="sec" style={{marginBottom:24}}>
+        <div className="sechdr">
+          <div className="sectitle">Open positions</div>
+          <span style={{fontSize:11,color:"#5a7a9a"}}>{allOpenRows.length} position{allOpenRows.length!==1?"s":""}</span>
+        </div>
+        {allOpenRows.length===0?(
+          <div className="empty">Nenhuma posição aberta — adicione um trade abaixo</div>
+        ):(
           <table>
-            <thead><tr><th>Ticker</th><th>Strategy</th><th>Strike</th><th>Premium</th><th>Expiration</th><th>Recovery</th><th>Status</th></tr></thead>
+            <thead><tr><th>Ticker</th><th>Type</th><th>Action</th><th>Strike</th><th>Premium</th><th>Contracts</th><th>Expiration</th><th>Days</th></tr></thead>
             <tbody>
-              {filteredTotals.map(t=>{
-                const recPct=Math.min(t.col/Math.max(t.leapCost,0.01)*100,100);
-                const recColor=recPct<10?"#BA7517":recPct<25?"#f5c842":"#00d4aa";
-                const openSell=t.openSells[0];
-                const openAny=t.openTrades[0];
-                const display=openSell||openAny;
-                const isSell=display?.action==="SELL";
-                const nearestDays=display?Math.ceil((new Date(display.expiration)-new Date())/(1000*60*60*24)):null;
-                const bc=nearestDays!=null?(nearestDays<=3?"#E24B4A":nearestDays<=7?"#BA7517":"#1D9E75"):"#3a5a7a";
-                return (
-                  <tr key={t.id} onClick={()=>onSelectAsset&&onSelectAsset(t.id)} style={{cursor:"pointer"}}>
-                    <td><span style={{fontFamily:"Syne,sans-serif",fontWeight:700,fontSize:14,color:"#fff"}}>{t.ticker}</span></td>
-                    <td><StratBadge strategy={t.strategy||"PMCC"}/></td>
-                    <td style={{color:"#f5c842"}}>{display?`$${display.strike}`:<span style={{fontSize:11,color:"#3a5a7a",fontStyle:"italic"}}>—</span>}</td>
-                    <td style={{color:isSell?"#00d4aa":"#ff6b9d"}}>{display?(isSell?"+":"-")+`$${fmt(display.premium*100)}`:<span style={{color:"#3a5a7a"}}>—</span>}</td>
-                    <td>{nearestDays!=null?(<div style={{display:"flex",alignItems:"center",gap:6}}><div style={{width:48,height:4,background:"#1a2a3a",borderRadius:2}}><div style={{height:"100%",width:`${Math.min(Math.max((nearestDays/21)*100,4),100)}%`,background:bc,borderRadius:2}}/></div><span style={{fontSize:11,color:bc}}>{nearestDays<=0?"exp!":nearestDays+"d"}</span></div>):<span style={{fontSize:11,color:"#3a5a7a",fontStyle:"italic"}}>—</span>}</td>
-                    <td>{isPremiumStrategy(t.strategy||"PMCC")?(<div style={{display:"flex",alignItems:"center",gap:6}}><div style={{width:60,height:4,background:"#1a2a3a",borderRadius:2}}><div style={{height:"100%",width:`${recPct}%`,background:recColor,borderRadius:2}}/></div><span style={{fontSize:11,color:recColor}}>{fmt(recPct,1)}%</span></div>):<span style={{color:"#3a5a7a",fontSize:12}}>—</span>}</td>
-                    <td>{t.openTrades.length>0?<span style={{display:"flex",alignItems:"center"}}><span className="pulse"/><span style={{fontSize:10,padding:"2px 8px",borderRadius:3,background:"#00d4aa15",border:"1px solid #00d4aa44",color:"#00d4aa",letterSpacing:1,textTransform:"uppercase"}}>open</span></span>:<span style={{fontSize:10,padding:"2px 8px",borderRadius:3,background:"#1a2a3a",border:"1px solid #3a5a7a44",color:"#3a5a7a",letterSpacing:1,textTransform:"uppercase"}}>—</span>}</td>
+              {allOpenRows.map((r,i)=>{
+                const dl=Math.ceil((new Date(r.expiration)-new Date())/(1000*60*60*24));
+                const bc=dl<=3?"#E24B4A":dl<=7?"#BA7517":"#1D9E75";
+                const isSell=r.action==="SELL";
+                return(
+                  <tr key={i} onClick={()=>onSelectAsset&&onSelectAsset(r.assetId)} style={{cursor:"pointer"}}>
+                    <td><span style={{fontFamily:"Syne,sans-serif",fontWeight:700,fontSize:14,color:r.color}}>{r.ticker}</span></td>
+                    <td><span style={{fontSize:10,padding:"2px 8px",borderRadius:3,background:isSell?"#00d4aa15":"#ff6b9d15",border:`1px solid ${isSell?"#00d4aa44":"#ff6b9d44"}`,color:isSell?"#00d4aa":"#ff6b9d"}}>{r.label}</span></td>
+                    <td><span style={{color:isSell?"#00d4aa":"#ff6b9d",fontWeight:600}}>{r.action}</span></td>
+                    <td style={{color:"#f5c842",fontWeight:600}}>${r.strike}</td>
+                    <td style={{color:isSell?"#00d4aa":"#ff6b9d"}}>{isSell?"+":"-"}${fmt(r.premium*100)}</td>
+                    <td style={{color:"#8aaac8"}}>{r.contracts}</td>
+                    <td style={{color:"#c8d8e8"}}>{r.expiration}</td>
+                    <td><span style={{fontSize:11,color:bc,fontWeight:600}}>{dl<=0?"Exp!":dl+"d"}</span></td>
                   </tr>
                 );
               })}
             </tbody>
           </table>
-        </div>
-      )}
+        )}
+      </div>
 
       {/* Simulator */}
       <div style={{marginBottom:14,display:"flex",alignItems:"center",gap:10}}>
