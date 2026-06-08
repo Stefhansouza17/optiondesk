@@ -441,12 +441,12 @@ function UnifiedTradeModal({ title="Add Trade", initial={}, asset=null, isEdit=f
   const upd = (k,v) => setForm(p=>({...p,[k]:v}));
   const leaps = asset?.leaps||[];
   const color = asset?.color||"#00d4aa";
-  const TYPES = ["Long Call","Long Put","Short Call","Short Put"];
-  const typeToForm = t=>t==="Long Call"?{action:"BUY",option_type:"call"}:t==="Long Put"?{action:"BUY",option_type:"put"}:t==="Short Call"?{action:"SELL",option_type:"call"}:{action:"SELL",option_type:"put"};
-  const currentType = form.action==="BUY"&&form.option_type==="call"?"Long Call":form.action==="BUY"&&form.option_type==="put"?"Long Put":form.action==="SELL"&&form.option_type==="call"?"Short Call":"Short Put";
-  const showLeapSelector = form.action==="SELL" && leaps.length>0;
-  const isLeapEntry = !isEdit && form.action==="BUY" && form.expiration && form.date &&
-    (new Date(form.expiration)-new Date(form.date))>180*24*60*60*1000;
+  const TYPES = ["Long Call","Long Put","Short Call","Short Put","LEAP"];
+  const typeToForm = t=>t==="Long Call"?{action:"BUY",option_type:"call"}:t==="Long Put"?{action:"BUY",option_type:"put"}:t==="Short Call"?{action:"SELL",option_type:"call"}:t==="Short Put"?{action:"SELL",option_type:"put"}:{action:"BUY",option_type:"call"};
+  const initTypeLabel = initial.isLeap?"LEAP":form.action==="BUY"&&form.option_type==="call"?"Long Call":form.action==="BUY"&&form.option_type==="put"?"Long Put":form.action==="SELL"&&form.option_type==="call"?"Short Call":"Short Put";
+  const [typeLabel, setTypeLabel] = useState(initTypeLabel);
+  const showLeapSelector = typeLabel!=="LEAP" && form.action==="SELL" && leaps.length>0;
+  const isLeapEntry = !isEdit && (typeLabel==="LEAP" || (form.action==="BUY" && form.expiration && form.date && (new Date(form.expiration)-new Date(form.date))>180*24*60*60*1000));
 
   const totalVal = ((parseFloat(form.premium)||0)*(parseInt(form.contracts)||1)*100);
 
@@ -454,8 +454,9 @@ function UnifiedTradeModal({ title="Add Trade", initial={}, asset=null, isEdit=f
     if(!form.strike||!form.expiration||!form.premium) return;
     const d={...form,strike:parseFloat(form.strike),premium:parseFloat(form.premium),
       contracts:Math.max(1,parseInt(form.contracts)||1),fees:parseFloat(form.fees)||0,
-      trade_group:form.action==="SELL"?(form.trade_group||null):null};
-    if(isLeapEntry&&onSaveLeap){
+      trade_group:form.action==="SELL"?(form.trade_group||null):null,
+      typeLabel};
+    if(!isEdit&&isLeapEntry&&onSaveLeap){
       await onSaveLeap({id:`${asset?.id||"t"}_${Date.now()}`,date:d.date,strike:d.strike,expiration:d.expiration,cost:d.premium,contracts:d.contracts});
       onClose(); return;
     }
@@ -483,8 +484,10 @@ function UnifiedTradeModal({ title="Add Trade", initial={}, asset=null, isEdit=f
           <div style={g2}>
             <div style={col}><label style={lbl}>Date</label><input style={inp} type="date" value={form.date} onChange={e=>upd("date",e.target.value)}/></div>
             <div style={col}><label style={lbl}>Trade Type</label>
-              <select style={inp} value={currentType} onChange={e=>{
-                const {action,option_type}=typeToForm(e.target.value);
+              <select style={inp} value={typeLabel} onChange={e=>{
+                const t=e.target.value;
+                setTypeLabel(t);
+                const {action,option_type}=typeToForm(t);
                 setForm(p=>({...p,action,option_type,trade_group:action==="BUY"?null:p.trade_group}));
               }}>
                 {TYPES.map(t=><option key={t} value={t}>{t}</option>)}
@@ -611,7 +614,12 @@ function AssetDashboard({ asset, onClose, onSaveTrade, onUpdateTrade, onDeleteTr
   function openEdit(t){setEditId(t.id);setForm({...ef,...t,contracts:t.contracts||1,fees:t.fees||"",notes:t.notes||""});setShowForm(true);}
   async function saveTrade(tradeData){
     if(editId){
-      await onUpdateTrade(editId,tradeData);
+      if(tradeData.typeLabel==="LEAP"){
+        await onDeleteTrade(editId);
+        await onSaveLeap({id:`${asset.id}_${Date.now()}`,date:tradeData.date,strike:tradeData.strike,expiration:tradeData.expiration,cost:tradeData.premium,contracts:tradeData.contracts});
+      } else {
+        await onUpdateTrade(editId,tradeData);
+      }
     } else {
       await onSaveTrade(tradeData);
     }
@@ -2033,10 +2041,7 @@ function Home({ assets, onSelectAsset, onShowPositions, onSaveManualTrade, onEdi
                     <td style={{color:"#c8d8e8"}}>{r.expiration}</td>
                     <td><span style={{fontSize:11,color:bc,fontWeight:600}}>{dl<=0?"Exp!":dl+"d"}</span></td>
                     <td onClick={e=>e.stopPropagation()}>
-                      {r.isLeap
-                        ? <button className="btn bsm bneutral" onClick={()=>onSelectAsset&&onSelectAsset(r.assetId)}>View →</button>
-                        : <button className="btn bsm bneutral" onClick={()=>onEditTrade&&onEditTrade(r)}>Edit</button>
-                      }
+                      <button className="btn bsm bneutral" onClick={()=>onEditTrade&&onEditTrade(r)}>Edit</button>
                     </td>
                   </tr>
                 );
@@ -2973,8 +2978,19 @@ function App() {
           asset={editTrade.asset}
           isEdit={true}
           onSave={async(changes)=>{
-            await handleUpdateTrade(editTrade.r.assetId, editTrade.r.id, changes);
-            showToast(`Trade updated: ${editTrade.r.ticker} ${changes.action} $${changes.strike}`);
+            const wasLeap=editTrade.r.isLeap, nowLeap=changes.typeLabel==="LEAP";
+            if(wasLeap&&nowLeap){
+              await handleUpdateLeap(editTrade.r.assetId,editTrade.r.id,{date:changes.date,strike:changes.strike,expiration:changes.expiration,cost:changes.premium,contracts:changes.contracts});
+            } else if(wasLeap&&!nowLeap){
+              await handleDeleteLeap(editTrade.r.assetId,editTrade.r.id);
+              await handleSaveTrade(editTrade.r.assetId,{date:changes.date,action:changes.action,option_type:changes.option_type,strike:changes.strike,expiration:changes.expiration,premium:changes.premium,contracts:changes.contracts,status:"open",fees:changes.fees||0,notes:changes.notes||null,trade_group:changes.trade_group||null});
+            } else if(!wasLeap&&nowLeap){
+              await handleDeleteTrade(editTrade.r.assetId,editTrade.r.id);
+              await handleSaveLeap(editTrade.r.assetId,{id:`${editTrade.r.assetId}_${Date.now()}`,date:changes.date,strike:changes.strike,expiration:changes.expiration,cost:changes.premium,contracts:changes.contracts});
+            } else {
+              await handleUpdateTrade(editTrade.r.assetId,editTrade.r.id,changes);
+            }
+            showToast(`Position updated: ${editTrade.r.ticker}`);
             setEditTrade(null);
           }}
           onClose={()=>setEditTrade(null)}
