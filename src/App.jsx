@@ -2732,6 +2732,11 @@ function App() {
       .catch(err=>{ console.error(err); setLoading(false); });
   },[]);
 
+  useEffect(()=>{
+    if(active==="home"||active==="closed") return;
+    fetchAssets().then(setAssets).catch(e=>console.error("nav reload:",e));
+  },[active]);
+
   const handleExpiredResolution = async (resolvedTrades) => {
     await Promise.all(resolvedTrades.map(t=>updateTrade(t.id,{status:t.decision})));
     setAssets(p=>p.map(a=>({
