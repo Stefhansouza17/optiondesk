@@ -1356,6 +1356,12 @@ function SimulatorPanel({ onSaveManualTrade }) {
     if(dist<0.07) return "Med";
     return "Low";
   },[side,selStrike,activeSpot]);
+  const deltaDir = delta > 0.1 ? "Bullish" : delta < -0.1 ? "Bearish" : "Neutral";
+  const deltaDirColor = delta > 0.1 ? "#3a8fff" : delta < -0.1 ? "#ff4d6a" : "#8aaac8";
+  const expectedValue = useMemo(()=>{
+    if(!payoffSamples.length||!selStrike) return null;
+    return payoffSamples.reduce((s,v)=>s+v,0)/payoffSamples.length;
+  },[payoffSamples,selStrike]);
 
   const strategy = useMemo(()=>{
     if(legs.length===1){
@@ -1735,54 +1741,81 @@ function SimulatorPanel({ onSaveManualTrade }) {
           const ivRankVal=iv30>0?Math.round(iv30*100):null;
           const ivRankLbl=ivRankVal===null?"—":ivRankVal>60?"High":ivRankVal>30?"Med":"Low";
           const ivRankColor=ivRankVal===null?"#3a5a7a":ivRankVal>60?"#ff4d6a":ivRankVal>30?"#f5c842":"#00d4aa";
+          const ivLbl=iv>0.4?"High":iv>0.2?"Med":"Low";
+          const ivColor=iv>0.4?"#ff4d6a":iv>0.2?"#f5c842":"#00d4aa";
+          const evColor=expectedValue!=null&&expectedValue>=0?"#00d4aa":"#ff4d6a";
+          const evPct=expectedValue!=null&&activePremium>0?((expectedValue/Math.abs(activePremium*100))*100):null;
           return(
-          <div style={{display:"flex",gap:0,borderBottom:"1px solid #1a2a3a",background:"#0d1821"}}>
-            {/* LEFT: Probabilities (narrower) */}
-            <div style={{width:"38%",flexShrink:0,padding:"10px 11px",borderRight:"1px solid #1a2a3a",display:"flex",flexDirection:"column",gap:7}}>
-              <div className="sim-slbl">Probabilities</div>
-              <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
+          <div style={{display:"flex",gap:0,borderBottom:"1px solid #1a2a3a",background:"#080c10"}}>
+            {/* LEFT: Probabilities */}
+            <div style={{flex:"0 0 45%",padding:"14px 16px",borderRight:"1px solid #1a2a3a",display:"flex",flexDirection:"column",gap:10}}>
+              <div className="sim-slbl" style={{margin:0,letterSpacing:2}}>Probabilities</div>
+
+              {/* Top row — 4 large metrics */}
+              <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:6}}>
                 <div>
-                  <div style={{fontSize:9,color:"#3a5a7a",marginBottom:2}}>Chance of Profit</div>
-                  <div style={{fontFamily:"Syne,sans-serif",fontSize:17,fontWeight:800,color:"#3a8fff"}}>{(chanceOfProfit*100).toFixed(1)}%</div>
+                  <div style={{fontSize:9,color:"#3a5a7a",marginBottom:4}}>Chance of Profit</div>
+                  <div style={{fontFamily:"Syne,sans-serif",fontSize:19,fontWeight:800,color:"#3a8fff"}}>{(chanceOfProfit*100).toFixed(1)}%</div>
                 </div>
-                {side==="sell"&&(
-                  <div style={{textAlign:"right"}}>
-                    <div style={{fontSize:9,color:"#3a5a7a",marginBottom:2}}>Assignment Risk</div>
-                    <div style={{fontSize:12,fontWeight:700,color:arColor}}>{assignmentRisk}</div>
-                  </div>
-                )}
+                <div>
+                  <div style={{fontSize:9,color:"#3a5a7a",marginBottom:4}}>Delta</div>
+                  <div style={{fontFamily:"Syne,sans-serif",fontSize:19,fontWeight:800,color:deltaDirColor}}>{Math.abs(delta).toFixed(2)}</div>
+                  <div style={{fontSize:9,color:deltaDirColor,marginTop:2}}>{deltaDir}</div>
+                </div>
+                <div>
+                  <div style={{fontSize:9,color:"#3a5a7a",marginBottom:4}}>IV (option)</div>
+                  <div style={{fontFamily:"Syne,sans-serif",fontSize:19,fontWeight:800,color:"#f5c842"}}>{(iv*100).toFixed(1)}%</div>
+                  <div style={{fontSize:9,color:ivColor,marginTop:2}}>{ivLbl}</div>
+                </div>
+                <div>
+                  <div style={{fontSize:9,color:"#3a5a7a",marginBottom:4}}>IV Rank (stock)</div>
+                  <div style={{fontFamily:"Syne,sans-serif",fontSize:19,fontWeight:800,color:ivRankColor}}>{ivRankVal!=null?ivRankVal:"—"}</div>
+                  {ivRankVal!=null&&<div style={{fontSize:9,color:ivRankColor,marginTop:2}}>{ivRankLbl}</div>}
+                </div>
               </div>
+
+              {/* Progress bar */}
               <div style={{height:4,background:"#1a2a3a",borderRadius:2,overflow:"hidden"}}>
-                <div style={{height:"100%",width:`${chanceOfProfit*100}%`,background:"linear-gradient(90deg,#3a8fff,#00d4aa)",borderRadius:2}}/>
+                <div style={{height:"100%",width:`${chanceOfProfit*100}%`,background:"linear-gradient(90deg,#3a8fff,#00d4aa)",borderRadius:2,transition:"width .3s"}}/>
               </div>
-              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:4}}>
-                {[["Prob ITM",(probITM*100).toFixed(1)+"%","#3a8fff"],["Prob Touch",(probTouch*100).toFixed(1)+"%","#a78bfa"]].map(([l,v,c])=>(
-                  <div key={l} style={{background:"#080c10",border:"1px solid #1a2a3a",borderRadius:5,padding:"5px 7px"}}>
-                    <div style={{fontSize:8,color:"#3a5a7a",marginBottom:2,letterSpacing:1}}>{l}</div>
-                    <div style={{fontSize:11,fontWeight:500,color:c}}>{v}</div>
-                  </div>
-                ))}
-              </div>
-              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:4}}>
-                <div style={{background:"#080c10",border:"1px solid #1a2a3a",borderRadius:5,padding:"5px 7px"}}>
-                  <div style={{fontSize:8,color:"#3a5a7a",marginBottom:2,letterSpacing:1}}>IV (option)</div>
-                  <div style={{fontSize:11,fontWeight:500,color:"#f5c842"}}>{(iv*100).toFixed(1)}%</div>
+
+              {/* Bottom row — 4 smaller metric cards */}
+              <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:6}}>
+                <div style={{background:"#0d1821",border:"1px solid #1a2a3a",borderRadius:6,padding:"8px 10px"}}>
+                  <div style={{fontSize:8,color:"#3a5a7a",marginBottom:3,letterSpacing:.5}}>Prob ITM</div>
+                  <div style={{fontSize:13,fontWeight:600,color:"#3a8fff"}}>{(probITM*100).toFixed(1)}%</div>
                 </div>
-                <div style={{background:"#080c10",border:"1px solid #1a2a3a",borderRadius:5,padding:"5px 7px"}}>
-                  <div style={{fontSize:8,color:"#3a5a7a",marginBottom:2,letterSpacing:1}}>IV Rank (stock)</div>
-                  <div style={{fontSize:11,fontWeight:500,color:ivRankColor,display:"flex",alignItems:"baseline",gap:3}}>
-                    {ivRankVal!==null?ivRankVal:"—"}
-                    {ivRankVal!==null&&<span style={{fontSize:8,color:ivRankColor}}>({ivRankLbl})</span>}
-                  </div>
+                <div style={{background:"#0d1821",border:"1px solid #1a2a3a",borderRadius:6,padding:"8px 10px"}}>
+                  <div style={{fontSize:8,color:"#3a5a7a",marginBottom:3,letterSpacing:.5}}>Prob Touch</div>
+                  <div style={{fontSize:13,fontWeight:600,color:"#a78bfa"}}>{(probTouch*100).toFixed(1)}%</div>
+                </div>
+                <div style={{background:"#0d1821",border:"1px solid #1a2a3a",borderRadius:6,padding:"8px 10px"}}>
+                  <div style={{fontSize:8,color:"#3a5a7a",marginBottom:3,letterSpacing:.5}}>Assignment Risk</div>
+                  {side==="sell"?(
+                    <>
+                      <div style={{fontSize:13,fontWeight:600,color:arColor}}>{assignmentRisk}</div>
+                      <div style={{fontSize:10,color:arColor,marginTop:1}}>{(probITM*100).toFixed(0)}%</div>
+                    </>
+                  ):<div style={{fontSize:11,color:"#2a4a6a"}}>N/A</div>}
+                </div>
+                <div style={{background:"#0d1821",border:"1px solid #1a2a3a",borderRadius:6,padding:"8px 10px"}}>
+                  <div style={{fontSize:8,color:"#3a5a7a",marginBottom:3,letterSpacing:.5}}>Expected Value</div>
+                  {expectedValue!=null?(
+                    <>
+                      <div style={{fontSize:13,fontWeight:600,color:evColor}}>{expectedValue>=0?"+":""}{expectedValue.toFixed(0)}</div>
+                      {evPct!=null&&<div style={{fontSize:10,color:evColor,marginTop:1}}>{evPct>=0?"+":""}{evPct.toFixed(1)}%</div>}
+                    </>
+                  ):<div style={{fontSize:11,color:"#2a4a6a"}}>—</div>}
                 </div>
               </div>
             </div>
-            {/* RIGHT: Payoff Chart (larger) */}
-            <div style={{flex:1,minWidth:0,padding:"10px 11px 0"}}>
-              <div style={{fontSize:8,letterSpacing:1.2,textTransform:"uppercase",color:"#3a5a7a",marginBottom:5}}>
+
+            {/* RIGHT: Payoff Chart */}
+            <div style={{flex:1,minWidth:0,padding:"14px 16px 0"}}>
+              <div style={{fontSize:8,letterSpacing:1.5,textTransform:"uppercase",color:"#3a5a7a",marginBottom:8}}>
                 Payoff at Expiration — {strategy}
               </div>
-              <PayoffChart spot={activeSpot||spot} pnlAt={combinedPnlAt} breakeven={breakeven} singleLeg={legs.length===1?primaryLeg:null} height={155}/>
+              <PayoffChart spot={activeSpot||spot} pnlAt={combinedPnlAt} breakeven={breakeven} singleLeg={legs.length===1?primaryLeg:null} height={160}/>
             </div>
           </div>
           );
