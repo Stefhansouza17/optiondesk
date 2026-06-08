@@ -1189,8 +1189,8 @@ function PayoffChart({ spot, strike, premium, breakeven, optType, side }) {
       {beVisible && <>
         <line x1={xOf(breakeven)} y1={PAD.t} x2={xOf(breakeven)} y2={H - PAD.b} stroke="#00d4aa" strokeWidth={1} strokeDasharray="4,3" />
         <circle cx={xOf(breakeven)} cy={yZero} r={4} fill="#00d4aa" stroke="#080c10" strokeWidth={1.5} />
-        <rect x={clampLabel(xOf(breakeven), 80) - 40} y={PAD.t} width={80} height={16} rx={3} fill="#00d4aa18" stroke="#00d4aa55" />
-        <text x={clampLabel(xOf(breakeven), 80)} y={PAD.t + 11} textAnchor="middle" fontSize={8.5} fill="#00d4aa" fontFamily="DM Mono,monospace">BE ${breakeven.toFixed(2)}</text>
+        <rect x={clampLabel(xOf(breakeven), 110) - 55} y={H - PAD.b - 17} width={110} height={16} rx={3} fill="#00d4aa18" stroke="#00d4aa55" />
+        <text x={clampLabel(xOf(breakeven), 110)} y={H - PAD.b - 6} textAnchor="middle" fontSize={8.5} fill="#00d4aa" fontFamily="DM Mono,monospace">Breakeven ${breakeven.toFixed(2)}</text>
       </>}
 
       {/* Strike dot */}
@@ -1654,7 +1654,7 @@ function SimulatorPanel({ onSaveManualTrade }) {
               ))}
             </div>
             {breakeven>0&&<div style={{display:"flex",alignItems:"center",gap:5,fontSize:10,color:"#f5c842"}}>
-              <div style={{width:20,height:0,borderTop:"1px dashed #f5c842"}}/> BE ${breakeven.toFixed(2)}
+              <div style={{width:20,height:0,borderTop:"1px dashed #f5c842"}}/> Breakeven ${breakeven.toFixed(2)}
             </div>}
             <div style={{display:"flex",alignItems:"center",gap:5,fontSize:10,color:"#00d4aa"}}>
               <div style={{width:20,height:2,background:"#00d4aa33",boxShadow:"0 0 4px #00d4aa44"}}/>
@@ -1722,7 +1722,7 @@ function SimulatorPanel({ onSaveManualTrade }) {
                           boxShadow:isAtm?"inset 3px 0 0 #00d4aa":"none"}}>
                         ${row.price.toFixed(2)}
                         {isAtm&&<span style={{fontSize:9,color:"#00d4aa",marginLeft:4}}>◀ ATM</span>}
-                        {isBe&&<span style={{fontSize:9,color:"#f5c842",background:"#f5c84215",border:"1px solid #f5c84244",borderRadius:3,padding:"1px 4px",marginLeft:4}}>BE</span>}
+                        {isBe&&<span style={{fontSize:9,color:"#f5c842",background:"#f5c84215",border:"1px solid #f5c84244",borderRadius:3,padding:"1px 4px",marginLeft:4}}>Breakeven</span>}
                       </td>
                       <td className="sim-td-pct" style={{color:row.pct>=0?"#00d4aa":"#ff4d6a"}}>
                         {row.pct>=0?"+":""}{row.pct}%
