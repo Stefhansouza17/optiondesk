@@ -2882,6 +2882,10 @@ function App() {
     } catch(e){ console.error(e); }
   };
 
+  const reloadAssets = async () => {
+    try { const fresh = await fetchAssets(); setAssets(fresh); } catch(e){ console.error(e); }
+  };
+
   const handleSaveManualTrade = async (symbol, trade) => {
     const ticker = symbol.toUpperCase();
     const existing = assets.find(a=>a.ticker===ticker);
@@ -2900,6 +2904,8 @@ function App() {
       assetId = existing.id;
     }
     await handleSaveTrade(assetId, trade);
+    // Re-fetch from Supabase to guarantee UI reflects saved state
+    await reloadAssets();
   };
 
   if(loading) return (
@@ -2951,13 +2957,13 @@ function App() {
       {showAdd&&<AddAssetModal onAdd={addAsset} onClose={()=>setShowAdd(false)} usedColors={assets.map(a=>a.color)}/>}
       {showPositions&&<AllPositionsModal assets={assets} onClose={()=>setShowPositions(false)}/>}
       {expiredPending.length>0&&<ExpirationAlertModal trades={expiredPending} onResolve={handleExpiredResolution}/>}
-      <ClaudeChat assets={assets} onSaveTrade={handleSaveTrade} onUpdateTrade={handleUpdateTrade} onSaveLeap={handleSaveLeap} onAddAsset={addAssetSilent}/>
+      <ClaudeChat assets={assets} onSaveTrade={handleSaveTrade} onUpdateTrade={handleUpdateTrade} onSaveLeap={handleSaveLeap} onAddAsset={addAssetSilent} onRefresh={reloadAssets}/>
     </div>
   );
 }
 
 // ── Claude Chat ───────────────────────────────────────────────────────────────
-function ClaudeChat({ assets, onSaveTrade, onUpdateTrade, onSaveLeap, onAddAsset }) {
+function ClaudeChat({ assets, onSaveTrade, onUpdateTrade, onSaveLeap, onAddAsset, onRefresh }) {
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState([{role:"assistant",content:"Hey! Send me a trade confirmation or describe your trade and I'll register it automatically. You can also upload a photo of your Robinhood confirmation! 📸"}]);
   const [input, setInput] = useState("");
@@ -3170,6 +3176,7 @@ function ClaudeChat({ assets, onSaveTrade, onUpdateTrade, onSaveLeap, onAddAsset
     if(newAssetNames.length>0) msg += ` Created: ${newAssetNames.join(", ")}.`;
     if(notFound.length>0) msg += ` ⚠️ Asset not found: ${notFound.join(", ")}`;
     setMessages(p=>[...p,{role:"assistant",content:msg}]);
+    if(onRefresh) await onRefresh();
   };
 
   const handleFile = (e) => {
