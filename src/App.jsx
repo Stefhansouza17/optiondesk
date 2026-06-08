@@ -403,7 +403,7 @@ function Calculator({ asset, totalCollected, etfPrice }) {
       <div className="sec" style={{marginBottom:16}}>
         <div className="sechdr"><div className="sectitle">Roll Calculator</div></div>
         <div style={{padding:"16px",display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
-          {[["Short strike ($)",sellStrike,setSellStrike,0.5],["Premium received ($)",sellPrem,setSellPrem,0.01],["Premium paid to close ($)",buyPrem,setBuyPrem,0.01],["Weeks projected",weeks,setWeeks,1]].map(([l,v,s,st])=>(
+          {[["Strike ($)",sellStrike,setSellStrike,0.5],["Premium received ($)",sellPrem,setSellPrem,0.01],["Premium paid to close ($)",buyPrem,setBuyPrem,0.01],["Weeks projected",weeks,setWeeks,1]].map(([l,v,s,st])=>(
             <div className="fgrp" key={l}><label className="flbl">{l}</label><input className="finput" type="number" step={st} value={v} onChange={e=>s(e.target.value)}/></div>
           ))}
         </div>
