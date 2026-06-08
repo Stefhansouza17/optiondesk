@@ -2041,22 +2041,26 @@ function Home({ assets, onSelectAsset, onShowPositions, onSaveManualTrade }) {
             </div>
           </div>
           <table>
-            <thead><tr><th>Ticker</th><th>Strategy</th><th>Short Strike</th><th>Premium</th><th>Expiration</th><th>Recovery</th><th>Status</th></tr></thead>
+            <thead><tr><th>Ticker</th><th>Strategy</th><th>Strike</th><th>Premium</th><th>Expiration</th><th>Recovery</th><th>Status</th></tr></thead>
             <tbody>
               {filteredTotals.map(t=>{
                 const recPct=Math.min(t.col/Math.max(t.leapCost,0.01)*100,100);
                 const recColor=recPct<10?"#BA7517":recPct<25?"#f5c842":"#00d4aa";
                 const openSell=t.openSells[0];
-                const bc=t.daysLeft!=null?(t.daysLeft<=3?"#E24B4A":t.daysLeft<=7?"#BA7517":"#1D9E75"):"#3a5a7a";
+                const openAny=t.openTrades[0];
+                const display=openSell||openAny;
+                const isSell=display?.action==="SELL";
+                const nearestDays=display?Math.ceil((new Date(display.expiration)-new Date())/(1000*60*60*24)):null;
+                const bc=nearestDays!=null?(nearestDays<=3?"#E24B4A":nearestDays<=7?"#BA7517":"#1D9E75"):"#3a5a7a";
                 return (
                   <tr key={t.id} onClick={()=>onSelectAsset&&onSelectAsset(t.id)} style={{cursor:"pointer"}}>
                     <td><span style={{fontFamily:"Syne,sans-serif",fontWeight:700,fontSize:14,color:"#fff"}}>{t.ticker}</span></td>
                     <td><StratBadge strategy={t.strategy||"PMCC"}/></td>
-                    <td style={{color:"#f5c842"}}>{openSell?`$${openSell.strike}`:<span style={{fontSize:11,color:"#3a5a7a",fontStyle:"italic"}}>no open call</span>}</td>
-                    <td style={{color:"#00d4aa"}}>{openSell?`+$${fmt(openSell.premium*100)}`:<span style={{color:"#3a5a7a"}}>—</span>}</td>
-                    <td>{t.daysLeft!=null?(<div style={{display:"flex",alignItems:"center",gap:6}}><div style={{width:48,height:4,background:"#1a2a3a",borderRadius:2}}><div style={{height:"100%",width:`${Math.min(Math.max((t.daysLeft/21)*100,4),100)}%`,background:bc,borderRadius:2}}/></div><span style={{fontSize:11,color:bc}}>{t.daysLeft<=0?"exp!":t.daysLeft+"d"}</span></div>):<span style={{fontSize:11,color:"#3a5a7a",fontStyle:"italic"}}>—</span>}</td>
+                    <td style={{color:"#f5c842"}}>{display?`$${display.strike}`:<span style={{fontSize:11,color:"#3a5a7a",fontStyle:"italic"}}>—</span>}</td>
+                    <td style={{color:isSell?"#00d4aa":"#ff6b9d"}}>{display?(isSell?"+":"-")+`$${fmt(display.premium*100)}`:<span style={{color:"#3a5a7a"}}>—</span>}</td>
+                    <td>{nearestDays!=null?(<div style={{display:"flex",alignItems:"center",gap:6}}><div style={{width:48,height:4,background:"#1a2a3a",borderRadius:2}}><div style={{height:"100%",width:`${Math.min(Math.max((nearestDays/21)*100,4),100)}%`,background:bc,borderRadius:2}}/></div><span style={{fontSize:11,color:bc}}>{nearestDays<=0?"exp!":nearestDays+"d"}</span></div>):<span style={{fontSize:11,color:"#3a5a7a",fontStyle:"italic"}}>—</span>}</td>
                     <td>{isPremiumStrategy(t.strategy||"PMCC")?(<div style={{display:"flex",alignItems:"center",gap:6}}><div style={{width:60,height:4,background:"#1a2a3a",borderRadius:2}}><div style={{height:"100%",width:`${recPct}%`,background:recColor,borderRadius:2}}/></div><span style={{fontSize:11,color:recColor}}>{fmt(recPct,1)}%</span></div>):<span style={{color:"#3a5a7a",fontSize:12}}>—</span>}</td>
-                    <td>{t.openTrades.length>0?<span style={{display:"flex",alignItems:"center"}}><span className="pulse"/><span style={{fontSize:10,padding:"2px 8px",borderRadius:3,background:"#00d4aa15",border:"1px solid #00d4aa44",color:"#00d4aa",letterSpacing:1,textTransform:"uppercase"}}>open</span></span>:<span style={{fontSize:10,padding:"2px 8px",borderRadius:3,background:"#f5c84210",border:"1px solid #f5c84244",color:"#f5c842",letterSpacing:1,textTransform:"uppercase"}}>no call</span>}</td>
+                    <td>{t.openTrades.length>0?<span style={{display:"flex",alignItems:"center"}}><span className="pulse"/><span style={{fontSize:10,padding:"2px 8px",borderRadius:3,background:"#00d4aa15",border:"1px solid #00d4aa44",color:"#00d4aa",letterSpacing:1,textTransform:"uppercase"}}>open</span></span>:<span style={{fontSize:10,padding:"2px 8px",borderRadius:3,background:"#1a2a3a",border:"1px solid #3a5a7a44",color:"#3a5a7a",letterSpacing:1,textTransform:"uppercase"}}>—</span>}</td>
                   </tr>
                 );
               })}
@@ -2919,8 +2923,10 @@ function App() {
         assetId = existing.id;
       }
       const saved = await handleSaveTrade(assetId, {...trade, strategy: detectedStrategy});
-      if(saved) showToast(`Trade salvo: ${ticker} ${trade.action} $${trade.strike}`);
-      await reloadAssets();
+      if(saved) {
+        showToast(`Trade salvo: ${ticker} ${trade.action} $${trade.strike}`);
+        await reloadAssets();
+      }
     } catch(e) {
       console.error("handleSaveManualTrade error:", e);
       showToast(`Erro ao salvar: ${e?.message||e?.code||String(e)}`,false);
