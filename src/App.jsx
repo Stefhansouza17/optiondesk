@@ -243,7 +243,15 @@ tr:hover td{background:#101e2c}
 .sim-row-be{border-top:1px dashed #f5c84244!important}
 tr:hover .sim-td,.sim-row-atm:hover .sim-td-price,.sim-row-atm:hover .sim-td-pct{filter:brightness(1.15)}
 @media(max-width:768px){
-  body{overflow-x:hidden}
+  html,body{overflow-x:hidden;max-width:100%}
+  .hdr{padding:10px 12px;flex-wrap:wrap;gap:6px}
+  .hdr>div:last-child{display:none}
+  .tabs{padding:0 8px}
+  .main{padding:14px 12px;box-sizing:border-box;max-width:100%;overflow-x:hidden}
+  .pbar{margin:10px 8px 0;padding:8px 12px;box-sizing:border-box}
+  .cards{grid-template-columns:1fr 1fr}
+  .lgrid{grid-template-columns:1fr 1fr}
+  .sec table{display:block;overflow-x:auto;width:100%;-webkit-overflow-scrolling:touch}
   .sim-wrap{flex-direction:column;overflow-x:hidden;max-width:100%}
   .sim-left{width:100%!important;flex-shrink:unset;border-right:none!important;border-bottom:1px solid #1a2a3a;box-sizing:border-box;max-width:100%}
   .sim-right{width:100%;max-width:100%;overflow-x:hidden;box-sizing:border-box}
