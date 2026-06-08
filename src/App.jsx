@@ -440,11 +440,11 @@ function UnifiedTradeModal({ title="Add Trade", initial={}, asset=null, isEdit=f
   });
   const upd = (k,v) => setForm(p=>({...p,[k]:v}));
   const leaps = asset?.leaps||[];
-  const [selLeapId, setSelLeapId] = useState(leaps[0]?.id||"none");
   const color = asset?.color||"#00d4aa";
-
-  const isPMCC = asset?.strategy==="PMCC" || asset?.strategy==="Covered Call";
-  const showLeapSelector = isPMCC && form.action==="SELL" && leaps.length>0;
+  const TYPES = ["Long Call","Long Put","Short Call","Short Put"];
+  const typeToForm = t=>t==="Long Call"?{action:"BUY",option_type:"call"}:t==="Long Put"?{action:"BUY",option_type:"put"}:t==="Short Call"?{action:"SELL",option_type:"call"}:{action:"SELL",option_type:"put"};
+  const currentType = form.action==="BUY"&&form.option_type==="call"?"Long Call":form.action==="BUY"&&form.option_type==="put"?"Long Put":form.action==="SELL"&&form.option_type==="call"?"Short Call":"Short Put";
+  const showLeapSelector = form.action==="SELL" && leaps.length>0;
   const isLeapEntry = !isEdit && form.action==="BUY" && form.expiration && form.date &&
     (new Date(form.expiration)-new Date(form.date))>180*24*60*60*1000;
 
@@ -453,12 +453,12 @@ function UnifiedTradeModal({ title="Add Trade", initial={}, asset=null, isEdit=f
   async function handleSave(){
     if(!form.strike||!form.expiration||!form.premium) return;
     const d={...form,strike:parseFloat(form.strike),premium:parseFloat(form.premium),
-      contracts:Math.max(1,parseInt(form.contracts)||1),fees:parseFloat(form.fees)||0};
+      contracts:Math.max(1,parseInt(form.contracts)||1),fees:parseFloat(form.fees)||0,
+      trade_group:form.action==="SELL"?(form.trade_group||null):null};
     if(isLeapEntry&&onSaveLeap){
       await onSaveLeap({id:`${asset?.id||"t"}_${Date.now()}`,date:d.date,strike:d.strike,expiration:d.expiration,cost:d.premium,contracts:d.contracts});
       onClose(); return;
     }
-    if(showLeapSelector&&selLeapId!=="none") d.trade_group=selLeapId;
     await onSave(d);
     onClose();
   }
@@ -482,30 +482,13 @@ function UnifiedTradeModal({ title="Add Trade", initial={}, asset=null, isEdit=f
 
           <div style={g2}>
             <div style={col}><label style={lbl}>Date</label><input style={inp} type="date" value={form.date} onChange={e=>upd("date",e.target.value)}/></div>
-            <div style={col}><label style={lbl}>Action</label>
-              <div style={{display:"flex",gap:4}}>
-                {["BUY","SELL"].map(a=>(
-                  <button key={a} onClick={()=>upd("action",a)} style={{flex:1,padding:"7px 0",borderRadius:5,border:"1px solid",cursor:"pointer",fontSize:12,fontFamily:"DM Mono,monospace",fontWeight:600,
-                    background:form.action===a?(a==="BUY"?"#ff4d6a22":"#00d4aa22"):"transparent",
-                    color:form.action===a?(a==="BUY"?"#ff4d6a":"#00d4aa"):"#3a5a7a",
-                    borderColor:form.action===a?(a==="BUY"?"#ff4d6a55":"#00d4aa55"):"#1a2a3a"}}>{a}</button>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          <div style={g2}>
-            <div style={col}><label style={lbl}>Option Type</label>
-              <div style={{display:"flex",gap:4}}>
-                {["call","put"].map(o=>(
-                  <button key={o} onClick={()=>upd("option_type",o)} style={{flex:1,padding:"7px 0",borderRadius:5,border:"1px solid",cursor:"pointer",fontSize:12,fontFamily:"DM Mono,monospace",fontWeight:600,
-                    background:form.option_type===o?(o==="call"?"#3a8fff22":"#a78bfa22"):"transparent",
-                    color:form.option_type===o?(o==="call"?"#3a8fff":"#a78bfa"):"#3a5a7a",
-                    borderColor:form.option_type===o?(o==="call"?"#3a8fff55":"#a78bfa55"):"#1a2a3a"}}>
-                    {o.charAt(0).toUpperCase()+o.slice(1)}
-                  </button>
-                ))}
-              </div>
+            <div style={col}><label style={lbl}>Trade Type</label>
+              <select style={inp} value={currentType} onChange={e=>{
+                const {action,option_type}=typeToForm(e.target.value);
+                setForm(p=>({...p,action,option_type,trade_group:action==="BUY"?null:p.trade_group}));
+              }}>
+                {TYPES.map(t=><option key={t} value={t}>{t}</option>)}
+              </select>
             </div>
           </div>
 
@@ -527,12 +510,11 @@ function UnifiedTradeModal({ title="Add Trade", initial={}, asset=null, isEdit=f
 
           {showLeapSelector&&(
             <div style={col}>
-              <label style={{...lbl,color:"#f5c842"}}>Associate with LEAP</label>
-              <select style={{...inp,borderColor:"#f5c84244",color:"#f5c842"}} value={selLeapId} onChange={e=>setSelLeapId(e.target.value)}>
-                <option value="none">— No association —</option>
+              <label style={{...lbl,color:"#f5c842"}}>Associated LEAP <span style={{opacity:.4,fontWeight:400}}>optional</span></label>
+              <select style={{...inp,borderColor:"#f5c84244",color:"#f5c842"}} value={form.trade_group||"none"} onChange={e=>upd("trade_group",e.target.value==="none"?null:e.target.value)}>
+                <option value="none">— None —</option>
                 {leaps.map(l=><option key={l.id} value={l.id}>${l.strike} · {l.expiration} · {l.contracts} contract{l.contracts!==1?"s":""}</option>)}
               </select>
-              <div style={{fontSize:9,color:"#3a5a7a",marginTop:3}}>Premium from this sale will reduce the selected LEAP's cost basis</div>
             </div>
           )}
 
@@ -1872,7 +1854,7 @@ function SimulatorPanel({ onSaveManualTrade }) {
 }
 
 // ── Home ──────────────────────────────────────────────────────────────────────
-function Home({ assets, onSelectAsset, onShowPositions, onSaveManualTrade }) {
+function Home({ assets, onSelectAsset, onShowPositions, onSaveManualTrade, onEditTrade }) {
   const [stratFilter, setStratFilter] = useState("all");
   const [sortBy, setSortBy] = useState("expiration");
 
@@ -1910,17 +1892,16 @@ function Home({ assets, onSelectAsset, onShowPositions, onSaveManualTrade }) {
 
   const allOpenRows = useMemo(()=>totals.flatMap(t=>[
     ...(t.leaps||[]).map(l=>({
+      ...l,
       ticker:t.ticker, color:t.color, assetId:t.id,
-      label:"LEAP", action:"BUY",
-      strike:l.strike, premium:l.cost, contracts:l.contracts,
-      expiration:l.expiration, date:l.date,
+      isLeap:true, label:"LEAP", action:"BUY", premium:l.cost,
     })),
     ...t.openTrades.map(tr=>({
+      ...tr,
       ticker:t.ticker, color:t.color, assetId:t.id,
+      isLeap:false,
       label:tr.action==="BUY"?(tr.option_type==="put"?"Long Put":"Long Call"):(tr.option_type==="put"?"Short Put":"Short Call"),
-      action:tr.action,
-      strike:tr.strike, premium:tr.premium, contracts:tr.contracts||1,
-      expiration:tr.expiration, date:tr.date,
+      contracts:tr.contracts||1,
     })),
   ]).sort((a,b)=>new Date(a.expiration)-new Date(b.expiration)),[totals]);
 
@@ -2035,7 +2016,7 @@ function Home({ assets, onSelectAsset, onShowPositions, onSaveManualTrade }) {
           <div className="empty">Nenhuma posição aberta — adicione um trade abaixo</div>
         ):(
           <table>
-            <thead><tr><th>Ticker</th><th>Type</th><th>Action</th><th>Strike</th><th>Premium</th><th>Contracts</th><th>Expiration</th><th>Days</th></tr></thead>
+            <thead><tr><th>Ticker</th><th>Type</th><th>Action</th><th>Strike</th><th>Premium</th><th>Contracts</th><th>Expiration</th><th>Days</th><th></th></tr></thead>
             <tbody>
               {allOpenRows.map((r,i)=>{
                 const dl=Math.ceil((new Date(r.expiration)-new Date())/(1000*60*60*24));
@@ -2051,6 +2032,12 @@ function Home({ assets, onSelectAsset, onShowPositions, onSaveManualTrade }) {
                     <td style={{color:"#8aaac8"}}>{r.contracts}</td>
                     <td style={{color:"#c8d8e8"}}>{r.expiration}</td>
                     <td><span style={{fontSize:11,color:bc,fontWeight:600}}>{dl<=0?"Exp!":dl+"d"}</span></td>
+                    <td onClick={e=>e.stopPropagation()}>
+                      {r.isLeap
+                        ? <button className="btn bsm bneutral" onClick={()=>onSelectAsset&&onSelectAsset(r.assetId)}>View →</button>
+                        : <button className="btn bsm bneutral" onClick={()=>onEditTrade&&onEditTrade(r)}>Edit</button>
+                      }
+                    </td>
                   </tr>
                 );
               })}
@@ -2734,6 +2721,7 @@ function App() {
   const [expiredPending, setExpiredPending] = useState([]);
   const [toast, setToast] = useState(null);
   const showToast = (msg, ok=true) => { setToast({msg,ok}); setTimeout(()=>setToast(null),6000); };
+  const [editTrade, setEditTrade] = useState(null);
 
   useEffect(()=>{
     const today=new Date().toISOString().slice(0,10);
@@ -2961,7 +2949,7 @@ function App() {
         )}
       </div>
 
-      {active==="home"&&<Home assets={assets} onSelectAsset={id=>setActive(id)} onShowPositions={()=>setShowPositions(true)} onSaveManualTrade={handleSaveManualTrade}/>}
+      {active==="home"&&<Home assets={assets} onSelectAsset={id=>setActive(id)} onShowPositions={()=>setShowPositions(true)} onSaveManualTrade={handleSaveManualTrade} onEditTrade={r=>{const a=assets.find(x=>x.id===r.assetId);setEditTrade({r,asset:a});}}/>}
       {assets.filter(a=>a.active).map(a=>active===a.id&&(
         <AssetDashboard key={a.id} asset={a} onClose={closeAsset}
           onSaveTrade={(t)=>handleSaveTrade(a.id,t)}
@@ -2978,6 +2966,20 @@ function App() {
       {showPositions&&<AllPositionsModal assets={assets} onClose={()=>setShowPositions(false)}/>}
       {expiredPending.length>0&&<ExpirationAlertModal trades={expiredPending} onResolve={handleExpiredResolution}/>}
       <ClaudeChat assets={assets} onSaveTrade={handleSaveTrade} onUpdateTrade={handleUpdateTrade} onSaveLeap={handleSaveLeap} onAddAsset={addAssetSilent} onRefresh={reloadAssets}/>
+      {editTrade&&(
+        <UnifiedTradeModal
+          title={`Edit · ${editTrade.r.ticker} ${editTrade.r.label}`}
+          initial={editTrade.r}
+          asset={editTrade.asset}
+          isEdit={true}
+          onSave={async(changes)=>{
+            await handleUpdateTrade(editTrade.r.assetId, editTrade.r.id, changes);
+            showToast(`Trade updated: ${editTrade.r.ticker} ${changes.action} $${changes.strike}`);
+            setEditTrade(null);
+          }}
+          onClose={()=>setEditTrade(null)}
+        />
+      )}
       {toast&&(
         <div style={{position:"fixed",bottom:24,left:"50%",transform:"translateX(-50%)",zIndex:9999,
           background:toast.ok?"#1D9E75":"#E24B4A",color:"#fff",borderRadius:8,padding:"12px 24px",
