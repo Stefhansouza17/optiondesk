@@ -2738,6 +2738,8 @@ function App() {
   const [showPositions, setShowPositions] = useState(false);
   const [loading, setLoading] = useState(true);
   const [expiredPending, setExpiredPending] = useState([]);
+  const [toast, setToast] = useState(null);
+  const showToast = (msg, ok=true) => { setToast({msg,ok}); setTimeout(()=>setToast(null),6000); };
 
   useEffect(()=>{
     const today=new Date().toISOString().slice(0,10);
@@ -2810,6 +2812,7 @@ function App() {
       // If duplicate key, asset already exists — still ok
       if(e.code==="23505"||e.message?.includes("duplicate")) return true;
       console.error("addAssetSilent error:", e);
+      showToast(`Erro ao criar ativo: ${e?.message||e?.code||"unknown"}`,false);
       return false;
     }
   };
@@ -2836,7 +2839,7 @@ function App() {
     try {
       await addLeap(assetId, leap);
       setAssets(p=>p.map(a=>a.id===assetId?{...a,leaps:[...a.leaps,leap]}:a));
-    } catch(e){ console.error(e); }
+    } catch(e){ console.error(e); showToast(`Leap save error: ${e?.message||e?.code||"unknown"}`,false); }
   };
 
   const handleSaveTrade = async (assetId, trade) => {
@@ -2852,7 +2855,7 @@ function App() {
       if(toClose.length) await Promise.all(toClose.map(t=>updateTrade(t.id,{status:"closed"})));
       setAssets(p=>p.map(a=>a.id===assetId?{...a,trades:[...a.trades.map(t=>toClose.some(c=>c.id===t.id)?{...t,status:"closed"}:t),saved]}:a));
       return saved;
-    } catch(e){ console.error(e); }
+    } catch(e){ console.error("handleSaveTrade error:",e); showToast(`Trade save failed: ${e?.message||e?.code||"unknown"}`,false); }
   };
 
   const handleUpdateTrade = async (assetId, tradeId, changes) => {
@@ -2884,7 +2887,7 @@ function App() {
   };
 
   const reloadAssets = async () => {
-    try { const fresh = await fetchAssets(); setAssets(fresh); } catch(e){ console.error(e); }
+    try { const fresh = await fetchAssets(); setAssets(fresh); } catch(e){ console.error("reloadAssets error:",e); }
   };
 
   const autoStrategy = (action, optType) => {
@@ -2897,24 +2900,31 @@ function App() {
 
   const handleSaveManualTrade = async (symbol, trade) => {
     const ticker = symbol.toUpperCase();
-    const existing = assets.find(a=>a.ticker===ticker);
-    let assetId;
-    const detectedStrategy = trade.strategy || autoStrategy(trade.action, trade.option_type);
-    if (!existing) {
-      const usedColors = assets.map(a=>a.color);
-      const color = COLORS.find(c=>!usedColors.includes(c)) || "#a78bfa";
-      const newAsset = {
-        id:ticker, ticker, strategy:detectedStrategy, color,
-        leapStrike:null, leapExpiration:null, leapCost:null, leapDelta:null,
-        initialPrice:0, active:true, trades:[],
-      };
-      await addAssetSilent(newAsset);
-      assetId = ticker;
-    } else {
-      assetId = existing.id;
+    try {
+      const existing = assets.find(a=>a.ticker===ticker);
+      let assetId;
+      const detectedStrategy = trade.strategy || autoStrategy(trade.action, trade.option_type);
+      if (!existing) {
+        const usedColors = assets.map(a=>a.color);
+        const color = COLORS.find(c=>!usedColors.includes(c)) || "#a78bfa";
+        const newAsset = {
+          id:ticker, ticker, strategy:detectedStrategy, color,
+          leapStrike:null, leapExpiration:null, leapCost:null, leapDelta:null,
+          initialPrice:0, active:true, trades:[],
+        };
+        const ok = await addAssetSilent(newAsset);
+        if(ok===false) { showToast(`Falha ao criar ativo ${ticker} no banco.`,false); return; }
+        assetId = ticker;
+      } else {
+        assetId = existing.id;
+      }
+      const saved = await handleSaveTrade(assetId, {...trade, strategy: detectedStrategy});
+      if(saved) showToast(`Trade salvo: ${ticker} ${trade.action} $${trade.strike}`);
+      await reloadAssets();
+    } catch(e) {
+      console.error("handleSaveManualTrade error:", e);
+      showToast(`Erro ao salvar: ${e?.message||e?.code||String(e)}`,false);
     }
-    await handleSaveTrade(assetId, {...trade, strategy: detectedStrategy});
-    await reloadAssets();
   };
 
   if(loading) return (
@@ -2967,6 +2977,14 @@ function App() {
       {showPositions&&<AllPositionsModal assets={assets} onClose={()=>setShowPositions(false)}/>}
       {expiredPending.length>0&&<ExpirationAlertModal trades={expiredPending} onResolve={handleExpiredResolution}/>}
       <ClaudeChat assets={assets} onSaveTrade={handleSaveTrade} onUpdateTrade={handleUpdateTrade} onSaveLeap={handleSaveLeap} onAddAsset={addAssetSilent} onRefresh={reloadAssets}/>
+      {toast&&(
+        <div style={{position:"fixed",bottom:24,left:"50%",transform:"translateX(-50%)",zIndex:9999,
+          background:toast.ok?"#1D9E75":"#E24B4A",color:"#fff",borderRadius:8,padding:"12px 24px",
+          fontFamily:"DM Mono,monospace",fontSize:13,maxWidth:"90vw",boxShadow:"0 4px 20px rgba(0,0,0,0.5)",
+          textAlign:"center",wordBreak:"break-word"}}>
+          {toast.msg}
+        </div>
+      )}
     </div>
   );
 }
