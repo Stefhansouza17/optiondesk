@@ -1247,6 +1247,7 @@ function SimulatorPanel({ onSaveManualTrade }) {
   const [tooltip, setTooltip] = useState(null);
   const [tipPos, setTipPos]   = useState({x:0,y:0});
   const [rangeShift, setRangeShift] = useState(0); // percentage offset for matrix center
+  const [showGreeks, setShowGreeks] = useState(true);
 
   const spot = quote?.last || 0;
   const activeSpot = rangeShift !== 0 ? spot * (1 + rangeShift / 100) : spot;
@@ -1521,18 +1522,32 @@ function SimulatorPanel({ onSaveManualTrade }) {
       {/* ── LEFT PANEL ── */}
       <div className="sim-left">
 
-        {/* Symbol search */}
-        <div>
-          <div className="sim-slbl">Symbol</div>
-          <div style={{display:"flex",gap:6}}>
-            <input className="finput" style={{textTransform:"uppercase",letterSpacing:1,fontSize:14,fontWeight:500,color:"#00d4aa"}}
-              value={searchInput} onChange={e=>setSearchInput(e.target.value.toUpperCase())}
-              onKeyDown={e=>e.key==="Enter"&&loadSym(searchInput)}
-              placeholder="AAPL, TSLA..."/>
-            <button className="btn bsm" onClick={()=>loadSym(searchInput)} disabled={loading} style={{flexShrink:0}}>{loading?"…":"↻"}</button>
+        {/* Symbol search / header */}
+        {sym?(
+          <div>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:3}}>
+              <div style={{fontFamily:"Syne,sans-serif",fontSize:26,fontWeight:800,color:"#ffffff",letterSpacing:-0.5,lineHeight:1}}>{sym}</div>
+              <div style={{display:"flex",gap:5,paddingTop:3}}>
+                <button title="Change symbol" onClick={()=>{setSym("");setExps([]);setChain([]);setQuote(null);setSearchInput("");}}
+                  style={{background:"#1a2a3a",border:"1px solid #2a3a4a",borderRadius:5,color:"#5a7a9a",fontSize:11,cursor:"pointer",padding:"3px 7px",fontFamily:"DM Mono,monospace"}}>↩</button>
+              </div>
+            </div>
+            {quote?.description&&<div style={{fontSize:10,color:"#3a5a7a",marginBottom:2,lineHeight:1.3}}>{quote.description}</div>}
+            {error&&<div style={{fontSize:10,color:"#ff4d6a",marginTop:4}}>{error}</div>}
           </div>
-          {error&&<div style={{fontSize:10,color:"#ff4d6a",marginTop:4}}>{error}</div>}
-        </div>
+        ):(
+          <div>
+            <div className="sim-slbl">Symbol</div>
+            <div style={{display:"flex",gap:6}}>
+              <input className="finput" style={{textTransform:"uppercase",letterSpacing:1,fontSize:14,fontWeight:500,color:"#00d4aa"}}
+                value={searchInput} onChange={e=>setSearchInput(e.target.value.toUpperCase())}
+                onKeyDown={e=>e.key==="Enter"&&loadSym(searchInput)}
+                placeholder="AAPL, TSLA..."/>
+              <button className="btn bsm" onClick={()=>loadSym(searchInput)} disabled={loading} style={{flexShrink:0}}>{loading?"…":"↻"}</button>
+            </div>
+            {error&&<div style={{fontSize:10,color:"#ff4d6a",marginTop:4}}>{error}</div>}
+          </div>
+        )}
 
 
         {/* Legs */}
@@ -1639,7 +1654,7 @@ function SimulatorPanel({ onSaveManualTrade }) {
         )}
 
         {/* Greeks + Theta Score */}
-        {selOption&&(
+        {selOption&&showGreeks&&(
           <div style={{display:"flex",flexDirection:"column",gap:8}}>
             <div className="sim-slbl">Greeks</div>
             <div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:5}}>
@@ -1752,25 +1767,25 @@ function SimulatorPanel({ onSaveManualTrade }) {
               <div className="sim-slbl" style={{margin:0,letterSpacing:2}}>Probabilities</div>
 
               {/* Top row — 4 large metrics */}
-              <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:6}}>
+              <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:8}}>
                 <div>
-                  <div style={{fontSize:9,color:"#3a5a7a",marginBottom:4}}>Chance of Profit</div>
-                  <div style={{fontFamily:"Syne,sans-serif",fontSize:19,fontWeight:800,color:"#3a8fff"}}>{(chanceOfProfit*100).toFixed(1)}%</div>
+                  <div style={{fontSize:9,color:"#3a5a7a",marginBottom:5,letterSpacing:.5}}>Chance of Profit</div>
+                  <div style={{fontFamily:"Syne,sans-serif",fontSize:27,fontWeight:800,color:"#3a8fff",lineHeight:1}}>{(chanceOfProfit*100).toFixed(1)}%</div>
                 </div>
                 <div>
-                  <div style={{fontSize:9,color:"#3a5a7a",marginBottom:4}}>Delta</div>
-                  <div style={{fontFamily:"Syne,sans-serif",fontSize:19,fontWeight:800,color:deltaDirColor}}>{Math.abs(delta).toFixed(2)}</div>
-                  <div style={{fontSize:9,color:deltaDirColor,marginTop:2}}>{deltaDir}</div>
+                  <div style={{fontSize:9,color:"#3a5a7a",marginBottom:5,letterSpacing:.5}}>Delta</div>
+                  <div style={{fontFamily:"Syne,sans-serif",fontSize:27,fontWeight:800,color:deltaDirColor,lineHeight:1}}>{Math.abs(delta).toFixed(2)}</div>
+                  <div style={{fontSize:10,color:deltaDirColor,marginTop:3,fontWeight:500}}>{deltaDir}</div>
                 </div>
                 <div>
-                  <div style={{fontSize:9,color:"#3a5a7a",marginBottom:4}}>IV (option)</div>
-                  <div style={{fontFamily:"Syne,sans-serif",fontSize:19,fontWeight:800,color:"#f5c842"}}>{(iv*100).toFixed(1)}%</div>
-                  <div style={{fontSize:9,color:ivColor,marginTop:2}}>{ivLbl}</div>
+                  <div style={{fontSize:9,color:"#3a5a7a",marginBottom:5,letterSpacing:.5}}>IV (option)</div>
+                  <div style={{fontFamily:"Syne,sans-serif",fontSize:27,fontWeight:800,color:"#f5c842",lineHeight:1}}>{(iv*100).toFixed(1)}%</div>
+                  <div style={{fontSize:10,color:ivColor,marginTop:3,fontWeight:500}}>{ivLbl}</div>
                 </div>
                 <div>
-                  <div style={{fontSize:9,color:"#3a5a7a",marginBottom:4}}>IV Rank (stock)</div>
-                  <div style={{fontFamily:"Syne,sans-serif",fontSize:19,fontWeight:800,color:ivRankColor}}>{ivRankVal!=null?ivRankVal:"—"}</div>
-                  {ivRankVal!=null&&<div style={{fontSize:9,color:ivRankColor,marginTop:2}}>{ivRankLbl}</div>}
+                  <div style={{fontSize:9,color:"#3a5a7a",marginBottom:5,letterSpacing:.5}}>IV Rank (stock)</div>
+                  <div style={{fontFamily:"Syne,sans-serif",fontSize:27,fontWeight:800,color:ivRankColor,lineHeight:1}}>{ivRankVal!=null?ivRankVal:"—"}</div>
+                  {ivRankVal!=null&&<div style={{fontSize:10,color:ivRankColor,marginTop:3,fontWeight:500}}>{ivRankLbl}</div>}
                 </div>
               </div>
 
@@ -1812,10 +1827,17 @@ function SimulatorPanel({ onSaveManualTrade }) {
 
             {/* RIGHT: Payoff Chart */}
             <div style={{flex:1,minWidth:0,padding:"14px 16px 0"}}>
-              <div style={{fontSize:8,letterSpacing:1.5,textTransform:"uppercase",color:"#3a5a7a",marginBottom:8}}>
-                Payoff at Expiration — {strategy}
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+                <div style={{fontSize:8,letterSpacing:1.5,textTransform:"uppercase",color:"#3a5a7a"}}>
+                  Payoff at Expiration — {strategy}
+                </div>
+                <button onClick={()=>setShowGreeks(p=>!p)}
+                  style={{display:"flex",alignItems:"center",gap:4,background:"#1a2a3a",border:"1px solid #2a4a6a",borderRadius:5,
+                    color:"#3a8fff",fontSize:10,cursor:"pointer",padding:"3px 9px",fontFamily:"DM Mono,monospace",letterSpacing:.5}}>
+                  <span style={{fontSize:12}}>{showGreeks?"⊙":"○"}</span> {showGreeks?"Hide":"Show"} Greeks
+                </button>
               </div>
-              <PayoffChart spot={activeSpot||spot} pnlAt={combinedPnlAt} breakeven={breakeven} singleLeg={legs.length===1?primaryLeg:null} height={160}/>
+              <PayoffChart spot={activeSpot||spot} pnlAt={combinedPnlAt} breakeven={breakeven} singleLeg={legs.length===1?primaryLeg:null} height={230}/>
             </div>
           </div>
           );
@@ -1896,9 +1918,11 @@ function SimulatorPanel({ onSaveManualTrade }) {
                       <td className="sim-td-price" style={{color:isAtm?"#fff":"#c8d8e8",fontWeight:isAtm?700:400,
                           background:isAtm?"linear-gradient(90deg,#00d4aa08,transparent)":"",
                           boxShadow:isAtm?"inset 3px 0 0 #00d4aa":"none"}}>
-                        ${row.price.toFixed(2)}
-                        {isAtm&&<span style={{fontSize:9,color:"#00d4aa",marginLeft:4}}>◀ ATM</span>}
-                        {isBe&&<span style={{fontSize:9,color:"#f5c842",background:"#f5c84215",border:"1px solid #f5c84244",borderRadius:3,padding:"1px 4px",marginLeft:4}}>Breakeven</span>}
+                        <span style={{display:"flex",alignItems:"center",gap:4}}>
+                          ${row.price.toFixed(2)}
+                          {isAtm&&<span style={{fontSize:8,background:"#00d4aa",color:"#080c10",borderRadius:3,padding:"1px 5px",fontWeight:700,letterSpacing:.3}}>ATM</span>}
+                          {isBe&&<span style={{fontSize:8,background:"#f5c84218",color:"#f5c842",border:"1px solid #f5c84255",borderRadius:3,padding:"1px 5px",fontWeight:700,letterSpacing:.3}}>BE</span>}
+                        </span>
                       </td>
                       <td className="sim-td-pct" style={{color:row.pct>=0?"#00d4aa":"#ff4d6a"}}>
                         {row.pct>=0?"+":""}{row.pct}%
