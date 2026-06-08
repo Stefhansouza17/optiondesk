@@ -2741,7 +2741,6 @@ function App() {
       .then(async data=>{
         let migrated=false;
         for(const a of data){
-          if(!isPremiumStrategy(a.strategy||'')) continue;
           for(const t of a.trades){
             if(t.action==="BUY"&&t.status==="open"&&t.expiration&&t.date&&
               (new Date(t.expiration)-new Date(t.date))>180*24*60*60*1000){
