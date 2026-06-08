@@ -612,6 +612,8 @@ function AssetDashboard({ asset, onClose, onSaveTrade, onUpdateTrade, onDeleteTr
     setLoadingLive(false);
   },[asset.ticker]);
   useEffect(()=>{fetchLive();},[fetchLive]);
+  // Keep local trades in sync when parent state updates (e.g. trade added from simulator or ClaudeChat)
+  useEffect(()=>{setTrades(asset.trades);},[asset.trades]);
 
   const leaps = asset.leaps||[];
   const totalLeapCost = leaps.reduce((s,l)=>s+l.cost*l.contracts*100,0);
@@ -2272,15 +2274,18 @@ function AllPositionsModal({ assets, onClose }) {
         });
       }
     });
-    // Open short calls
+    // Open trades (calls, puts, any action)
     a.trades.filter(t=>t.status==="open").forEach(t=>{
       const dl=Math.ceil((new Date(t.expiration)-new Date())/(1000*60*60*24));
       const bc=dl<=3?"#E24B4A":dl<=7?"#BA7517":"#1D9E75";
+      const isBuy=t.action==="BUY";
+      const optKind=t.option_type==="put"?"Put":"Call";
+      const typeLabel=isBuy?`Long ${optKind}`:`Short ${optKind}`;
       rows.push({
-        type:"Short Call", ticker:a.ticker, color:a.color,
+        type:typeLabel, ticker:a.ticker, color:a.color,
         strike:`$${t.strike}`, expiration:t.expiration,
         cost:`$${fmt(t.premium)}`, contracts:t.contracts||1,
-        action:"SELL", status:"open", premium:`$${fmt(t.premium*100)}`,
+        action:t.action, status:"open", premium:`$${fmt(t.premium*100)}`,
         daysLeft:dl, daysColor:bc,
       });
     });
@@ -2305,8 +2310,8 @@ function AllPositionsModal({ assets, onClose }) {
             {allOpen.map((p,i)=>(
               <tr key={i}>
                 <td><span style={{fontFamily:"Syne,sans-serif",fontWeight:700,color:p.color}}>{p.ticker}</span></td>
-                <td><span style={{fontSize:11,padding:"2px 8px",borderRadius:4,background:p.type==="LEAP"?"#3a8fff20":"#00d4aa15",color:p.type==="LEAP"?"#3a8fff":"#00d4aa",border:`1px solid ${p.type==="LEAP"?"#3a8fff44":"#00d4aa44"}`}}>{p.type}</span></td>
-                <td><span style={{color:p.action==="SELL"?"#00d4aa":"#3a8fff"}}>{p.action}</span></td>
+                <td><span style={{fontSize:11,padding:"2px 8px",borderRadius:4,background:p.type==="LEAP"?"#3a8fff20":p.action==="BUY"?"#3a8fff20":"#00d4aa15",color:p.type==="LEAP"?"#3a8fff":p.action==="BUY"?"#3a8fff":"#00d4aa",border:`1px solid ${p.type==="LEAP"?"#3a8fff44":p.action==="BUY"?"#3a8fff44":"#00d4aa44"}`}}>{p.type}</span></td>
+                <td><span style={{color:p.action==="SELL"?"#00d4aa":"#ff4d6a"}}>{p.action}</span></td>
                 <td style={{color:"#f5c842"}}>{p.strike}</td>
                 <td>
                   {p.daysLeft!=null?(
