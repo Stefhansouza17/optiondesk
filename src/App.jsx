@@ -1338,6 +1338,17 @@ function SimulatorPanel({ onSaveManualTrade }) {
   const probTouch = Math.min(probITM*2,0.99);
   const chanceOfProfit = side==="buy"?probITM:(1-probITM);
 
+  const strategy = useMemo(()=>{
+    if(legs.length===1){
+      const l=legs[0];
+      if(l.side==="buy"&&l.optType==="call") return "Long Call";
+      if(l.side==="sell"&&l.optType==="call") return "Short Call";
+      if(l.side==="buy"&&l.optType==="put")  return "Long Put";
+      if(l.side==="sell"&&l.optType==="put")  return "Short Put";
+    }
+    return legs.map(l=>`${l.side==="buy"?"Buy":"Sell"} ${l.optType}`).join(" / ");
+  },[legs]);
+
   const loadSym = useCallback(async(s)=>{
     setLoading(true); setError(null); setChain([]); setQuote(null);
     setLegs([{id:1,side:"buy",optType:"call",strike:null,strikeInput:"",customPremium:null,premInput:""}]);
