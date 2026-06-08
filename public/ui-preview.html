@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>OptionDesk — UI Preview</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@700;800&display=swap" rel="stylesheet"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#080c10;color:#c8d8e8;font-family:'DM Mono',monospace;font-size:13px;padding:32px 16px;min-height:100vh}
+
+h1{font-family:'Syne',sans-serif;font-size:18px;font-weight:800;color:#fff;text-align:center;margin-bottom:4px}
+.sub{text-align:center;font-size:9px;color:#3a5a7a;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:28px}
+
+/* ── Layout ── */
+.layout{display:flex;gap:20px;align-items:flex-start;justify-content:center;flex-wrap:wrap}
+.sim-left{width:310px;flex-shrink:0;display:flex;flex-direction:column;gap:1px}
+.sim-right{flex:1;min-width:320px;max-width:560px;display:flex;flex-direction:column;gap:1px}
+
+/* section box */
+.box{background:#0d1821;border:1px solid #1a2a3a;padding:11px 13px;display:flex;flex-direction:column;gap:8px}
+.box:first-child{border-radius:8px 8px 0 0}
+.box.last{border-radius:0 0 8px 8px}
+.slbl{font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:#3a5a7a}
+
+/* toggles */
+.tgl-group{display:flex;flex:1;border:1px solid #1a2a3a;border-radius:5px;overflow:hidden}
+.tgl{flex:1;border:none;padding:5px 0;font-family:'DM Mono',monospace;font-size:11px;cursor:pointer;font-weight:500;background:transparent;color:#5a7a9a}
+.tgl.on-buy{background:#00d4aa;color:#080c10}
+.tgl.on-call{background:#3a8fff;color:#fff}
+.tgl.on-put{background:#a78bfa;color:#fff}
+
+/* leg card */
+.leg-card{background:#080c10;border:1px solid #1a2a3a;border-radius:7px;padding:9px 10px;display:flex;flex-direction:column;gap:7px}
+.toggle-row{display:flex;gap:5px}
+.chips-wrap{overflow-x:auto;padding-bottom:3px}
+.chips-wrap::-webkit-scrollbar{height:3px}
+.chips-wrap::-webkit-scrollbar-thumb{background:#2a3a4a;border-radius:2px}
+.chips-row{display:flex;gap:3px;min-width:max-content}
+.chip{border:1px solid #1a2a3a;background:#080c10;color:#5a7a9a;border-radius:4px;padding:3px 7px;font-size:9px;cursor:pointer}
+.chip.atm{border-color:#00d4aa55;color:#00d4aa}
+.chip.sel{border-color:#3a8fff;background:#3a8fff22;color:#3a8fff}
+.inputs-row{display:flex;gap:6px}
+.field{display:flex;align-items:center;gap:4px;flex:1;background:#0d1821;border:1px solid #1a2a3a;border-radius:5px;padding:4px 7px}
+.field.cust{border-color:#f5c84255}
+.field span{font-size:10px;color:#5a7a9a}
+.field input{background:transparent;border:none;outline:none;font-family:'DM Mono',monospace;font-size:13px;width:55px;color:#c8d8e8}
+.field input.cv{color:#f5c842}
+
+/* add leg */
+.add-leg-btn{width:100%;padding:9px;background:#00d4aa10;border:1px dashed #00d4aa44;border-radius:6px;color:#00d4aa;font-family:'DM Mono',monospace;font-size:11px;cursor:pointer;letter-spacing:.5px}
+
+/* summary */
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:5px}
+.metric{background:#080c10;border:1px solid #1a2a3a;border-radius:6px;padding:7px 9px}
+.metric .lbl{font-size:8px;letter-spacing:1px;text-transform:uppercase;color:#3a5a7a;margin-bottom:3px}
+.metric .val{font-family:'Syne',sans-serif;font-size:15px;font-weight:800}
+
+/* greeks */
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:5px}
+.gcard{background:#080c10;border:1px solid #1a2a3a;border-radius:5px;padding:8px 7px;text-align:center}
+.gcard .gname{font-size:10px;color:#3a5a7a;margin-bottom:4px}
+.gcard .gval{font-size:14px;font-weight:500}
+
+/* exp bar */
+.exp-bar{display:flex;justify-content:space-between;align-items:center;background:#080c10;border:1px solid #00d4aa33;border-radius:6px;padding:8px 11px}
+.exp-date{font-family:'Syne',sans-serif;font-size:13px;font-weight:700;color:#00d4aa}
+.dte-pill{font-size:11px;font-weight:700;color:#ff4d6a;background:#ff4d6a15;border:1px solid #ff4d6a55;border-radius:4px;padding:3px 9px;letter-spacing:.5px}
+
+/* ── RIGHT: prob+chart above heatmap ── */
+/* The row that holds prob (left) + payoff (right) */
+.prob-chart-row{display:flex;gap:10px;align-items:stretch;padding:10px 12px;background:#0d1821;border:1px solid #1a2a3a;border-radius:8px 8px 0 0}
+
+.prob-box{flex:1;min-width:0;display:flex;flex-direction:column;gap:7px}
+.prob-header{display:flex;justify-content:space-between;align-items:flex-start}
+.cop{font-family:'Syne',sans-serif;font-size:19px;font-weight:800;color:#3a8fff}
+.delta-side{text-align:right}
+.delta-side .dlbl{font-size:8px;color:#3a5a7a;margin-bottom:2px}
+.delta-side .dval{font-family:'Syne',sans-serif;font-size:14px;font-weight:700;color:#3a8fff}
+.bar-track{height:4px;background:#1a2a3a;border-radius:2px;overflow:hidden}
+.bar-fill{height:100%;border-radius:2px;background:linear-gradient(90deg,#3a8fff,#00d4aa)}
+.prob-sub{display:grid;grid-template-columns:1fr 1fr;gap:4px}
+.ps-item{background:#080c10;border:1px solid #1a2a3a;border-radius:4px;padding:5px 7px}
+.ps-lbl{font-size:8px;color:#3a5a7a;letter-spacing:1px;margin-bottom:2px}
+.ps-val{font-size:12px;color:#3a8fff;font-weight:500}
+
+.chart-side{width:55%;flex-shrink:0;display:flex;flex-direction:column;gap:4px}
+.chart-label{font-size:8px;letter-spacing:1.2px;text-transform:uppercase;color:#3a5a7a}
+
+/* toolbar strip */
+.toolbar{display:flex;align-items:center;gap:10px;padding:7px 12px;background:#0d1821;border-left:1px solid #1a2a3a;border-right:1px solid #1a2a3a;flex-wrap:wrap}
+.view-btn{background:transparent;border:1px solid #1a2a3a;border-radius:4px;color:#5a7a9a;font-family:'DM Mono',monospace;font-size:9px;padding:3px 8px;cursor:pointer}
+.view-btn.sel{background:#3a8fff22;border-color:#3a8fff55;color:#3a8fff}
+.be-lbl{display:flex;align-items:center;gap:5px;font-size:10px;color:#f5c842}
+
+/* range slider */
+.range-bar{display:flex;align-items:center;gap:8px;padding:7px 12px;background:#080c10;border:1px solid #1a2a3a}
+.range-bar span.rlbl{font-size:9px;letter-spacing:1.2px;text-transform:uppercase;color:#3a5a7a;flex-shrink:0}
+.range-bar input[type=range]{flex:1;accent-color:#3a8fff;cursor:pointer}
+.range-bar .rpct{font-family:'DM Mono',monospace;font-size:10px;color:#3a5a7a;min-width:42px;text-align:right}
+
+/* heatmap */
+.heatmap{background:#0d1821;border:1px solid #1a2a3a;border-radius:0 0 8px 8px;overflow:auto}
+table{width:100%;border-collapse:collapse;font-size:10px}
+th{background:#080c10;padding:5px 7px;font-size:8px;letter-spacing:1px;text-transform:uppercase;color:#3a5a7a;text-align:center;border-bottom:1px solid #1a2a3a;white-space:nowrap}
+th.sp1{text-align:left;min-width:58px}
+th.sp2{text-align:left;min-width:36px}
+th.sel-exp{color:#00d4aa;border-bottom-color:#00d4aa44}
+td{padding:4px 7px;text-align:center;border-bottom:1px solid #0d1821;font-family:'DM Mono',monospace;font-size:10px;white-space:nowrap}
+td.price-col{text-align:left;font-size:10px}
+td.pct-col{font-size:9px;text-align:left}
+tr.atm-row td{background:linear-gradient(90deg,#00d4aa06,transparent);color:#fff;font-weight:600}
+tr.atm-row td.price-col{box-shadow:inset 3px 0 0 #00d4aa}
+
+/* cell colors */
+.c-hi{color:#00d4aa}.c-md{color:#3a8fff}.c-lo{color:#5a7a9a}.c-neg{color:#ff4d6a}.c-mneg{color:#ff8c6a}
+
+/* annotation box */
+.note{background:#1a2a3a18;border:1px solid #1a2a3a;border-radius:7px;padding:11px 13px;max-width:280px}
+.note .ntitle{font-size:9px;letter-spacing:1px;text-transform:uppercase;margin-bottom:7px}
+.note p{font-size:11px;line-height:1.65;color:#8aaac8}
+.note b{color:#c8d8e8}
+</style>
+</head>
+<body>
+
+<h1>OptionDesk — UI Preview</h1>
+<div class="sub">proposed changes · not yet implemented</div>
+
+<div class="layout">
+
+  <!-- LEFT PANEL -->
+  <div class="sim-left">
+
+    <div class="box">
+      <div class="slbl">Legs</div>
+      <div class="leg-card">
+        <div class="toggle-row">
+          <div class="tgl-group">
+            <button class="tgl on-buy">Buy</button>
+            <button class="tgl">Sell</button>
+          </div>
+          <div class="tgl-group">
+            <button class="tgl on-call">Call</button>
+            <button class="tgl">Put</button>
+          </div>
+        </div>
+        <div class="chips-wrap" id="chips">
+          <div class="chips-row">
+            <button class="chip">265.00</button>
+            <button class="chip">267.50</button>
+            <button class="chip">270.00</button>
+            <button class="chip">272.50</button>
+            <button class="chip">275.00</button>
+            <button class="chip">277.50</button>
+            <button class="chip atm" id="atm-chip">280.00 ◀</button>
+            <button class="chip sel" id="sel-chip">282.50</button>
+            <button class="chip">285.00</button>
+            <button class="chip">287.50</button>
+            <button class="chip">290.00</button>
+            <button class="chip">292.50</button>
+          </div>
+        </div>
+        <div class="inputs-row">
+          <div class="field"><span>K</span><input value="282.50" readonly/></div>
+          <div class="field cust"><span>$</span><input class="cv" value="2.45" readonly/><button style="background:none;border:none;color:#3a8fff;cursor:pointer;font-size:10px;padding:0;font-family:'DM Mono',monospace">↺</button></div>
+        </div>
+      </div>
+      <button class="add-leg-btn">+ Add Leg</button>
+    </div>
+
+    <div class="box">
+      <div class="slbl">Summary</div>
+      <div class="grid2">
+        <div class="metric"><div class="lbl">Net Debit</div><div class="val" style="color:#ff4d6a">-$245</div></div>
+        <div class="metric"><div class="lbl">Max Loss</div><div class="val" style="color:#ff4d6a">$245</div></div>
+        <div class="metric"><div class="lbl">Max Profit</div><div class="val" style="color:#00d4aa;font-size:12px;padding-top:2px">Unlimited</div></div>
+        <div class="metric"><div class="lbl">Breakeven</div><div class="val" style="color:#f5c842;font-size:13px">$284.95</div></div>
+      </div>
+    </div>
+
+    <div class="box">
+      <div class="slbl">Greeks</div>
+      <div class="grid3">
+        <div class="gcard"><div class="gname">Theta</div><div class="gval" style="color:#ff4d6a">-0.025</div></div>
+        <div class="gcard"><div class="gname">Gamma</div><div class="gval" style="color:#00d4aa">0.015</div></div>
+        <div class="gcard"><div class="gname">Vega</div><div class="gval" style="color:#a78bfa">0.185</div></div>
+      </div>
+    </div>
+
+    <div class="box last">
+      <div class="exp-bar">
+        <div class="exp-date">Jun 20, 2025</div>
+        <div class="dte-pill">47 DTE</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- RIGHT PANEL (prob + chart acima do heatmap) -->
+  <div class="sim-right">
+
+    <!-- Prob (esquerda) + Payoff Chart (direita) — acima do heatmap -->
+    <div class="prob-chart-row">
+
+      <!-- ESQUERDA: Probabilities -->
+      <div class="prob-box">
+        <div class="slbl">Probabilities</div>
+        <div class="prob-header">
+          <div>
+            <div style="font-size:9px;color:#3a5a7a;margin-bottom:2px">Chance of Profit</div>
+            <div class="cop">67.3%</div>
+          </div>
+          <div class="delta-side">
+            <div class="dlbl">Delta</div>
+            <div class="dval">0.42</div>
+          </div>
+        </div>
+        <div class="bar-track"><div class="bar-fill" style="width:67.3%"></div></div>
+        <div class="prob-sub">
+          <div class="ps-item"><div class="ps-lbl">Prob ITM</div><div class="ps-val">42.0%</div></div>
+          <div class="ps-item"><div class="ps-lbl">Prob Touch</div><div class="ps-val">84.0%</div></div>
+        </div>
+      </div>
+
+      <!-- DIREITA: Payoff Chart (33% menor) -->
+      <div class="chart-side">
+        <div class="chart-label">Payoff at Expiration — Long Call</div>
+        <svg viewBox="0 0 220 130" style="width:100%;height:130px;display:block" preserveAspectRatio="none">
+          <defs>
+            <clipPath id="ab"><rect x="26" y="12" width="182" height="66"/></clipPath>
+            <clipPath id="be"><rect x="26" y="78" width="182" height="36"/></clipPath>
+          </defs>
+          <rect x="26" y="12" width="182" height="66" fill="rgba(0,212,170,.06)"/>
+          <rect x="26" y="78" width="182" height="36" fill="rgba(226,75,74,.10)"/>
+          <line x1="26" y1="78" x2="208" y2="78" stroke="#2a4a6a" stroke-width="1"/>
+          <!-- grid lines -->
+          <line x1="26" y1="45" x2="208" y2="45" stroke="#151f2e" stroke-width="0.5"/>
+          <text x="22" y="49" text-anchor="end" font-size="6" fill="#3a5a7a" font-family="DM Mono,monospace">+100</text>
+          <text x="22" y="82" text-anchor="end" font-size="6" fill="#3a5a7a" font-family="DM Mono,monospace">0</text>
+          <line x1="26" y1="110" x2="208" y2="110" stroke="#151f2e" stroke-width="0.5"/>
+          <text x="22" y="114" text-anchor="end" font-size="6" fill="#3a5a7a" font-family="DM Mono,monospace">-100</text>
+          <!-- ATM line -->
+          <line x1="110" y1="12" x2="110" y2="114" stroke="#3a8fff" stroke-width="1" stroke-dasharray="3,2"/>
+          <!-- BE line -->
+          <line x1="128" y1="12" x2="128" y2="114" stroke="#00d4aa" stroke-width="1" stroke-dasharray="3,2"/>
+          <!-- payoff curve (long call) -->
+          <polyline points="26,78 80,78 110,78 128,78 150,58 172,38 208,12"
+            fill="none" stroke="#00d4aa" stroke-width="2" stroke-linejoin="round"/>
+          <polygon points="26,78 80,78 110,78 128,78 150,58 172,38 208,12 208,78"
+            fill="rgba(0,212,170,.18)" clip-path="url(#ab)"/>
+          <!-- strike dot -->
+          <circle cx="128" cy="78" r="3.5" fill="#3a8fff" stroke="#080c10" stroke-width="1.5"/>
+          <!-- ATM label top -->
+          <rect x="90" y="12" width="40" height="12" rx="2" fill="#3a8fff18" stroke="#3a8fff44"/>
+          <text x="110" y="21" text-anchor="middle" font-size="6" fill="#3a8fff" font-family="DM Mono,monospace">ATM $280</text>
+          <!-- BE label bottom -->
+          <rect x="73" y="100" width="70" height="11" rx="2" fill="#00d4aa18" stroke="#00d4aa55"/>
+          <text x="108" y="109" text-anchor="middle" font-size="6.5" fill="#00d4aa" font-family="DM Mono,monospace">Breakeven $284.95</text>
+          <!-- x axis -->
+          <text x="26"  y="124" text-anchor="middle" font-size="6" fill="#3a5a7a" font-family="DM Mono,monospace">$213</text>
+          <text x="110" y="124" text-anchor="middle" font-size="6" fill="#3a5a7a" font-family="DM Mono,monospace">$280</text>
+          <text x="208" y="124" text-anchor="middle" font-size="6" fill="#3a5a7a" font-family="DM Mono,monospace">$347</text>
+        </svg>
+      </div>
+    </div>
+
+    <!-- Toolbar -->
+    <div class="toolbar">
+      <div style="font-size:9px;color:#3a5a7a;letter-spacing:1.5px;text-transform:uppercase">View</div>
+      <button class="view-btn sel">P&L $</button>
+      <button class="view-btn">P&L %</button>
+      <button class="view-btn">ROI</button>
+      <div class="be-lbl"><div style="width:20px;height:0;border-top:1px dashed #f5c842"></div> Breakeven $284.95</div>
+      <div style="display:flex;align-items:center;gap:5px;font-size:10px;color:#00d4aa;margin-left:4px">
+        <div style="width:20px;height:2px;background:#00d4aa33"></div>
+        <span style="opacity:.7">ATM</span>
+        <span style="color:#c8d8e8;font-family:'DM Mono',monospace">$280.00</span>
+      </div>
+      <div style="margin-left:auto;font-size:9px;color:#3a5a7a">Hover for details</div>
+    </div>
+
+    <!-- Range slider -->
+    <div class="range-bar">
+      <span class="rlbl">Range</span>
+      <button style="background:none;border:none;color:#5a7a9a;cursor:pointer;font-size:13px;padding:0 2px">◀</button>
+      <input type="range" min="-75" max="75" step="0.5" value="0"/>
+      <button style="background:none;border:none;color:#5a7a9a;cursor:pointer;font-size:13px;padding:0 2px">▶</button>
+      <span class="rpct">0.0%</span>
+    </div>
+
+    <!-- Heatmap -->
+    <div class="heatmap">
+      <table>
+        <thead>
+          <tr>
+            <th class="sp1">Price</th>
+            <th class="sp2">Chg%</th>
+            <th>Apr 17</th>
+            <th>Apr 25</th>
+            <th>May 2</th>
+            <th>May 9</th>
+            <th>May 16</th>
+            <th class="sel-exp">Jun 20 ★</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td class="price-col c-hi">$295.00</td><td class="pct-col c-hi">+5.4%</td><td class="c-hi">+612</td><td class="c-hi">+589</td><td class="c-hi">+563</td><td class="c-hi">+541</td><td class="c-hi">+522</td><td class="c-hi">+498</td></tr>
+          <tr><td class="price-col c-hi">$292.50</td><td class="pct-col c-hi">+4.5%</td><td class="c-hi">+481</td><td class="c-hi">+462</td><td class="c-hi">+441</td><td class="c-hi">+423</td><td class="c-hi">+407</td><td class="c-hi">+388</td></tr>
+          <tr><td class="price-col c-md">$290.00</td><td class="pct-col c-md">+3.6%</td><td class="c-md">+356</td><td class="c-md">+341</td><td class="c-md">+324</td><td class="c-md">+310</td><td class="c-md">+298</td><td class="c-md">+281</td></tr>
+          <tr><td class="price-col c-md">$287.50</td><td class="pct-col c-md">+2.7%</td><td class="c-md">+239</td><td class="c-md">+228</td><td class="c-md">+215</td><td class="c-md">+204</td><td class="c-md">+195</td><td class="c-md">+182</td></tr>
+          <tr><td class="price-col c-md">$285.00</td><td class="pct-col c-md">+1.8%</td><td class="c-md">+130</td><td class="c-md">+122</td><td class="c-lo">+113</td><td class="c-lo">+105</td><td class="c-lo">+98</td><td class="c-lo">+87</td></tr>
+          <tr class="atm-row">
+            <td class="price-col">$280.00</td><td class="pct-col">0.0%</td>
+            <td class="c-neg">-68</td><td class="c-neg">-52</td><td class="c-neg">-41</td><td class="c-neg">-31</td><td class="c-neg">-22</td><td class="c-lo">-8</td>
+          </tr>
+          <tr><td class="price-col c-neg">$277.50</td><td class="pct-col c-neg">-0.9%</td><td class="c-neg">-142</td><td class="c-neg">-128</td><td class="c-neg">-118</td><td class="c-neg">-109</td><td class="c-neg">-102</td><td class="c-neg">-91</td></tr>
+          <tr><td class="price-col c-neg">$275.00</td><td class="pct-col c-neg">-1.8%</td><td class="c-neg">-178</td><td class="c-neg">-168</td><td class="c-neg">-160</td><td class="c-neg">-153</td><td class="c-neg">-147</td><td class="c-neg">-139</td></tr>
+          <tr><td class="price-col c-neg">$272.50</td><td class="pct-col c-neg">-2.7%</td><td class="c-neg">-203</td><td class="c-neg">-196</td><td class="c-neg">-190</td><td class="c-neg">-184</td><td class="c-neg">-180</td><td class="c-neg">-174</td></tr>
+          <tr><td class="price-col c-neg">$270.00</td><td class="pct-col c-neg">-3.6%</td><td class="c-neg">-221</td><td class="c-neg">-216</td><td class="c-neg">-211</td><td class="c-neg">-207</td><td class="c-neg">-204</td><td class="c-neg">-200</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+  </div>
+
+</div>
+
+<script>
+// center ATM chip in scroll
+const wrap = document.getElementById('chips');
+const atm  = document.getElementById('atm-chip');
+if(wrap && atm){
+  const wW = wrap.offsetWidth;
+  wrap.scrollLeft = atm.offsetLeft - wW/2 + atm.offsetWidth/2;
+}
+</script>
+</body>
+</html>
