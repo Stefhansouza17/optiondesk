@@ -2132,6 +2132,7 @@ function SimulatorPanel({ onSaveManualTrade }) {
                       strike:qaStrike, expiration:qaExp,
                       premium:qaPrem, contracts:qaCont,
                       status:"open", option_type:optType,
+                      positionEffect:"auto",
                       strategy:strategy,
                     });
                   }}>Add Trade →</button>
@@ -2702,6 +2703,7 @@ function ManualTradeModal({ onClose, onSave, defaultData }) {
         premium:     price,                    // price → premium  (matches trades.premium)
         contracts:   qty,                      // quantity → contracts
         status:      "open",
+        positionEffect: "auto",
         // Extended fields — saved only when columns exist (supabase.js handles fallback)
         option_type: form.optionType,          // call | put
         fees:        fees || undefined,
@@ -3014,6 +3016,8 @@ function App() {
   const [editTrade, setEditTrade] = useState(null);
   const [duplicatePrompt, setDuplicatePrompt] = useState(null);
   const duplicateResolver = useRef(null);
+  const [closePrompt, setClosePrompt] = useState(null);
+  const closeResolver = useRef(null);
 
   useEffect(()=>{
     const today=new Date().toISOString().slice(0,10);
@@ -3117,7 +3121,8 @@ function App() {
     strike: parseFloat(trade.strike),
     premium: parseFloat(trade.premium)||0,
     contracts: Math.max(1, parseInt(trade.contracts)||1),
-    status: trade.status || "open",
+    positionEffect: trade.positionEffect || (trade.status==="closed" ? "close" : "auto"),
+    status: trade.positionEffect==="close" ? "closed" : (trade.status || "open"),
   });
 
   const sameTradeCore = (a,b) =>
@@ -3149,11 +3154,21 @@ function App() {
     if(resolve) resolve(approved);
   };
 
-  const getClosingPlan = (asset, trade) => {
+  const requestCloseApproval = (payload) => new Promise(resolve => {
+    closeResolver.current = resolve;
+    setClosePrompt(payload);
+  });
+
+  const resolveClosePrompt = (choice) => {
+    const resolve = closeResolver.current;
+    closeResolver.current = null;
+    setClosePrompt(null);
+    if(resolve) resolve(choice);
+  };
+
+  const getOppositeOpenMatches = (asset, trade) => {
     const normalized = normalizeTradeForLifecycle(trade);
-    if(normalized.status==="open") return [];
     const oppositeAction = normalized.action==="BUY"?"SELL":"BUY";
-    let remaining = normalized.contracts;
     return (asset?.trades||[])
       .filter(t =>
         t.status==="open" &&
@@ -3162,7 +3177,14 @@ function App() {
         Math.abs(parseFloat(t.strike)-normalized.strike)<0.01 &&
         t.expiration===normalized.expiration
       )
-      .sort((a,b)=>new Date(a.date||0)-new Date(b.date||0))
+      .sort((a,b)=>new Date(a.date||0)-new Date(b.date||0));
+  };
+
+  const getClosingPlan = (asset, trade) => {
+    const normalized = normalizeTradeForLifecycle(trade);
+    if(normalized.positionEffect!=="close") return [];
+    let remaining = normalized.contracts;
+    return getOppositeOpenMatches(asset, normalized)
       .map(t=>{
         if(remaining<=0) return null;
         const currentContracts = Math.max(1, parseInt(t.contracts)||1);
@@ -3186,7 +3208,14 @@ function App() {
     const closingPlan = getClosingPlan(asset, normalized);
     const saved = await addTrade(assetId, normalized);
     if(closingPlan.length) {
-      await Promise.all(closingPlan.map(p=>updateTrade(p.trade.id,p.changes)));
+      try {
+        await Promise.all(closingPlan.map(p=>updateTrade(p.trade.id,p.changes)));
+      } catch(closeError) {
+        console.error("close update failed after trade save:", closeError);
+        showToast("Trade saved, but closing update failed. Refreshing positions.", false);
+        await reloadAssets();
+        return {saved, closingPlan:[], closeError};
+      }
     }
     setAssets(p=>p.map(a=>{
       if(a.id!==assetId) return a;
@@ -3202,7 +3231,22 @@ function App() {
   const handleSaveTrade = async (assetId, trade, options={}) => {
     try {
       const asset = assets.find(a=>a.id===assetId);
-      const normalized = normalizeTradeForLifecycle(trade);
+      let normalized = normalizeTradeForLifecycle(trade);
+      if(normalized.positionEffect==="auto" && normalized.action==="BUY") {
+        const closeMatches = getOppositeOpenMatches(asset, normalized);
+        if(closeMatches.length) {
+          const choice = await requestCloseApproval({asset, trade:normalized, matches:closeMatches});
+          if(choice==="cancel") {
+            showToast("Trade canceled.", false);
+            return null;
+          }
+          normalized = normalizeTradeForLifecycle({
+            ...normalized,
+            positionEffect: choice==="close" ? "close" : "open",
+            status: choice==="close" ? "closed" : "open",
+          });
+        }
+      }
       if(!options.skipDuplicateCheck) {
         const duplicate = findDuplicateTrade(asset, normalized);
         if(duplicate) {
@@ -3368,6 +3412,35 @@ function App() {
           </div>
         </div>
       )}
+      {closePrompt&&(
+        <div className="overlay" onClick={e=>e.target===e.currentTarget&&resolveClosePrompt("cancel")}>
+          <div className="fbox" style={{width:460,maxWidth:"94vw"}}>
+            <div className="ftitle">Potential closing trade</div>
+            <div style={{fontSize:12,color:"#8aaac8",lineHeight:1.6,marginBottom:14}}>
+              This BUY matches an open SELL. Should this close the existing position?
+            </div>
+            <div style={{background:"#071019",border:"1px solid #1B2A3A",borderRadius:8,padding:12,marginBottom:14}}>
+              {[
+                ["Ticker", closePrompt.asset?.ticker||""],
+                ["Option", `${closePrompt.trade.option_type} $${fmt(closePrompt.trade.strike)}`],
+                ["Expiration", closePrompt.trade.expiration],
+                ["BUY contracts", closePrompt.trade.contracts],
+                ["Open SELL contracts", closePrompt.matches.reduce((s,t)=>s+parseInt(t.contracts||1),0)],
+              ].map(([label,value])=>(
+                <div key={label} style={{display:"flex",justifyContent:"space-between",gap:12,fontSize:12,marginBottom:6}}>
+                  <span style={{color:"#4A6A8A"}}>{label}</span>
+                  <span style={{color:"#D6E2F0",textAlign:"right"}}>{value}</span>
+                </div>
+              ))}
+            </div>
+            <div style={{display:"grid",gridTemplateColumns:"1fr",gap:8}}>
+              <button className="btn" onClick={()=>resolveClosePrompt("close")} style={{color:"#63E6BE",borderColor:"#63E6BE44",background:"#63E6BE15"}}>Close existing position</button>
+              <button className="btn bneutral" onClick={()=>resolveClosePrompt("open")}>Save as new open BUY</button>
+              <button className="btn bdanger" onClick={()=>resolveClosePrompt("cancel")}>Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
       <ClaudeChat assets={assets} onSaveTrade={handleSaveTrade} onUpdateTrade={handleUpdateTrade} onSaveLeap={handleSaveLeap} onAddAsset={addAssetSilent} onRefresh={reloadAssets}/>
       {editTrade&&(
         <UnifiedTradeModal
@@ -3381,9 +3454,11 @@ function App() {
               if(wasLeap&&nowLeap){
                 await updateLeap(editTrade.r.id,{date:changes.date,strike:changes.strike,expiration:changes.expiration,cost:changes.premium,contracts:changes.contracts});
               } else if(wasLeap&&!nowLeap){
+                if(!window.confirm("Convert this LEAP into a trade? This removes the LEAP record and creates a trade record.")) return;
                 await deleteLeap(editTrade.r.id);
-                await addTrade(editTrade.r.assetId,{date:changes.date,action:changes.action,option_type:changes.option_type,strike:changes.strike,expiration:changes.expiration,premium:changes.premium,contracts:changes.contracts,status:"open",fees:changes.fees||0,notes:changes.notes||null,trade_group:changes.trade_group||null,strategy:changes.typeLabel});
+                await handleSaveTrade(editTrade.r.assetId,{date:changes.date,action:changes.action,option_type:changes.option_type,strike:changes.strike,expiration:changes.expiration,premium:changes.premium,contracts:changes.contracts,status:"open",positionEffect:"open",fees:changes.fees||0,notes:changes.notes||null,trade_group:changes.trade_group||null,strategy:changes.typeLabel});
               } else if(!wasLeap&&nowLeap){
+                if(!window.confirm("Convert this trade into a LEAP? This removes the trade record and creates a LEAP record.")) return;
                 await deleteTrade(editTrade.r.id);
                 await addLeap(editTrade.r.assetId,{id:`${editTrade.r.assetId}_${Date.now()}`,date:changes.date,strike:changes.strike,expiration:changes.expiration,cost:changes.premium,contracts:changes.contracts});
               } else {
