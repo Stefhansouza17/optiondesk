@@ -133,7 +133,7 @@ html,body{font-family:'DM Mono','IBM Plex Mono',monospace;background:#050A0F;col
 .snbtn{background:none;border:none;color:#7D91AA;padding:7px 12px;cursor:pointer;font-family:'DM Mono',monospace;font-size:11px;letter-spacing:0.5px;border-radius:4px;transition:all 0.2s;text-transform:uppercase}
 .snbtn:hover{color:#D6E2F0;background:#1B2A3A}
 .snbtn.active{color:var(--ac,#63E6BE);background:#0a2a1a;border:1px solid #63E6BE33}
-.main{padding:18px 24px;max-width:1300px;margin:0 auto}
+.main{padding:12px 20px;max-width:1500px;margin:0 auto}
 .pbar{display:flex;align-items:center;gap:12px;padding:10px 16px;background:#0B131D;border:1px solid #1B2A3A;border-radius:8px;margin:14px 24px 0;flex-wrap:wrap}
 .tlbl{font-family:'Syne',sans-serif;font-size:15px;font-weight:700}
 .pinput{background:#071019;border:1px solid #1B2A3A;font-family:'DM Mono',monospace;font-size:18px;font-weight:500;padding:4px 10px;border-radius:4px;width:100px;text-align:right}
@@ -141,14 +141,14 @@ html,body{font-family:'DM Mono','IBM Plex Mono',monospace;background:#050A0F;col
 .dvdr{width:1px;height:18px;background:#1B2A3A;flex-shrink:0}
 .sml{font-size:11px;color:#7D91AA;white-space:nowrap}
 .sml span{color:#D6E2F0;font-size:12px}
-.cards{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}
-.card{background:#0B131D;border:1px solid #1B2A3A;border-radius:8px;padding:16px;position:relative;overflow:visible;transition:border-color 0.2s}
+.cards{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:12px}
+.card{background:#0B131D;border:1px solid #1B2A3A;border-radius:8px;padding:12px 16px;position:relative;overflow:visible;transition:border-color 0.2s}
 .card:hover{border-color:#2a4a6a}
 .card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--top,#1a3a5a);border-radius:8px 8px 0 0}
 .clbl{font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:#7D91AA;margin-bottom:7px;display:flex;align-items:center;gap:4px}
-.cval{font-family:'Syne',sans-serif;font-size:22px;font-weight:700;color:#fff;line-height:1;margin-bottom:5px}
+.cval{font-family:'Syne',sans-serif;font-size:20px;font-weight:700;color:#fff;line-height:1;margin-bottom:4px}
 .csub{font-size:11px;color:#7D91AA}
-.sec{background:#0B131D;border:1px solid #1B2A3A;border-radius:8px;margin-bottom:16px}
+.sec{background:#0B131D;border:1px solid #1B2A3A;border-radius:8px;margin-bottom:12px}
 .sechdr{padding:12px 16px;border-bottom:1px solid #1B2A3A;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px}
 .sectitle{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#7D91AA;display:flex;align-items:center;gap:4px}
 .btn{background:#63E6BE15;border:1px solid #63E6BE44;color:#63E6BE;padding:6px 12px;border-radius:4px;cursor:pointer;font-family:'DM Mono',monospace;font-size:11px;letter-spacing:0.5px;transition:all 0.2s}
@@ -186,7 +186,7 @@ tr:hover td{background:#101e2c}
 .litem:nth-last-child(-n+3){border-bottom:none}
 .llbl{font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:#4A6A8A;margin-bottom:3px}
 .lval{font-size:14px;color:#D6E2F0;font-weight:500}
-.empty{padding:32px;text-align:center;color:#4A6A8A;font-size:12px}
+.empty{padding:22px;text-align:center;color:#4A6A8A;font-size:12px}
 .toggle-group{display:flex;background:#0B131D;border:1px solid #1B2A3A;border-radius:12px;padding:3px;gap:2px}
 .tgl{background:none;border:none;padding:7px 18px;border-radius:9px;cursor:pointer;font-family:'DM Mono',monospace;font-size:11px;font-weight:600;transition:all 0.2s;color:#7D91AA}
 .green{color:#63E6BE!important}
@@ -205,44 +205,48 @@ tr:hover td{background:#101e2c}
 .pulse{display:inline-block;width:7px;height:7px;border-radius:50%;background:#63E6BE;margin-right:6px;animation:pulse 1.8s infinite}
 @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(0,212,170,0.5)}70%{box-shadow:0 0 0 7px rgba(0,212,170,0)}100%{box-shadow:0 0 0 0 rgba(0,212,170,0)}}
 /* ── Simulator ── */
-.sim-wrap{display:flex;border:1px solid #1B2A3A;border-radius:12px;overflow:hidden;margin-top:0;background:#050A0F;min-height:600px}
-.sim-left{width:320px;flex-shrink:0;border-right:1px solid #1B2A3A;background:#071019;overflow-y:auto;padding:16px 14px;display:flex;flex-direction:column;gap:12px}
-.sim-right{flex:1;overflow:hidden;display:flex;flex-direction:column;min-width:0;background:#050A0F}
-.sim-slbl{font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#7D91AA;margin-bottom:7px;font-weight:500;font-family:'DM Mono',monospace}
+.sim-wrap{display:flex;border:1px solid #22364A;border-radius:8px;overflow:hidden;margin-top:0;background:#050A0F;min-height:690px;box-shadow:0 26px 80px rgba(0,0,0,.52),inset 0 1px 0 rgba(255,255,255,.035);font-family:'DM Mono','IBM Plex Mono',monospace}
+.sim-left{width:326px;flex-shrink:0;border-right:1px solid #22364A;background:radial-gradient(circle at 18% 0%,rgba(91,140,255,.08),transparent 33%),linear-gradient(180deg,#071019,#050A0F);overflow-y:auto;padding:16px 16px;display:flex;flex-direction:column;gap:14px}
+.sim-right{flex:1;overflow:hidden;display:flex;flex-direction:column;min-width:0;background:linear-gradient(180deg,#050A0F,#071019)}
+.sim-slbl{font-size:11px;letter-spacing:2.15px;text-transform:uppercase;color:#B7C9EA;margin-bottom:10px;font-weight:700;font-family:'DM Mono','IBM Plex Mono',monospace}
 .sim-strike-box{background:#071019;border:1px solid #1B2A3A;border-radius:9px;padding:10px 11px}
 .sim-strike-big{font-family:'Syne',sans-serif;font-size:23px;font-weight:800;color:#FFD84D;flex:1}
 .sim-strike-input{background:#0B131D;border:1px solid #FFD84D44;color:#FFD84D;font-family:'DM Mono',monospace;font-size:12px;padding:4px 8px;border-radius:5px;width:76px;text-align:center}
 .sim-strike-input:focus{outline:none;border-color:#FFD84Daa}
-.sim-chip{background:none;border:1px solid #1B2A3A;color:#7D91AA;padding:4px 10px;border-radius:20px;cursor:pointer;font-family:'DM Mono',monospace;font-size:10px;white-space:nowrap;flex-shrink:0;transition:all .15s}
-.sim-chip:hover{border-color:#22364A;color:#D6E2F0}
-.sim-chip.sel{background:#FFD84D;border-color:#FFD84D;color:#050A0F;font-weight:700;box-shadow:0 0 10px rgba(255,216,77,.3)}
+.sim-chip{background:#071019;border:1px solid #102033;color:#AFC4E9;padding:7px 9px;border-radius:8px;cursor:pointer;font-family:'DM Mono','IBM Plex Mono',monospace;font-size:12px;white-space:nowrap;flex-shrink:0;transition:all .15s;min-width:50px}
+.sim-chip:hover{border-color:#22364A;color:#D6E2F0;background:#0B131D}
+.sim-chip.sel{background:#0F2A66;border-color:#5B8CFF;color:#D6E2F0;font-weight:700;box-shadow:0 0 0 1px rgba(91,140,255,.24),0 0 20px rgba(91,140,255,.32)}
 .sim-chip.atm{border-color:#63E6BE55;color:#63E6BE}
-.sim-metric{background:#0B131D;border:1px solid #1B2A3A;border-radius:10px;padding:10px 12px;position:relative;overflow:hidden}
-.sim-metric::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--mt);border-radius:10px 10px 0 0}
-.sim-metric-lbl{font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:#4A6A8A;margin-bottom:5px;font-family:'DM Mono',monospace}
-.sim-metric-val{font-family:'Syne',sans-serif;font-size:16px;font-weight:700;color:var(--mc)}
-.sim-timeline{border-bottom:1px solid #1B2A3A;background:#071019;padding:10px 14px 0;flex-shrink:0;overflow-x:auto}
-.sim-exp-btn{background:none;border:1px solid #1B2A3A;color:#7D91AA;padding:6px 11px;border-radius:20px;cursor:pointer;font-family:'DM Mono',monospace;font-size:11px;font-weight:500;white-space:nowrap;flex-shrink:0;transition:all .15s;min-width:40px;text-align:center;line-height:1.2}
+.sim-metric{background:linear-gradient(180deg,#0B131D,#071019);border:1px solid #22364A;border-radius:6px;padding:15px 14px;position:relative;overflow:hidden;box-shadow:inset 0 1px 0 rgba(255,255,255,.025)}
+.sim-metric::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:var(--mt);opacity:.7}
+.sim-metric-lbl{font-size:10px;letter-spacing:.8px;text-transform:uppercase;color:#9EB9E9;margin-bottom:7px;font-family:'DM Mono','IBM Plex Mono',monospace}
+.sim-metric-val{font-family:'DM Mono','IBM Plex Mono',monospace;font-size:20px;font-weight:800;color:var(--mc);letter-spacing:-.3px}
+.sim-timeline{border-bottom:1px solid #22364A;background:#071019;padding:13px 17px;flex-shrink:0;overflow-x:auto}
+.sim-timeline::-webkit-scrollbar,.sim-matrix::-webkit-scrollbar{height:5px;width:5px}
+.sim-timeline::-webkit-scrollbar-thumb,.sim-matrix::-webkit-scrollbar-thumb{background:#22364A;border-radius:4px}
+.sim-exp-btn{background:#050A0F;border:1px solid #1B2A3A;color:#AFC4E9;padding:10px 14px;border-radius:18px;cursor:pointer;font-family:'DM Mono','IBM Plex Mono',monospace;font-size:13px;font-weight:600;white-space:nowrap;flex-shrink:0;transition:all .15s;min-width:48px;text-align:center;line-height:1.1}
 .sim-exp-btn:hover{border-color:#2a4a6a;color:#D6E2F0;background:#0B131D}
-.sim-exp-btn.sel{background:#63E6BE;border-color:#63E6BE;color:#050A0F;font-weight:700;box-shadow:0 0 14px rgba(99,230,190,.4)}
+.sim-exp-btn.sel{background:#9CFAC8;border-color:#9CFAC8;color:#050A0F;font-weight:800;box-shadow:0 0 0 2px rgba(99,230,190,.14),0 0 24px rgba(99,230,190,.62),0 0 44px rgba(99,230,190,.2)}
 .sim-dir-row{display:flex;gap:6px}
-.sim-toolbar{display:flex;align-items:center;gap:10px;padding:9px 15px;border-bottom:1px solid #1B2A3A;background:#071019;flex-shrink:0;flex-wrap:wrap}
-.sim-view-group{display:flex;background:#0B131D;border:1px solid #1B2A3A;border-radius:9px;padding:2px;gap:2px}
-.sim-view-btn{background:none;border:none;padding:5px 14px;border-radius:7px;cursor:pointer;font-family:'DM Mono',monospace;font-size:10px;font-weight:600;color:#7D91AA;letter-spacing:.5px;transition:all .15s}
-.sim-view-btn.sel{background:#162030;color:#fff;box-shadow:0 0 0 1px #2a4a6a,0 1px 4px rgba(0,0,0,.5)}
-.sim-matrix{flex:1;overflow:auto}
-.sim-th{position:sticky;top:0;z-index:10;background:#071019;font-size:9px;letter-spacing:1px;color:#4A6A8A;padding:8px 10px;text-align:center;border-bottom:1px solid #1B2A3A;border-right:1px solid #0B131D;white-space:nowrap;font-weight:400;font-family:'DM Mono',monospace}
-.sim-th.sp1{position:sticky;left:0;z-index:15;text-align:left;padding-left:14px;min-width:100px;background:#071019;border-right:1px solid #1B2A3A}
-.sim-th.sp2{position:sticky;left:100px;z-index:15;min-width:56px;background:#071019;border-right:1px solid #1B2A3A}
-.sim-th.sel-exp{color:#63E6BE;font-weight:700}
-.sim-td{padding:6px 10px;text-align:center;font-size:12px;font-weight:500;border-bottom:1px solid #071019;border-right:1px solid #071019;white-space:nowrap;font-family:'DM Mono',monospace;transition:filter .1s}
-.sim-td-price{text-align:left;padding-left:14px;font-size:12px;background:#071019!important;position:sticky;left:0;z-index:5;border-right:1px solid #1B2A3A;border-bottom:1px solid #0B131D;white-space:nowrap;font-family:'DM Mono',monospace}
-.sim-td-pct{font-size:11px;background:#071019!important;position:sticky;left:100px;z-index:5;border-right:1px solid #1B2A3A;border-bottom:1px solid #0B131D;text-align:center;padding:6px 10px;font-family:'DM Mono',monospace}
-.sim-row-atm .sim-td-price{color:#fff!important;font-weight:700;background:linear-gradient(90deg,#63E6BE0a,transparent)!important;box-shadow:inset 3px 0 0 #63E6BE}
-.sim-row-atm .sim-td-pct{background:linear-gradient(90deg,#63E6BE05,transparent)!important}
-.sim-row-atm{border-top:1px solid #63E6BE22!important;border-bottom:1px solid #63E6BE22!important}
-.sim-row-be{border-top:1px dashed #FFD84D44!important}
-tr:hover .sim-td,.sim-row-atm:hover .sim-td-price,.sim-row-atm:hover .sim-td-pct{filter:brightness(1.2)}
+.sim-toolbar{display:flex;align-items:center;gap:18px;padding:13px 19px;border-top:1px solid #0B131D;border-bottom:1px solid #22364A;background:#050A0F;flex-shrink:0;flex-wrap:wrap}
+.sim-view-group{display:flex;background:#050A0F;border:1px solid #22364A;border-radius:8px;padding:2px;gap:6px}
+.sim-view-btn{background:#050A0F;border:1px solid transparent;padding:8px 18px;border-radius:7px;cursor:pointer;font-family:'DM Mono','IBM Plex Mono',monospace;font-size:13px;font-weight:600;color:#9EB9E9;letter-spacing:.4px;transition:all .15s}
+.sim-view-btn.sel{background:#0F2A66;color:#D6E2F0;border-color:#3558C9;box-shadow:0 0 18px rgba(91,140,255,.2)}
+.sim-range-track{height:12px;appearance:none;background:linear-gradient(90deg,#273DFF,#5B8CFF);border-radius:8px;outline:none}
+.sim-range-track::-webkit-slider-thumb{appearance:none;width:22px;height:22px;border-radius:50%;background:#5B8CFF;border:2px solid #5B8CFF;box-shadow:0 0 16px rgba(91,140,255,.55);cursor:pointer}
+.sim-matrix{flex:1;overflow:auto;background:#050A0F}
+.sim-th{position:sticky;top:0;z-index:10;background:#071019;font-size:11px;letter-spacing:1px;color:#7D91AA;padding:11px 12px;text-align:center;border-bottom:1px solid #22364A;border-right:1px solid #050A0F;white-space:nowrap;font-weight:500;font-family:'DM Mono','IBM Plex Mono',monospace;text-transform:uppercase}
+.sim-th.sp1{position:sticky;left:0;z-index:15;text-align:left;padding-left:20px;min-width:118px;background:#071019;border-right:1px solid #22364A}
+.sim-th.sp2{position:sticky;left:118px;z-index:15;min-width:70px;background:#071019;border-right:1px solid #22364A}
+.sim-th.sel-exp{color:#63E6BE;font-weight:800;background:#092017;box-shadow:inset 0 -2px 0 #63E6BE,inset 0 0 18px rgba(99,230,190,.08)}
+.sim-td{padding:9px 14px;text-align:center;font-size:14px;font-weight:650;border-bottom:1px solid #071019;border-right:1px solid #050A0F;white-space:nowrap;font-family:'DM Mono','IBM Plex Mono',monospace;transition:filter .1s;text-shadow:0 1px 6px rgba(0,0,0,.35)}
+.sim-td-price{text-align:left;padding-left:20px;font-size:14px;background:#071019!important;position:sticky;left:0;z-index:5;border-right:1px solid #22364A;border-bottom:1px solid #0B131D;white-space:nowrap;font-family:'DM Mono','IBM Plex Mono',monospace}
+.sim-td-pct{font-size:13px;background:#071019!important;position:sticky;left:118px;z-index:5;border-right:1px solid #22364A;border-bottom:1px solid #0B131D;text-align:center;padding:8px 12px;font-family:'DM Mono','IBM Plex Mono',monospace;font-weight:700}
+.sim-row-atm .sim-td-price{color:#fff!important;font-weight:800;background:linear-gradient(90deg,#63E6BE14,transparent)!important;box-shadow:inset 3px 0 0 #63E6BE}
+.sim-row-atm .sim-td-pct{background:linear-gradient(90deg,#63E6BE0d,transparent)!important}
+.sim-row-atm{border-top:1px solid #63E6BE55!important;border-bottom:1px solid #63E6BE33!important}
+.sim-row-be{border-top:1px dashed #FFD84D88!important}
+tr:hover .sim-td,.sim-row-atm:hover .sim-td-price,.sim-row-atm:hover .sim-td-pct{filter:brightness(1.18)}
 @media(max-width:768px){
   html,body{overflow-x:hidden;max-width:100%}
   .hdr{padding:10px 12px;flex-wrap:wrap;gap:6px}
@@ -1131,7 +1135,7 @@ function PayoffChart({ spot, pnlAt, breakeven, singleLeg, height=185 }) {
   const isUnlimited = singleLeg?.side==="buy" && singleLeg?.optType==="call";
   const isUnlimitedLoss = singleLeg?.side==="sell" && singleLeg?.optType==="call";
   const W = 600, H = height;
-  const PAD = { l: 44, r: 18, t: 28, b: 26 };
+  const PAD = { l: 52, r: 22, t: 34, b: 30 };
   const cW = W - PAD.l - PAD.r, cH = H - PAD.t - PAD.b;
   const pMin = spot * 0.76, pMax = spot * 1.24;
 
@@ -1159,46 +1163,57 @@ function PayoffChart({ spot, pnlAt, breakeven, singleLeg, height=185 }) {
       <defs>
         <clipPath id={`above-${uid}`}><rect x={PAD.l} y={PAD.t} width={cW} height={Math.max(yZero - PAD.t, 0)} /></clipPath>
         <clipPath id={`below-${uid}`}><rect x={PAD.l} y={yZero} width={cW} height={Math.max(H - PAD.b - yZero, 0)} /></clipPath>
+        <linearGradient id={`profitGrad-${uid}`} x1="0" x2="0" y1="0" y2="1">
+          <stop offset="0%" stopColor="#63E6BE" stopOpacity=".34" />
+          <stop offset="100%" stopColor="#63E6BE" stopOpacity=".08" />
+        </linearGradient>
+        <linearGradient id={`lossGrad-${uid}`} x1="0" x2="0" y1="0" y2="1">
+          <stop offset="0%" stopColor="#FF4D6D" stopOpacity=".10" />
+          <stop offset="100%" stopColor="#FF4D6D" stopOpacity=".34" />
+        </linearGradient>
       </defs>
 
-      {/* Zone backgrounds */}
-      <rect x={PAD.l} y={PAD.t} width={cW} height={Math.max(yZero - PAD.t, 0)} fill="rgba(0,212,170,.06)" />
-      <rect x={PAD.l} y={yZero} width={cW} height={Math.max(H - PAD.b - yZero, 0)} fill="rgba(226,75,74,.10)" />
+      {/* Chart frame + zone backgrounds */}
+      <rect x={PAD.l} y={PAD.t} width={cW} height={cH} fill="rgba(5,10,15,.55)" stroke="#1B2A3A" strokeWidth="1" />
+      <rect x={PAD.l} y={PAD.t} width={cW} height={Math.max(yZero - PAD.t, 0)} fill={`url(#profitGrad-${uid})`} />
+      <rect x={PAD.l} y={yZero} width={cW} height={Math.max(H - PAD.b - yZero, 0)} fill={`url(#lossGrad-${uid})`} />
 
       {/* Grid */}
       {gridVals.map(v => (
         <g key={v}>
-          <line x1={PAD.l} y1={yOf(v)} x2={W - PAD.r} y2={yOf(v)} stroke={v === 0 ? "#2a4a6a" : "#151f2e"} strokeWidth={v === 0 ? 1 : 0.5} />
-          <text x={PAD.l - 4} y={yOf(v) + 3.5} textAnchor="end" fontSize={8} fill="#4A6A8A" fontFamily="DM Mono,monospace">{v > 0 ? "+" : ""}{v}</text>
+          <line x1={PAD.l} y1={yOf(v)} x2={W - PAD.r} y2={yOf(v)} stroke={v === 0 ? "#2A4A6A" : "#102033"} strokeWidth={v === 0 ? 1.2 : 0.7} />
+          <text x={PAD.l - 8} y={yOf(v) + 3.5} textAnchor="end" fontSize={9} fill="#9EB9E9" fontFamily="DM Mono,monospace">{v > 0 ? "+" : ""}{v}</text>
         </g>
       ))}
 
       {/* Filled areas */}
-      <polygon points={polyPts} fill="rgba(0,212,170,.18)" clipPath={`url(#above-${uid})`} />
-      <polygon points={polyPts} fill="rgba(226,75,74,.20)" clipPath={`url(#below-${uid})`} />
+      <polygon points={polyPts} fill="rgba(99,230,190,.23)" clipPath={`url(#above-${uid})`} />
+      <polygon points={polyPts} fill="rgba(255,77,109,.25)" clipPath={`url(#below-${uid})`} />
 
       {/* ATM vertical */}
-      <line x1={xOf(spot)} y1={PAD.t} x2={xOf(spot)} y2={H - PAD.b} stroke="#5B8CFF" strokeWidth={1} strokeDasharray="4,3" />
+      <line x1={xOf(spot)} y1={PAD.t} x2={xOf(spot)} y2={H - PAD.b} stroke="#5B8CFF" strokeWidth={1.2} strokeDasharray="5,4" />
 
       {/* Breakeven vertical */}
       {beVisible && <>
-        <line x1={xOf(breakeven)} y1={PAD.t} x2={xOf(breakeven)} y2={H - PAD.b} stroke="#63E6BE" strokeWidth={1} strokeDasharray="4,3" />
-        <circle cx={xOf(breakeven)} cy={yZero} r={4} fill="#63E6BE" stroke="#071019" strokeWidth={1.5} />
-        <rect x={clampLabel(xOf(breakeven), 110) - 55} y={H - PAD.b - 17} width={110} height={16} rx={3} fill="#63E6BE18" stroke="#63E6BE55" />
-        <text x={clampLabel(xOf(breakeven), 110)} y={H - PAD.b - 6} textAnchor="middle" fontSize={8.5} fill="#63E6BE" fontFamily="DM Mono,monospace">Breakeven ${breakeven.toFixed(2)}</text>
+        <line x1={xOf(breakeven)} y1={PAD.t} x2={xOf(breakeven)} y2={H - PAD.b} stroke="#63E6BE" strokeWidth={1.2} strokeDasharray="5,4" />
+        <circle cx={xOf(breakeven)} cy={yZero} r={5.2} fill="#63E6BE" stroke="#050A0F" strokeWidth={2.2} />
+        <circle cx={xOf(breakeven)} cy={yZero} r={8.5} fill="none" stroke="#63E6BE55" strokeWidth={1} />
+        <rect x={clampLabel(xOf(breakeven), 122) - 61} y={H - PAD.b - 20} width={122} height={18} rx={4} fill="#063D30" stroke="#63E6BE88" />
+        <text x={clampLabel(xOf(breakeven), 122)} y={H - PAD.b - 8} textAnchor="middle" fontSize={9} fill="#63E6BE" fontFamily="DM Mono,monospace">Breakeven ${breakeven.toFixed(2)}</text>
       </>}
 
       {/* Strike dot */}
       {singleLeg?.strike&&singleLeg.strike>pMin&&singleLeg.strike<pMax&&(
-        <circle cx={xOf(singleLeg.strike)} cy={yOf(pnlAt(singleLeg.strike))} r={4} fill="#5B8CFF" stroke="#071019" strokeWidth={1.5} />
+        <circle cx={xOf(singleLeg.strike)} cy={yOf(pnlAt(singleLeg.strike))} r={5} fill="#5B8CFF" stroke="#050A0F" strokeWidth={2} />
       )}
 
       {/* ATM label */}
-      <rect x={clampLabel(xOf(spot), 80) - 40} y={PAD.t} width={80} height={16} rx={3} fill="#5B8CFF18" stroke="#5B8CFF44" />
-      <text x={clampLabel(xOf(spot), 80)} y={PAD.t + 11} textAnchor="middle" fontSize={8.5} fill="#5B8CFF" fontFamily="DM Mono,monospace">ATM ${spot.toFixed(2)}</text>
+      <rect x={clampLabel(xOf(spot), 84) - 42} y={PAD.t + 2} width={84} height={18} rx={4} fill="#0F2A66" stroke="#5B8CFF" />
+      <text x={clampLabel(xOf(spot), 84)} y={PAD.t + 14} textAnchor="middle" fontSize={9} fill="#9EB9FF" fontFamily="DM Mono,monospace">ATM ${spot.toFixed(2)}</text>
 
       {/* Payoff line */}
-      <polyline points={curvePts} fill="none" stroke="#63E6BE" strokeWidth={2} strokeLinejoin="round" />
+      <polyline points={curvePts} fill="none" stroke="#63E6BE" strokeWidth={3.1} strokeLinejoin="round" clipPath={`url(#above-${uid})`} />
+      <polyline points={curvePts} fill="none" stroke="#FF4D6D" strokeWidth={3.1} strokeLinejoin="round" clipPath={`url(#below-${uid})`} />
 
       {/* Annotations */}
       {isUnlimited && <text x={W - PAD.r - 6} y={PAD.t + 18} textAnchor="end" fontSize={9} fill="#63E6BE66" fontFamily="DM Mono,monospace">Unlimited profit ↗</text>}
@@ -1206,9 +1221,9 @@ function PayoffChart({ spot, pnlAt, breakeven, singleLeg, height=185 }) {
 
       {/* X axis */}
       {xLabels.map((p, i) => (
-        <text key={i} x={xOf(p)} y={H - PAD.b + 15} textAnchor="middle" fontSize={8} fill="#4A6A8A" fontFamily="DM Mono,monospace">${p.toFixed(0)}</text>
+        <text key={i} x={xOf(p)} y={H - PAD.b + 18} textAnchor="middle" fontSize={9} fill="#9EB9E9" fontFamily="DM Mono,monospace">${p.toFixed(0)}</text>
       ))}
-      <text x={10} y={H / 2} textAnchor="middle" fontSize={8} fill="#4A6A8A" transform={`rotate(-90,10,${H / 2})`} fontFamily="DM Mono,monospace">P&L ($)</text>
+      <text x={12} y={H / 2} textAnchor="middle" fontSize={9} fill="#9EB9E9" transform={`rotate(-90,12,${H / 2})`} fontFamily="DM Mono,monospace">P&L ($)</text>
     </svg>
   );
 }
@@ -1485,14 +1500,14 @@ function SimulatorPanel({ onSaveManualTrade }) {
   };
 
   const pnlBg = (v)=>{
-    if(v>150)  return"rgba(99,230,190,.42)";
-    if(v>80)   return"rgba(99,230,190,.28)";
-    if(v>20)   return"rgba(99,230,190,.17)";
-    if(v>0)    return"rgba(99,230,190,.09)";
-    if(v>-20)  return"rgba(255,77,109,.10)";
-    if(v>-80)  return"rgba(255,77,109,.22)";
-    if(v>-200) return"rgba(255,77,109,.36)";
-    return"rgba(255,77,109,.52)";
+    if(v>150)  return"linear-gradient(180deg,rgba(13,84,61,.82),rgba(11,64,49,.72))";
+    if(v>80)   return"linear-gradient(180deg,rgba(10,72,55,.66),rgba(9,53,42,.58))";
+    if(v>20)   return"linear-gradient(180deg,rgba(8,58,48,.48),rgba(7,42,36,.42))";
+    if(v>0)    return"linear-gradient(180deg,rgba(8,46,40,.34),rgba(7,33,31,.28))";
+    if(v>-20)  return"linear-gradient(180deg,rgba(60,22,31,.30),rgba(43,18,25,.25))";
+    if(v>-80)  return"linear-gradient(180deg,rgba(89,31,42,.48),rgba(62,23,32,.42))";
+    if(v>-200) return"linear-gradient(180deg,rgba(111,36,49,.62),rgba(78,27,38,.54))";
+    return"linear-gradient(180deg,rgba(130,41,55,.76),rgba(90,31,42,.66))";
   };
   const pnlColor=(v)=>v>0?"#63E6BE":v<-5?"#FF4D6D":"#2a4a5a";
 
@@ -1524,23 +1539,23 @@ function SimulatorPanel({ onSaveManualTrade }) {
 
         {/* Symbol search / header */}
         {sym?(
-          <div>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
+          <div style={{background:"radial-gradient(circle at 18% 0%,rgba(99,230,190,.09),transparent 34%),linear-gradient(180deg,#071019,#050A0F)",border:"1px solid #22364A",borderRadius:7,padding:"17px 18px",boxShadow:"inset 0 1px 0 rgba(255,255,255,.035)"}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:6}}>
               <div style={{display:"flex",alignItems:"center",gap:7}}>
                 <div title="Change symbol" onClick={()=>{setSym("");setExps([]);setChain([]);setQuote(null);setSearchInput("");}}
-                  style={{fontFamily:"Syne,sans-serif",fontSize:26,fontWeight:800,color:"#ffffff",letterSpacing:-0.5,lineHeight:1,cursor:"pointer"}}>
+                  style={{fontFamily:"Syne,sans-serif",fontSize:31,fontWeight:800,color:"#63E6BE",letterSpacing:1,lineHeight:1,cursor:"pointer",textShadow:"0 0 24px rgba(99,230,190,.20)"}}>
                   {sym}
                 </div>
                 <button title="Favorite" style={{background:"none",border:"none",color:"#4A6A8A",fontSize:15,cursor:"pointer",padding:0,lineHeight:1,flexShrink:0}}>☆</button>
               </div>
               <button title="Refresh" onClick={()=>loadSym(sym)} disabled={loading}
-                style={{background:"#0B131D",border:"1px solid #1B2A3A",borderRadius:6,color:loading?"#2a4a5a":"#7D91AA",
-                  fontSize:15,cursor:"pointer",padding:"4px 9px",lineHeight:1,display:"flex",alignItems:"center",
+                style={{background:"#050A0F",border:"1px solid #22364A",borderRadius:7,color:loading?"#22364A":"#63E6BE",
+                  fontSize:15,cursor:"pointer",padding:"7px 9px",lineHeight:1,display:"flex",alignItems:"center",
                   justifyContent:"center",transition:"all .15s",flexShrink:0}}>
                 ⟳
               </button>
             </div>
-            {quote?.description&&<div style={{fontSize:10,color:"#4A6A8A",marginBottom:2,lineHeight:1.3}}>{quote.description}</div>}
+            {quote?.description&&<div style={{fontSize:11,color:"#9EB9E9",marginBottom:2,lineHeight:1.3}}>{quote.description}</div>}
             {error&&<div style={{fontSize:10,color:"#FF4D6D",marginTop:4}}>{error}</div>}
           </div>
         ):(
@@ -1568,8 +1583,8 @@ function SimulatorPanel({ onSaveManualTrade }) {
               const legMktPrem=legOpt?.ask||legOpt?.last||0;
               const legAtm=legStrikes.length&&spot?legStrikes.reduce((a,b)=>Math.abs(b-spot)<Math.abs(a-spot)?b:a):null;
               return(
-                <div key={leg.id} style={{background:"#0B131D",border:"1px solid #1B2A3A",borderRadius:10,padding:"9px 11px"}}>
-                  <div style={{display:"flex",gap:5,alignItems:"center",marginBottom:8}}>
+                <div key={leg.id} style={{background:"linear-gradient(180deg,#0B131D,#071019)",border:"1px solid #22364A",borderRadius:8,padding:"10px 11px",boxShadow:"inset 0 1px 0 rgba(255,255,255,.03)"}}>
+                  <div style={{display:"flex",gap:6,alignItems:"center",marginBottom:12}}>
                     {[
                       {label:"Buy",  active:leg.side==="buy",   bg:"#63E6BE", col:"#050A0F", fn:()=>updateLeg(leg.id,{side:"buy"})},
                       {label:"Sell", active:leg.side==="sell",  bg:"#FF4D6D", col:"#fff",    fn:()=>updateLeg(leg.id,{side:"sell"})},
@@ -1577,13 +1592,13 @@ function SimulatorPanel({ onSaveManualTrade }) {
                       {label:"Put",  active:leg.optType==="put",  bg:"#B37CFF", col:"#fff",  fn:()=>updateLeg(leg.id,{optType:"put",strike:null,strikeInput:""})},
                     ].map(({label,active,bg,col,fn})=>(
                       <button key={label} onClick={fn}
-                        style={{flex:1,padding:"7px 0",borderRadius:7,
+                        style={{flex:1,padding:"10px 0",borderRadius:7,
                           border:`1px solid ${active?bg+"66":"#1B2A3A"}`,
                           cursor:"pointer",fontFamily:"DM Mono,monospace",fontSize:12,fontWeight:700,
                           letterSpacing:.3,transition:"all .15s",
                           background:active?bg:"#0B131D",
                           color:active?col:"#7D91AA",
-                          boxShadow:active?`0 0 12px ${bg}44`:"none"}}>
+                          boxShadow:active?`0 0 0 1px ${bg}55,0 0 18px ${bg}66,0 0 36px ${bg}22`:"none"}}>
                         {label}
                       </button>
                     ))}
@@ -1612,22 +1627,22 @@ function SimulatorPanel({ onSaveManualTrade }) {
                     </div>
                   )}
                   <div style={{display:"flex",gap:6,alignItems:"center"}}>
-                    <div style={{display:"flex",alignItems:"center",gap:4,flex:1,background:"#071019",border:"1px solid #1B2A3A",borderRadius:5,padding:"4px 7px"}}>
+                    <div style={{display:"flex",alignItems:"center",gap:7,flex:1,background:"#050A0F",border:"1px solid #1B2A3A",borderRadius:6,padding:"9px 10px"}}>
                       <span style={{fontSize:10,color:"#7D91AA",fontFamily:"DM Mono,monospace"}}>K</span>
                       <input value={leg.strikeInput}
                         onChange={e=>updateLeg(leg.id,{strikeInput:e.target.value})}
                         onBlur={e=>snapStrikeLeg(leg.id,e.target.value)}
                         onKeyDown={e=>e.key==="Enter"&&snapStrikeLeg(leg.id,leg.strikeInput)}
                         placeholder="strike"
-                        style={{background:"transparent",border:"none",outline:"none",color:"#D6E2F0",fontFamily:"DM Mono,monospace",fontSize:13,width:58}}/>
+                        style={{background:"transparent",border:"none",outline:"none",color:"#D6E2F0",fontFamily:"DM Mono,monospace",fontSize:17,width:72}}/>
                     </div>
-                    <div style={{display:"flex",alignItems:"center",gap:4,flex:1,background:"#071019",border:`1px solid ${leg.customPremium!==null?"#FFD84D66":"#1B2A3A"}`,borderRadius:5,padding:"4px 7px"}}>
+                    <div style={{display:"flex",alignItems:"center",gap:7,flex:1,background:"#050A0F",border:`1px solid ${leg.customPremium!==null?"#FFD84D66":"#1B2A3A"}`,borderRadius:6,padding:"9px 10px"}}>
                       <span style={{fontSize:10,color:"#7D91AA",fontFamily:"DM Mono,monospace"}}>$</span>
                       <input value={leg.premInput||legMktPrem.toFixed(2)}
                         onChange={e=>updateLeg(leg.id,{premInput:e.target.value})}
                         onBlur={e=>{const v=parseFloat(e.target.value);if(!isNaN(v)&&v>0){updateLeg(leg.id,{customPremium:v,premInput:v.toFixed(2)});}else{updateLeg(leg.id,{customPremium:null,premInput:legMktPrem>0?legMktPrem.toFixed(2):"0.00"});}}}
                         onKeyDown={e=>{if(e.key==="Enter"){const v=parseFloat(leg.premInput);if(!isNaN(v)&&v>0)updateLeg(leg.id,{customPremium:v,premInput:v.toFixed(2)});}}}
-                        style={{background:"transparent",border:"none",outline:"none",color:leg.customPremium!==null?"#FFD84D":"#D6E2F0",fontFamily:"DM Mono,monospace",fontSize:13,width:55}}/>
+                        style={{background:"transparent",border:"none",outline:"none",color:leg.customPremium!==null?"#FFD84D":"#D6E2F0",fontFamily:"DM Mono,monospace",fontSize:17,width:72}}/>
                       {leg.customPremium!==null&&(
                         <button onClick={()=>updateLeg(leg.id,{customPremium:null,premInput:legMktPrem>0?legMktPrem.toFixed(2):"0.00"})}
                           title="Reset to market" style={{background:"none",border:"none",cursor:"pointer",color:"#5B8CFF",fontSize:9,padding:0,fontFamily:"DM Mono,monospace"}}>↺</button>
@@ -1639,8 +1654,8 @@ function SimulatorPanel({ onSaveManualTrade }) {
             })}
           </div>
           <button onClick={addLeg}
-            style={{width:"100%",padding:"9px 0",background:"#63E6BE10",border:"1px dashed #63E6BE44",
-              borderRadius:7,color:"#63E6BE",fontFamily:"DM Mono,monospace",fontSize:12,fontWeight:500,
+            style={{width:"100%",padding:"13px 0",marginTop:10,background:"#63E6BE10",border:"1px dashed #63E6BE66",
+              borderRadius:7,color:"#63E6BE",fontFamily:"DM Mono,monospace",fontSize:13,fontWeight:700,
               cursor:"pointer",letterSpacing:.5,display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>
             ＋ Add Leg
           </button>
@@ -1687,10 +1702,10 @@ function SimulatorPanel({ onSaveManualTrade }) {
               const col=sc>=70?"#63E6BE":sc>=40?"#FFD84D":"#FF4D6D";
               const lbl=sc>=70?"Strong":sc>=40?"Moderate":"Weak";
               return(
-                <div style={{background:"#071019",border:`1px solid ${col}33`,borderRadius:6,padding:"9px 10px"}}>
+                <div style={{background:"linear-gradient(180deg,#0B131D,#071019)",border:`1px solid ${col}66`,borderRadius:7,padding:"11px 12px",boxShadow:`0 0 18px ${col}18,inset 0 1px 0 rgba(255,255,255,.03)`}}>
                   <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
                     <div style={{display:"flex",alignItems:"center",gap:6}}>
-                      <div style={{fontSize:13,fontWeight:600,color:"#8aaac8",letterSpacing:.5}}>Theta Score</div>
+                      <div style={{fontSize:14,fontWeight:700,color:"#B7C9EA",letterSpacing:.7}}>Theta Score</div>
                       <div style={{position:"relative",display:"inline-block"}}>
                         <button style={{width:15,height:15,borderRadius:"50%",background:"#1B2A3A",border:"1px solid #2a3a4a",
                           color:"#6a8aaa",fontSize:9,cursor:"default",display:"flex",alignItems:"center",justifyContent:"center",
@@ -1705,12 +1720,12 @@ function SimulatorPanel({ onSaveManualTrade }) {
                       </div>
                     </div>
                     <div style={{textAlign:"right"}}>
-                      <div style={{fontFamily:"Syne,sans-serif",fontSize:20,fontWeight:800,color:col,lineHeight:1}}>{sc}</div>
+                      <div style={{fontFamily:"Syne,sans-serif",fontSize:26,fontWeight:800,color:col,lineHeight:1,textShadow:`0 0 18px ${col}44`}}>{sc}</div>
                       <div style={{fontSize:10,color:col,letterSpacing:.5,marginTop:2}}>{lbl}</div>
                     </div>
                   </div>
-                  <div style={{height:5,background:"#1B2A3A",borderRadius:3,overflow:"hidden"}}>
-                    <div style={{height:"100%",width:`${sc}%`,background:`linear-gradient(90deg,${col}88,${col})`,borderRadius:3,transition:"width .3s"}}/>
+                  <div style={{height:7,background:"#102033",borderRadius:4,overflow:"hidden"}}>
+                    <div style={{height:"100%",width:`${sc}%`,background:`linear-gradient(90deg,${col}aa,${col})`,borderRadius:4,transition:"width .3s",boxShadow:`0 0 14px ${col}66`}}/>
                   </div>
                 </div>
               );
@@ -1784,9 +1799,9 @@ function SimulatorPanel({ onSaveManualTrade }) {
           const evColor=expectedValue!=null&&expectedValue>=0?"#63E6BE":"#FF4D6D";
           const evPct=expectedValue!=null&&activePremium>0?((expectedValue/Math.abs(activePremium*100))*100):null;
           return(
-          <div style={{display:"flex",gap:0,borderBottom:"1px solid #1B2A3A",background:"#071019"}}>
+          <div style={{display:"grid",gridTemplateColumns:"minmax(470px,47%) minmax(430px,1fr)",gap:0,borderBottom:"1px solid #22364A",background:"#071019"}}>
             {/* LEFT: Probabilities */}
-            <div style={{flex:"0 0 44%",padding:"14px 16px",borderRight:"1px solid #1B2A3A",display:"flex",flexDirection:"column",gap:10,background:"#071019"}}>
+            <div style={{padding:"21px 20px 16px",borderRight:"1px solid #22364A",display:"flex",flexDirection:"column",gap:16,background:"linear-gradient(180deg,#071019,#050A0F)"}}>
               <div style={{display:"flex",alignItems:"center",gap:6}}>
                 <div className="sim-slbl" style={{margin:0,letterSpacing:2}}>Probabilities</div>
                 <button style={{width:15,height:15,borderRadius:"50%",background:"#1B2A3A",border:"1px solid #2a3a4a",
@@ -1795,58 +1810,58 @@ function SimulatorPanel({ onSaveManualTrade }) {
               </div>
 
               {/* Top row — 4 large metrics */}
-              <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:10}}>
+              <div style={{display:"grid",gridTemplateColumns:"1.15fr .78fr .9fr .78fr",gap:8,alignItems:"start"}}>
                 <div>
-                  <div style={{fontSize:8,color:"#4A6A8A",marginBottom:5,letterSpacing:.5,fontFamily:"DM Mono,monospace"}}>Chance of Profit</div>
-                  <div style={{fontFamily:"Syne,sans-serif",fontSize:28,fontWeight:800,color:"#5B8CFF",lineHeight:1}}>{(chanceOfProfit*100).toFixed(1)}%</div>
+                  <div style={{fontSize:11,color:"#B7C9EA",marginBottom:8,letterSpacing:.35,fontFamily:"DM Mono,monospace"}}>Chance of Profit</div>
+                  <div style={{fontFamily:"Syne,sans-serif",fontSize:29,fontWeight:800,color:"#5B8CFF",lineHeight:1,letterSpacing:.1,textShadow:"0 0 18px rgba(91,140,255,.18)"}}>{(chanceOfProfit*100).toFixed(1)}%</div>
                 </div>
                 <div>
-                  <div style={{fontSize:8,color:"#4A6A8A",marginBottom:5,letterSpacing:.5,fontFamily:"DM Mono,monospace"}}>Delta</div>
-                  <div style={{fontFamily:"Syne,sans-serif",fontSize:28,fontWeight:800,color:deltaDirColor,lineHeight:1}}>{Math.abs(delta).toFixed(2)}</div>
-                  <div style={{fontSize:9,color:deltaDirColor,marginTop:4,fontWeight:600,fontFamily:"DM Mono,monospace"}}>{deltaDir}</div>
+                  <div style={{fontSize:11,color:"#B7C9EA",marginBottom:8,letterSpacing:.35,fontFamily:"DM Mono,monospace"}}>Delta</div>
+                  <div style={{fontFamily:"Syne,sans-serif",fontSize:23,fontWeight:800,color:deltaDirColor,lineHeight:1,textShadow:"0 0 16px rgba(91,140,255,.14)"}}>{Math.abs(delta).toFixed(2)}</div>
+                  <div style={{fontSize:10,color:deltaDirColor,marginTop:5,fontWeight:700,fontFamily:"DM Mono,monospace"}}>{deltaDir}</div>
                 </div>
                 <div>
-                  <div style={{fontSize:8,color:"#4A6A8A",marginBottom:5,letterSpacing:.5,fontFamily:"DM Mono,monospace"}}>IV (option)</div>
-                  <div style={{fontFamily:"Syne,sans-serif",fontSize:28,fontWeight:800,color:"#FFD84D",lineHeight:1}}>{(iv*100).toFixed(1)}%</div>
-                  <div style={{fontSize:9,color:ivColor,marginTop:4,fontWeight:600,fontFamily:"DM Mono,monospace"}}>{ivLbl}</div>
+                  <div style={{fontSize:11,color:"#B7C9EA",marginBottom:8,letterSpacing:.35,fontFamily:"DM Mono,monospace"}}>IV (option)</div>
+                  <div style={{fontFamily:"Syne,sans-serif",fontSize:23,fontWeight:800,color:"#FFD84D",lineHeight:1,textShadow:"0 0 16px rgba(255,216,77,.14)"}}>{(iv*100).toFixed(1)}%</div>
+                  <div style={{fontSize:10,color:ivColor,marginTop:5,fontWeight:700,fontFamily:"DM Mono,monospace"}}>{ivLbl}</div>
                 </div>
                 <div>
-                  <div style={{fontSize:8,color:"#4A6A8A",marginBottom:5,letterSpacing:.5,fontFamily:"DM Mono,monospace"}}>IV Rank (stock)</div>
-                  <div style={{fontFamily:"Syne,sans-serif",fontSize:28,fontWeight:800,color:ivRankColor,lineHeight:1}}>{ivRankVal!=null?ivRankVal:"—"}</div>
-                  {ivRankVal!=null&&<div style={{fontSize:9,color:ivRankColor,marginTop:4,fontWeight:600,fontFamily:"DM Mono,monospace"}}>{ivRankLbl}</div>}
+                  <div style={{fontSize:11,color:"#B7C9EA",marginBottom:8,letterSpacing:.35,fontFamily:"DM Mono,monospace"}}>IV Rank</div>
+                  <div style={{fontFamily:"Syne,sans-serif",fontSize:23,fontWeight:800,color:ivRankColor,lineHeight:1}}>{ivRankVal!=null?ivRankVal:"—"}</div>
+                  {ivRankVal!=null&&<div style={{fontSize:10,color:ivRankColor,marginTop:5,fontWeight:700,fontFamily:"DM Mono,monospace"}}>{ivRankLbl}</div>}
                 </div>
               </div>
 
               {/* Progress bar */}
-              <div style={{height:4,background:"#1B2A3A",borderRadius:2,overflow:"hidden"}}>
+              <div style={{height:6,background:"#102033",borderRadius:3,overflow:"hidden"}}>
                 <div style={{height:"100%",width:`${chanceOfProfit*100}%`,background:"linear-gradient(90deg,#5B8CFF,#63E6BE)",borderRadius:2,transition:"width .4s"}}/>
               </div>
 
               {/* Bottom row — 4 smaller metric cards */}
-              <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:6}}>
-                <div style={{background:"#0B131D",border:"1px solid #1B2A3A",borderRadius:9,padding:"9px 10px"}}>
-                  <div style={{fontSize:8,color:"#4A6A8A",marginBottom:4,letterSpacing:.5,fontFamily:"DM Mono,monospace"}}>Prob ITM</div>
-                  <div style={{fontSize:13,fontWeight:700,color:"#5B8CFF",fontFamily:"DM Mono,monospace"}}>{(probITM*100).toFixed(1)}%</div>
+              <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:11}}>
+                <div style={{background:"linear-gradient(180deg,#0B131D,#071019)",border:"1px solid #22364A",borderRadius:7,padding:"13px 14px"}}>
+                  <div style={{fontSize:10,color:"#9EB9E9",marginBottom:6,letterSpacing:.45,fontWeight:600,fontFamily:"DM Mono,monospace"}}>Prob ITM</div>
+                  <div style={{fontSize:14,fontWeight:800,color:"#5B8CFF",fontFamily:"DM Mono,monospace"}}>{(probITM*100).toFixed(1)}%</div>
                 </div>
-                <div style={{background:"#0B131D",border:"1px solid #1B2A3A",borderRadius:9,padding:"9px 10px"}}>
-                  <div style={{fontSize:8,color:"#4A6A8A",marginBottom:4,letterSpacing:.5,fontFamily:"DM Mono,monospace"}}>Prob Touch</div>
-                  <div style={{fontSize:13,fontWeight:700,color:"#B37CFF",fontFamily:"DM Mono,monospace"}}>{(probTouch*100).toFixed(1)}%</div>
+                <div style={{background:"linear-gradient(180deg,#0B131D,#071019)",border:"1px solid #22364A",borderRadius:7,padding:"13px 14px"}}>
+                  <div style={{fontSize:10,color:"#9EB9E9",marginBottom:6,letterSpacing:.45,fontWeight:600,fontFamily:"DM Mono,monospace"}}>Prob Touch</div>
+                  <div style={{fontSize:14,fontWeight:800,color:"#B37CFF",fontFamily:"DM Mono,monospace"}}>{(probTouch*100).toFixed(1)}%</div>
                 </div>
-                <div style={{background:"#0B131D",border:"1px solid #1B2A3A",borderRadius:9,padding:"9px 10px"}}>
-                  <div style={{fontSize:8,color:"#4A6A8A",marginBottom:4,letterSpacing:.5,fontFamily:"DM Mono,monospace"}}>Assignment Risk</div>
+                <div style={{background:"linear-gradient(180deg,#0B131D,#071019)",border:"1px solid #22364A",borderRadius:7,padding:"13px 14px"}}>
+                  <div style={{fontSize:10,color:"#9EB9E9",marginBottom:6,letterSpacing:.45,fontWeight:600,fontFamily:"DM Mono,monospace"}}>Assignment Risk</div>
                   {side==="sell"?(
                     <>
-                      <div style={{fontSize:13,fontWeight:700,color:arColor,fontFamily:"DM Mono,monospace"}}>{assignmentRisk}</div>
-                      <div style={{fontSize:9,color:arColor,marginTop:2,fontFamily:"DM Mono,monospace"}}>{(probITM*100).toFixed(0)}%</div>
+                      <div style={{fontSize:14,fontWeight:800,color:arColor,fontFamily:"DM Mono,monospace"}}>{assignmentRisk}</div>
+                      <div style={{fontSize:10,color:arColor,marginTop:3,fontFamily:"DM Mono,monospace"}}>{(probITM*100).toFixed(0)}%</div>
                     </>
                   ):<div style={{fontSize:11,color:"#2a4a6a"}}>N/A</div>}
                 </div>
-                <div style={{background:"#0B131D",border:"1px solid #1B2A3A",borderRadius:9,padding:"9px 10px"}}>
-                  <div style={{fontSize:8,color:"#4A6A8A",marginBottom:4,letterSpacing:.5,fontFamily:"DM Mono,monospace"}}>Expected Value</div>
+                <div style={{background:"linear-gradient(180deg,#0B131D,#071019)",border:"1px solid #22364A",borderRadius:7,padding:"13px 14px"}}>
+                  <div style={{fontSize:10,color:"#9EB9E9",marginBottom:6,letterSpacing:.45,fontWeight:600,fontFamily:"DM Mono,monospace"}}>Expected Value</div>
                   {expectedValue!=null?(
                     <>
-                      <div style={{fontSize:13,fontWeight:700,color:evColor,fontFamily:"DM Mono,monospace"}}>{expectedValue>=0?"+$":"$"}{Math.abs(expectedValue).toFixed(0)}</div>
-                      {evPct!=null&&<div style={{fontSize:9,color:evColor,marginTop:2,fontFamily:"DM Mono,monospace"}}>{evPct>=0?"+":""}{evPct.toFixed(1)}%</div>}
+                      <div style={{fontSize:14,fontWeight:800,color:evColor,fontFamily:"DM Mono,monospace"}}>{expectedValue>=0?"+$":"$"}{Math.abs(expectedValue).toFixed(0)}</div>
+                      {evPct!=null&&<div style={{fontSize:10,color:evColor,marginTop:3,fontFamily:"DM Mono,monospace"}}>{evPct>=0?"+":""}{evPct.toFixed(1)}%</div>}
                     </>
                   ):<div style={{fontSize:11,color:"#2a4a6a"}}>—</div>}
                 </div>
@@ -1854,10 +1869,10 @@ function SimulatorPanel({ onSaveManualTrade }) {
             </div>
 
             {/* RIGHT: Payoff Chart */}
-            <div style={{flex:1,minWidth:0,padding:"14px 16px 0"}}>
-              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
-                <div style={{fontSize:9,letterSpacing:1.5,textTransform:"uppercase",color:"#4A6A8A",fontFamily:"DM Mono,monospace",fontWeight:500}}>
-                  Payoff at Expiration — <span style={{color:"#7D91AA"}}>{strategy}</span>
+            <div style={{minWidth:0,padding:"20px 20px 0",background:"radial-gradient(circle at 50% 0%,rgba(91,140,255,.08),transparent 42%),#050A0F"}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+                <div style={{fontSize:13,letterSpacing:1.5,textTransform:"uppercase",color:"#9EB9E9",fontFamily:"DM Mono,monospace",fontWeight:600}}>
+                  Payoff at Expiration — <span style={{color:"#D6E2F0"}}>{strategy}</span>
                 </div>
                 <button onClick={()=>setShowGreeks(p=>!p)}
                   style={{display:"flex",alignItems:"center",gap:5,background:"#0B131D",border:"1px solid #1B2A3A",borderRadius:6,
@@ -1866,7 +1881,7 @@ function SimulatorPanel({ onSaveManualTrade }) {
                   <span style={{fontSize:11}}>{showGreeks?"⊙":"○"}</span> {showGreeks?"Hide":"Show"} Greeks
                 </button>
               </div>
-              <PayoffChart spot={activeSpot||spot} pnlAt={combinedPnlAt} breakeven={breakeven} singleLeg={legs.length===1?primaryLeg:null} height={230}/>
+              <PayoffChart spot={activeSpot||spot} pnlAt={combinedPnlAt} breakeven={breakeven} singleLeg={legs.length===1?primaryLeg:null} height={250}/>
             </div>
           </div>
           );
@@ -1895,13 +1910,13 @@ function SimulatorPanel({ onSaveManualTrade }) {
 
         {/* Range slider */}
         {matrixRows.length>0&&(
-          <div style={{display:"flex",alignItems:"center",gap:8,padding:"7px 12px",borderBottom:"1px solid #1B2A3A",background:"#071019"}}>
-            <span style={{fontSize:9,letterSpacing:1.2,textTransform:"uppercase",color:"#4A6A8A",flexShrink:0}}>Range</span>
+          <div style={{display:"flex",alignItems:"center",gap:16,padding:"14px 18px",borderBottom:"1px solid #22364A",background:"#071019"}}>
+            <span style={{fontSize:11,letterSpacing:1.4,textTransform:"uppercase",color:"#9EB9E9",flexShrink:0,fontWeight:700}}>Range</span>
             <button onClick={()=>setRangeShift(v=>Math.max(-75,+(v-0.5).toFixed(1)))}
               style={{background:"none",border:"none",color:"#7D91AA",cursor:"pointer",fontSize:13,padding:"0 2px",lineHeight:1}}>◀</button>
-            <input type="range" min={-75} max={75} step={0.5} value={rangeShift}
+            <input className="sim-range-track" type="range" min={-75} max={75} step={0.5} value={rangeShift}
               onChange={e=>setRangeShift(parseFloat(e.target.value))}
-              style={{flex:1,accentColor:"#5B8CFF",cursor:"pointer"}}/>
+              style={{flex:1,cursor:"pointer"}}/>
             <button onClick={()=>setRangeShift(v=>Math.min(75,+(v+0.5).toFixed(1)))}
               style={{background:"none",border:"none",color:"#7D91AA",cursor:"pointer",fontSize:13,padding:"0 2px",lineHeight:1}}>▶</button>
             <span style={{fontFamily:"DM Mono,monospace",fontSize:10,color:rangeShift===0?"#4A6A8A":rangeShift>0?"#63E6BE":"#FF4D6D",minWidth:42,textAlign:"right"}}>
@@ -1949,8 +1964,8 @@ function SimulatorPanel({ onSaveManualTrade }) {
                           boxShadow:isAtm?"inset 3px 0 0 #63E6BE":"none"}}>
                         <span style={{display:"flex",alignItems:"center",gap:4}}>
                           ${row.price.toFixed(2)}
-                          {isAtm&&<span style={{fontSize:8,background:"#63E6BE",color:"#071019",borderRadius:3,padding:"1px 5px",fontWeight:700,letterSpacing:.3}}>ATM</span>}
-                          {isBe&&<span style={{fontSize:8,background:"#FFD84D18",color:"#FFD84D",border:"1px solid #FFD84D55",borderRadius:3,padding:"1px 5px",fontWeight:700,letterSpacing:.3}}>BE</span>}
+                          {isAtm&&<span style={{fontSize:9,background:"#63E6BE",color:"#050A0F",borderRadius:4,padding:"2px 6px",fontWeight:800,letterSpacing:.45,boxShadow:"0 0 12px rgba(99,230,190,.5)"}}>ATM</span>}
+                          {isBe&&<span style={{fontSize:9,background:"#FFD84D",color:"#050A0F",border:"1px solid #FFD84D",borderRadius:4,padding:"2px 6px",fontWeight:800,letterSpacing:.45,boxShadow:"0 0 12px rgba(255,216,77,.35)"}}>BE</span>}
                         </span>
                       </td>
                       <td className="sim-td-pct" style={{color:row.pct>=0?"#63E6BE":"#FF4D6D"}}>
@@ -1963,7 +1978,8 @@ function SimulatorPanel({ onSaveManualTrade }) {
                         return(
                           <td key={ci} className="sim-td"
                             style={{background:pnlBg(v),color:pnlColor(v),
-                              outline:isSel?"1px solid #63E6BE22":"none",outlineOffset:"-1px",
+                              outline:isSel?"1px solid #63E6BE88":"none",outlineOffset:"-1px",
+                              boxShadow:isSel?"inset 0 1px 0 rgba(99,230,190,.24),inset 0 -1px 0 rgba(99,230,190,.18),inset 0 0 20px rgba(99,230,190,.08)":"none",
                               fontWeight:Math.abs(v)>100?600:400}}
                             onMouseEnter={e=>{
                               setTooltip({price:row.price,pct:row.pct,date:colLabel,dollar:v,
@@ -2285,7 +2301,7 @@ function Home({ assets, onSelectAsset, onShowPositions, onSaveManualTrade, onEdi
       )}
 
       {/* Open Positions — flat per-trade table */}
-      <div className="sec" style={{marginBottom:24}}>
+      <div className="sec" style={{marginBottom:12,opacity:.78}}>
         <div className="sechdr">
           <div className="sectitle">Open positions</div>
           <span style={{fontSize:11,color:"#7D91AA"}}>{allOpenRows.length} position{allOpenRows.length!==1?"s":""}</span>
@@ -2322,9 +2338,9 @@ function Home({ assets, onSelectAsset, onShowPositions, onSaveManualTrade, onEdi
       </div>
 
       {/* Simulator */}
-      <div style={{marginBottom:14,display:"flex",alignItems:"center",gap:10}}>
-        <div style={{fontSize:11,letterSpacing:2,textTransform:"uppercase",color:"#4A6A8A"}}>Simulator</div>
-        <div style={{flex:1,height:1,background:"#1B2A3A"}}/>
+      <div style={{marginBottom:8,marginTop:4,display:"flex",alignItems:"center",gap:10}}>
+        <div style={{fontSize:13,letterSpacing:2.6,textTransform:"uppercase",color:"#B7C9EA",fontWeight:700}}>Simulator</div>
+        <div style={{flex:1,height:1,background:"linear-gradient(90deg,#22364A,transparent)"}}/>
       </div>
       <SimulatorPanel onSaveManualTrade={onSaveManualTrade}/>
     </div>
