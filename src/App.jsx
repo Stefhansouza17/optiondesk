@@ -26,7 +26,10 @@ async function fetchSymbolSearch(query) {
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
-const fmt = (n, d=2) => Number(n||0).toFixed(d);
+const fmt = (n, d=2) => Number(n||0).toLocaleString("en-US", {
+  minimumFractionDigits: d,
+  maximumFractionDigits: d,
+});
 const COLORS = ["#63E6BE","#FFD84D","#5B8CFF","#ff6b9d","#B37CFF","#fb923c"];
 
 // ── Black-Scholes ─────────────────────────────────────────────────────────────
@@ -768,7 +771,7 @@ function AssetDashboard({ asset, onClose, onSaveTrade, onUpdateTrade, onDeleteTr
                 <div className="sec">
                   <div className="sechdr">
                     <div className="sectitle">Cost basis recovery</div>
-                    <div style={{fontSize:11,color:"#7D91AA"}}>target: <span style={{color:"#D6E2F0"}}>${fmt(totalLeapCost*100)}</span></div>
+                    <div style={{fontSize:11,color:"#7D91AA"}}>target: <span style={{color:"#D6E2F0"}}>${fmt(totalLeapCost)}</span></div>
                   </div>
                   <div style={{padding:"14px 16px"}}>
                     <div style={{display:"flex",justifyContent:"space-between",fontSize:11,color:"#7D91AA",marginBottom:8}}>
