@@ -630,6 +630,74 @@ function AssetDashboard({ asset, onClose, onSaveTrade, onUpdateTrade, onDeleteTr
   const closedTrades = trades.filter(t=>t.status==="closed").sort((a,b)=>new Date(b.date)-new Date(a.date));
   const expiredTrades = trades.filter(t=>t.status==="expired").sort((a,b)=>new Date(b.date)-new Date(a.date));
   const filteredTrades = (statusFilter==="open"?openTrades:statusFilter==="closed"?closedTrades:statusFilter==="expired"?expiredTrades:trades).sort((a,b)=>new Date(b.date)-new Date(a.date));
+  const pmccShortCalls = trades
+    .filter(t=>(t.option_type||"call")==="call"&&t.action==="SELL")
+    .sort((a,b)=>new Date(a.date||0)-new Date(b.date||0));
+  const pmccClosingBuys = trades
+    .filter(t=>(t.option_type||"call")==="call"&&t.action==="BUY"&&t.status!=="open")
+    .sort((a,b)=>new Date(a.date||0)-new Date(b.date||0));
+  const pmccCycles = pmccShortCalls.map((sell,idx)=>{
+    const contracts = Math.max(1,parseInt(sell.contracts||1));
+    const close = pmccClosingBuys.find(b=>
+      Math.abs(parseFloat(b.strike)-parseFloat(sell.strike))<0.01 &&
+      b.expiration===sell.expiration &&
+      new Date(b.date||sell.date)>=new Date(sell.date||0)
+    );
+    const credit = parseFloat(sell.premium||0)*contracts*100;
+    const debit = close?parseFloat(close.premium||0)*Math.min(contracts,parseInt(close.contracts||1))*100:0;
+    const net = credit-debit;
+    const dte = sell.expiration?Math.max(Math.ceil((new Date(sell.expiration)-new Date())/(1000*60*60*24)),0):0;
+    return {
+      id:sell.id||idx,
+      number:idx+1,
+      short:sell,
+      close,
+      status:sell.status==="open"?"open":sell.status==="expired"?"expired":close?"closed":sell.status,
+      credit,
+      debit,
+      net,
+      contracts,
+      dte,
+    };
+  });
+  const activeCycle = pmccCycles.find(c=>c.status==="open");
+  const realizedPremium = pmccCycles.filter(c=>c.status!=="open").reduce((s,c)=>s+c.net,0);
+  const openCycleCredit = activeCycle?.credit||0;
+  const premiumCaptured = realizedPremium + openCycleCredit;
+  const weeklyPremium = pmccCycles.length
+    ? premiumCaptured/Math.max(1,(new Date()-new Date(pmccCycles[0].short.date||new Date()))/(1000*60*60*24))*7
+    : 0;
+  const projectedFreeDays = weeklyPremium>0
+    ? Math.ceil(Math.max(totalLeapCost-premiumCaptured,0)/(weeklyPremium/7))
+    : null;
+  const currentShort = activeCycle?.short;
+  const healthDte = currentShort?.expiration?Math.max(Math.ceil((new Date(currentShort.expiration)-new Date())/(1000*60*60*24)),0):0;
+  const distancePct = currentShort&&etfPrice>0?(parseFloat(currentShort.strike)-etfPrice)/etfPrice*100:null;
+  const healthScore = currentShort ? Math.max(0,Math.min(100,
+    Math.round(100
+      - (distancePct==null?25:distancePct<0?45:distancePct<3?30:distancePct<7?15:0)
+      - (healthDte<=2?25:healthDte<=7?15:healthDte<=14?7:0)
+      - (currentShort.status==="open"?0:10)
+    )
+  )) : null;
+  const healthState = healthScore==null?"No short call":healthScore>=80?"Healthy":healthScore>=60?"Watch":healthScore>=30?"Danger":"Breached";
+  const healthColor = healthScore==null?"#7D91AA":healthScore>=80?"#63E6BE":healthScore>=60?"#FFD84D":"#FF4D6D";
+  const inferredRolls = pmccClosingBuys.flatMap(close=>{
+    const nextSell = pmccShortCalls.find(s=>
+      s.date===close.date &&
+      (Math.abs(parseFloat(s.strike)-parseFloat(close.strike))>=0.01 || s.expiration!==close.expiration)
+    );
+    if(!nextSell) return [];
+    const contracts = Math.min(parseInt(close.contracts||1),parseInt(nextSell.contracts||1));
+    const debit = parseFloat(close.premium||0)*contracts*100;
+    const credit = parseFloat(nextSell.premium||0)*contracts*100;
+    const oldStrike = parseFloat(close.strike);
+    const newStrike = parseFloat(nextSell.strike);
+    const oldExp = new Date(close.expiration);
+    const newExp = new Date(nextSell.expiration);
+    const type = newStrike>oldStrike&&newExp>oldExp?"Up/Out":newExp>oldExp?"Out":newStrike>oldStrike?"Up":"Defensive";
+    return [{date:close.date,from:close,to:nextSell,contracts,debit,credit,net:credit-debit,type}];
+  });
 
   function openAdd(){setEditId(null);setForm({...ef,strategy});setShowForm(true);}
   function openEdit(t){setEditId(t.id);setForm({...ef,...t,contracts:t.contracts||1,fees:t.fees||"",notes:t.notes||""});setShowForm(true);}
@@ -774,6 +842,95 @@ function AssetDashboard({ asset, onClose, onSaveTrade, onUpdateTrade, onDeleteTr
                     </div>
                     <div className="ptrack"><div className="pfill" style={{width:`${recovPct*100}%`,background:`linear-gradient(90deg,${color},#5B8CFF)`}}/></div>
                     <div style={{fontSize:11,color:"#7D91AA",marginTop:6}}>$<span style={{color:"#FFD84D"}}>{fmt(Math.max(totalLeapCost-totalDollar,0))}</span> remaining to free LEAP</div>
+                  </div>
+                </div>
+                <div style={{display:"grid",gridTemplateColumns:"1.2fr 1fr",gap:14,marginBottom:16}}>
+                  <div className="sec" style={{marginBottom:0}}>
+                    <div className="sechdr">
+                      <div className="sectitle">PMCC Cycle Tracker</div>
+                      <div style={{fontSize:11,color:"#7D91AA"}}>{pmccCycles.length} cycle{pmccCycles.length!==1?"s":""}</div>
+                    </div>
+                    {pmccCycles.length===0?<div className="empty">No short-call cycles yet</div>:(
+                      <table>
+                        <thead><tr><th>#</th><th>Short Call</th><th>Status</th><th>Credit</th><th>Debit</th><th>Net</th></tr></thead>
+                        <tbody>
+                          {pmccCycles.slice(-5).map(c=>(
+                            <tr key={c.id}>
+                              <td style={{color:"#7D91AA"}}>{c.number}</td>
+                              <td><span style={{color:"#FFD84D"}}>${c.short.strike}C</span> <span style={{color:"#7D91AA"}}>{c.short.expiration}</span></td>
+                              <td><span className={c.status==="open"?"stopen":c.status==="expired"?"stexpired":"stclosed"} style={c.status==="open"?{color,borderColor:color+"44",background:color+"15"}:undefined}>{c.status}</span></td>
+                              <td style={{color:"#63E6BE"}}>${fmt(c.credit)}</td>
+                              <td style={{color:c.debit>0?"#FF4D6D":"#4A6A8A"}}>{c.debit>0?`-$${fmt(c.debit)}`:"-"}</td>
+                              <td style={{color:c.net>=0?"#63E6BE":"#FF4D6D"}}>{c.net>=0?"+":""}${fmt(c.net)}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    )}
+                  </div>
+                  <div className="sec" style={{marginBottom:0}}>
+                    <div className="sechdr"><div className="sectitle">Premium Capture</div></div>
+                    <div style={{padding:"14px 16px",display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+                      {[
+                        ["Captured",`$${fmt(premiumCaptured)}`,"#63E6BE"],
+                        ["Realized",`$${fmt(realizedPremium)}`,"#5B8CFF"],
+                        ["Weekly pace",`$${fmt(weeklyPremium)}`,"#FFD84D"],
+                        ["Free LEAP ETA",projectedFreeDays?`~${projectedFreeDays}d`:"-","#B37CFF"],
+                      ].map(([label,value,c])=>(
+                        <div key={label} style={{background:"#071019",border:"1px solid #1B2A3A",borderRadius:6,padding:"11px 12px"}}>
+                          <div style={{fontSize:9,letterSpacing:1.4,textTransform:"uppercase",color:"#4A6A8A",marginBottom:5}}>{label}</div>
+                          <div style={{fontFamily:"Syne,sans-serif",fontSize:18,fontWeight:800,color:c}}>{value}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14,marginBottom:16}}>
+                  <div className="sec" style={{marginBottom:0}}>
+                    <div className="sechdr">
+                      <div className="sectitle">Position Health</div>
+                      <div style={{fontSize:12,fontWeight:700,color:healthColor}}>{healthState}</div>
+                    </div>
+                    <div style={{padding:"14px 16px"}}>
+                      {currentShort?(
+                        <>
+                          <div style={{display:"flex",alignItems:"center",gap:14,marginBottom:12}}>
+                            <div style={{fontFamily:"Syne,sans-serif",fontSize:36,fontWeight:800,color:healthColor,lineHeight:1}}>{healthScore}</div>
+                            <div style={{flex:1}}>
+                              <div className="ptrack"><div className="pfill" style={{width:`${healthScore}%`,background:`linear-gradient(90deg,${healthColor},#5B8CFF)`}}/></div>
+                              <div style={{fontSize:11,color:"#7D91AA",marginTop:6}}>Short ${currentShort.strike}C exp {currentShort.expiration}</div>
+                            </div>
+                          </div>
+                          <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8,fontSize:11}}>
+                            <div><span style={{color:"#4A6A8A"}}>DTE</span><div style={{color:"#D6E2F0",fontWeight:700}}>{healthDte}</div></div>
+                            <div><span style={{color:"#4A6A8A"}}>Distance</span><div style={{color:(distancePct||0)>=0?"#63E6BE":"#FF4D6D",fontWeight:700}}>{distancePct==null?"-":`${distancePct>=0?"+":""}${fmt(distancePct,1)}%`}</div></div>
+                            <div><span style={{color:"#4A6A8A"}}>Open credit</span><div style={{color:"#63E6BE",fontWeight:700}}>${fmt(openCycleCredit)}</div></div>
+                          </div>
+                        </>
+                      ):<div className="empty" style={{padding:22}}>No active short call</div>}
+                    </div>
+                  </div>
+                  <div className="sec" style={{marginBottom:0}}>
+                    <div className="sechdr">
+                      <div className="sectitle">Roll History</div>
+                      <div style={{fontSize:11,color:"#7D91AA"}}>{inferredRolls.length} inferred</div>
+                    </div>
+                    {inferredRolls.length===0?<div className="empty">No same-day rolls detected</div>:(
+                      <table>
+                        <thead><tr><th>Date</th><th>From</th><th>To</th><th>Net</th><th>Type</th></tr></thead>
+                        <tbody>
+                          {inferredRolls.slice(-4).map((r,i)=>(
+                            <tr key={`${r.date}-${i}`}>
+                              <td style={{color:"#7D91AA"}}>{r.date}</td>
+                              <td>${r.from.strike}C</td>
+                              <td><span style={{color:"#FFD84D"}}>${r.to.strike}C</span></td>
+                              <td style={{color:r.net>=0?"#63E6BE":"#FF4D6D"}}>{r.net>=0?"+":""}${fmt(r.net)}</td>
+                              <td style={{color:"#8aaac8"}}>{r.type}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    )}
                   </div>
                 </div>
                 <div className="sec">
