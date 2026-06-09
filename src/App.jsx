@@ -114,8 +114,8 @@ const importJSON = (onSuccess) => {
 
 // ── CSS ───────────────────────────────────────────────────────────────────────
 const CSS = `
-@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Syne:wght@700;800&display=swap');
 *{box-sizing:border-box;margin:0;padding:0}
+html,body{font-family:'DM Mono','IBM Plex Mono',monospace;background:#050A0F;color:#D6E2F0;-webkit-font-smoothing:antialiased}
 ::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:#071019}::-webkit-scrollbar-thumb{background:#1e3a5f;border-radius:2px}
 .hdr{border-bottom:1px solid #1B2A3A;padding:13px 24px;display:flex;align-items:center;justify-content:space-between;background:rgba(10,20,35,0.97);position:sticky;top:0;z-index:100;backdrop-filter:blur(10px)}
 .logo{font-family:'Syne',sans-serif;font-size:20px;font-weight:800;color:#fff;cursor:pointer;user-select:none}
