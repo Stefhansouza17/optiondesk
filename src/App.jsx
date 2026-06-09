@@ -205,44 +205,44 @@ tr:hover td{background:#101e2c}
 .pulse{display:inline-block;width:7px;height:7px;border-radius:50%;background:#63E6BE;margin-right:6px;animation:pulse 1.8s infinite}
 @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(0,212,170,0.5)}70%{box-shadow:0 0 0 7px rgba(0,212,170,0)}100%{box-shadow:0 0 0 0 rgba(0,212,170,0)}}
 /* ── Simulator ── */
-.sim-wrap{display:flex;border:1px solid #1B2A3A;border-radius:12px;overflow:hidden;margin-top:0;background:#050A0F}
-.sim-left{width:290px;flex-shrink:0;border-right:1px solid #1B2A3A;background:#071019;overflow-y:auto;padding:15px 13px;display:flex;flex-direction:column;gap:13px}
+.sim-wrap{display:flex;border:1px solid #1B2A3A;border-radius:12px;overflow:hidden;margin-top:0;background:#050A0F;min-height:600px}
+.sim-left{width:320px;flex-shrink:0;border-right:1px solid #1B2A3A;background:#071019;overflow-y:auto;padding:16px 14px;display:flex;flex-direction:column;gap:12px}
 .sim-right{flex:1;overflow:hidden;display:flex;flex-direction:column;min-width:0;background:#050A0F}
-.sim-slbl{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#7D91AA;margin-bottom:6px;font-weight:500}
+.sim-slbl{font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#7D91AA;margin-bottom:7px;font-weight:500;font-family:'DM Mono',monospace}
 .sim-strike-box{background:#071019;border:1px solid #1B2A3A;border-radius:9px;padding:10px 11px}
 .sim-strike-big{font-family:'Syne',sans-serif;font-size:23px;font-weight:800;color:#FFD84D;flex:1}
 .sim-strike-input{background:#0B131D;border:1px solid #FFD84D44;color:#FFD84D;font-family:'DM Mono',monospace;font-size:12px;padding:4px 8px;border-radius:5px;width:76px;text-align:center}
 .sim-strike-input:focus{outline:none;border-color:#FFD84Daa}
-.sim-chip{background:none;border:1px solid #1B2A3A;color:#7D91AA;padding:4px 9px;border-radius:20px;cursor:pointer;font-family:'DM Mono',monospace;font-size:10px;white-space:nowrap;flex-shrink:0;transition:all .15s}
+.sim-chip{background:none;border:1px solid #1B2A3A;color:#7D91AA;padding:4px 10px;border-radius:20px;cursor:pointer;font-family:'DM Mono',monospace;font-size:10px;white-space:nowrap;flex-shrink:0;transition:all .15s}
 .sim-chip:hover{border-color:#22364A;color:#D6E2F0}
-.sim-chip.sel{background:#FFD84D;border-color:#FFD84D;color:#050A0F;font-weight:700;box-shadow:0 0 10px rgba(255,216,77,.25)}
+.sim-chip.sel{background:#FFD84D;border-color:#FFD84D;color:#050A0F;font-weight:700;box-shadow:0 0 10px rgba(255,216,77,.3)}
 .sim-chip.atm{border-color:#63E6BE55;color:#63E6BE}
-.sim-metric{background:#0B131D;border:1px solid #1B2A3A;border-radius:9px;padding:9px 11px;position:relative;overflow:hidden}
-.sim-metric::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--mt);border-radius:9px 9px 0 0}
-.sim-metric-lbl{font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:#4A6A8A;margin-bottom:4px}
-.sim-metric-val{font-family:'Syne',sans-serif;font-size:14px;font-weight:700;color:var(--mc)}
-.sim-timeline{border-bottom:1px solid #1B2A3A;background:#071019;padding:9px 14px 0;flex-shrink:0;overflow-x:auto}
-.sim-exp-btn{background:none;border:1px solid #1B2A3A;color:#7D91AA;padding:5px 10px;border-radius:20px;cursor:pointer;font-family:'DM Mono',monospace;font-size:10px;white-space:nowrap;flex-shrink:0;transition:all .15s;min-width:36px;text-align:center}
-.sim-exp-btn:hover{border-color:#22364A;color:#D6E2F0}
-.sim-exp-btn.sel{background:#63E6BE;border-color:#63E6BE;color:#050A0F;font-weight:700;box-shadow:0 0 12px rgba(99,230,190,.35)}
+.sim-metric{background:#0B131D;border:1px solid #1B2A3A;border-radius:10px;padding:10px 12px;position:relative;overflow:hidden}
+.sim-metric::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--mt);border-radius:10px 10px 0 0}
+.sim-metric-lbl{font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:#4A6A8A;margin-bottom:5px;font-family:'DM Mono',monospace}
+.sim-metric-val{font-family:'Syne',sans-serif;font-size:16px;font-weight:700;color:var(--mc)}
+.sim-timeline{border-bottom:1px solid #1B2A3A;background:#071019;padding:10px 14px 0;flex-shrink:0;overflow-x:auto}
+.sim-exp-btn{background:none;border:1px solid #1B2A3A;color:#7D91AA;padding:6px 11px;border-radius:20px;cursor:pointer;font-family:'DM Mono',monospace;font-size:11px;font-weight:500;white-space:nowrap;flex-shrink:0;transition:all .15s;min-width:40px;text-align:center;line-height:1.2}
+.sim-exp-btn:hover{border-color:#2a4a6a;color:#D6E2F0;background:#0B131D}
+.sim-exp-btn.sel{background:#63E6BE;border-color:#63E6BE;color:#050A0F;font-weight:700;box-shadow:0 0 14px rgba(99,230,190,.4)}
 .sim-dir-row{display:flex;gap:6px}
 .sim-toolbar{display:flex;align-items:center;gap:10px;padding:9px 15px;border-bottom:1px solid #1B2A3A;background:#071019;flex-shrink:0;flex-wrap:wrap}
 .sim-view-group{display:flex;background:#0B131D;border:1px solid #1B2A3A;border-radius:9px;padding:2px;gap:2px}
-.sim-view-btn{background:none;border:none;padding:5px 13px;border-radius:7px;cursor:pointer;font-family:'DM Mono',monospace;font-size:10px;font-weight:600;color:#7D91AA;letter-spacing:.5px;transition:all .15s}
-.sim-view-btn.sel{background:#1B2A3A;color:#D6E2F0;box-shadow:inset 0 1px 0 rgba(255,255,255,.05)}
+.sim-view-btn{background:none;border:none;padding:5px 14px;border-radius:7px;cursor:pointer;font-family:'DM Mono',monospace;font-size:10px;font-weight:600;color:#7D91AA;letter-spacing:.5px;transition:all .15s}
+.sim-view-btn.sel{background:#162030;color:#fff;box-shadow:0 0 0 1px #2a4a6a,0 1px 4px rgba(0,0,0,.5)}
 .sim-matrix{flex:1;overflow:auto}
-.sim-th{position:sticky;top:0;z-index:10;background:#071019;font-size:9px;letter-spacing:1px;color:#4A6A8A;padding:7px 10px;text-align:center;border-bottom:1px solid #1B2A3A;border-right:1px solid #0B131D;white-space:nowrap;font-weight:400;font-family:'DM Mono',monospace}
-.sim-th.sp1{position:sticky;left:0;z-index:15;text-align:left;padding-left:14px;min-width:92px;background:#071019;border-right:1px solid #1B2A3A}
-.sim-th.sp2{position:sticky;left:92px;z-index:15;min-width:52px;background:#071019;border-right:1px solid #1B2A3A}
-.sim-th.sel-exp{color:#63E6BE;font-weight:600}
-.sim-td{padding:6px 10px;text-align:center;font-size:12px;font-weight:500;border-bottom:1px solid #071019;border-right:1px solid #071019;white-space:nowrap;font-family:'DM Mono',monospace}
+.sim-th{position:sticky;top:0;z-index:10;background:#071019;font-size:9px;letter-spacing:1px;color:#4A6A8A;padding:8px 10px;text-align:center;border-bottom:1px solid #1B2A3A;border-right:1px solid #0B131D;white-space:nowrap;font-weight:400;font-family:'DM Mono',monospace}
+.sim-th.sp1{position:sticky;left:0;z-index:15;text-align:left;padding-left:14px;min-width:100px;background:#071019;border-right:1px solid #1B2A3A}
+.sim-th.sp2{position:sticky;left:100px;z-index:15;min-width:56px;background:#071019;border-right:1px solid #1B2A3A}
+.sim-th.sel-exp{color:#63E6BE;font-weight:700}
+.sim-td{padding:6px 10px;text-align:center;font-size:12px;font-weight:500;border-bottom:1px solid #071019;border-right:1px solid #071019;white-space:nowrap;font-family:'DM Mono',monospace;transition:filter .1s}
 .sim-td-price{text-align:left;padding-left:14px;font-size:12px;background:#071019!important;position:sticky;left:0;z-index:5;border-right:1px solid #1B2A3A;border-bottom:1px solid #0B131D;white-space:nowrap;font-family:'DM Mono',monospace}
-.sim-td-pct{font-size:11px;background:#071019!important;position:sticky;left:92px;z-index:5;border-right:1px solid #1B2A3A;border-bottom:1px solid #0B131D;text-align:center;padding:6px 10px;font-family:'DM Mono',monospace}
-.sim-row-atm .sim-td-price{color:#fff!important;font-weight:700;background:linear-gradient(90deg,#63E6BE08,transparent)!important;box-shadow:inset 3px 0 0 #63E6BE}
+.sim-td-pct{font-size:11px;background:#071019!important;position:sticky;left:100px;z-index:5;border-right:1px solid #1B2A3A;border-bottom:1px solid #0B131D;text-align:center;padding:6px 10px;font-family:'DM Mono',monospace}
+.sim-row-atm .sim-td-price{color:#fff!important;font-weight:700;background:linear-gradient(90deg,#63E6BE0a,transparent)!important;box-shadow:inset 3px 0 0 #63E6BE}
 .sim-row-atm .sim-td-pct{background:linear-gradient(90deg,#63E6BE05,transparent)!important}
 .sim-row-atm{border-top:1px solid #63E6BE22!important;border-bottom:1px solid #63E6BE22!important}
 .sim-row-be{border-top:1px dashed #FFD84D44!important}
-tr:hover .sim-td,.sim-row-atm:hover .sim-td-price,.sim-row-atm:hover .sim-td-pct{filter:brightness(1.18)}
+tr:hover .sim-td,.sim-row-atm:hover .sim-td-price,.sim-row-atm:hover .sim-td-pct{filter:brightness(1.2)}
 @media(max-width:768px){
   html,body{overflow-x:hidden;max-width:100%}
   .hdr{padding:10px 12px;flex-wrap:wrap;gap:6px}
@@ -1525,12 +1525,20 @@ function SimulatorPanel({ onSaveManualTrade }) {
         {/* Symbol search / header */}
         {sym?(
           <div>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:3}}>
-              <div style={{fontFamily:"Syne,sans-serif",fontSize:26,fontWeight:800,color:"#ffffff",letterSpacing:-0.5,lineHeight:1}}>{sym}</div>
-              <div style={{display:"flex",gap:5,paddingTop:3}}>
-                <button title="Change symbol" onClick={()=>{setSym("");setExps([]);setChain([]);setQuote(null);setSearchInput("");}}
-                  style={{background:"#1B2A3A",border:"1px solid #2a3a4a",borderRadius:5,color:"#7D91AA",fontSize:11,cursor:"pointer",padding:"3px 7px",fontFamily:"DM Mono,monospace"}}>↩</button>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
+              <div style={{display:"flex",alignItems:"center",gap:7}}>
+                <div title="Change symbol" onClick={()=>{setSym("");setExps([]);setChain([]);setQuote(null);setSearchInput("");}}
+                  style={{fontFamily:"Syne,sans-serif",fontSize:26,fontWeight:800,color:"#ffffff",letterSpacing:-0.5,lineHeight:1,cursor:"pointer"}}>
+                  {sym}
+                </div>
+                <button title="Favorite" style={{background:"none",border:"none",color:"#4A6A8A",fontSize:15,cursor:"pointer",padding:0,lineHeight:1,flexShrink:0}}>☆</button>
               </div>
+              <button title="Refresh" onClick={()=>loadSym(sym)} disabled={loading}
+                style={{background:"#0B131D",border:"1px solid #1B2A3A",borderRadius:6,color:loading?"#2a4a5a":"#7D91AA",
+                  fontSize:15,cursor:"pointer",padding:"4px 9px",lineHeight:1,display:"flex",alignItems:"center",
+                  justifyContent:"center",transition:"all .15s",flexShrink:0}}>
+                ⟳
+              </button>
             </div>
             {quote?.description&&<div style={{fontSize:10,color:"#4A6A8A",marginBottom:2,lineHeight:1.3}}>{quote.description}</div>}
             {error&&<div style={{fontSize:10,color:"#FF4D6D",marginTop:4}}>{error}</div>}
@@ -1561,18 +1569,27 @@ function SimulatorPanel({ onSaveManualTrade }) {
               const legAtm=legStrikes.length&&spot?legStrikes.reduce((a,b)=>Math.abs(b-spot)<Math.abs(a-spot)?b:a):null;
               return(
                 <div key={leg.id} style={{background:"#0B131D",border:"1px solid #1B2A3A",borderRadius:10,padding:"9px 11px"}}>
-                  <div style={{display:"flex",gap:5,alignItems:"center",marginBottom:7}}>
-                    <div className="toggle-group" style={{flex:1}}>
-                      <button className="tgl" onClick={()=>updateLeg(leg.id,{side:"buy"})} style={{background:leg.side==="buy"?"#63E6BE":"transparent",color:leg.side==="buy"?"#050A0F":"#7D91AA",flex:1,boxShadow:leg.side==="buy"?"0 0 10px rgba(99,230,190,.28)":"none"}}>Buy</button>
-                      <button className="tgl" onClick={()=>updateLeg(leg.id,{side:"sell"})} style={{background:leg.side==="sell"?"#FF4D6D":"transparent",color:leg.side==="sell"?"#fff":"#7D91AA",flex:1,boxShadow:leg.side==="sell"?"0 0 10px rgba(255,77,109,.28)":"none"}}>Sell</button>
-                    </div>
-                    <div className="toggle-group" style={{flex:1}}>
-                      <button className="tgl" onClick={()=>updateLeg(leg.id,{optType:"call",strike:null,strikeInput:""})} style={{background:leg.optType==="call"?"#5B8CFF":"transparent",color:leg.optType==="call"?"#fff":"#7D91AA",flex:1,boxShadow:leg.optType==="call"?"0 0 10px rgba(91,140,255,.28)":"none"}}>Call</button>
-                      <button className="tgl" onClick={()=>updateLeg(leg.id,{optType:"put",strike:null,strikeInput:""})} style={{background:leg.optType==="put"?"#B37CFF":"transparent",color:leg.optType==="put"?"#fff":"#7D91AA",flex:1,boxShadow:leg.optType==="put"?"0 0 10px rgba(179,124,255,.28)":"none"}}>Put</button>
-                    </div>
+                  <div style={{display:"flex",gap:5,alignItems:"center",marginBottom:8}}>
+                    {[
+                      {label:"Buy",  active:leg.side==="buy",   bg:"#63E6BE", col:"#050A0F", fn:()=>updateLeg(leg.id,{side:"buy"})},
+                      {label:"Sell", active:leg.side==="sell",  bg:"#FF4D6D", col:"#fff",    fn:()=>updateLeg(leg.id,{side:"sell"})},
+                      {label:"Call", active:leg.optType==="call", bg:"#5B8CFF", col:"#fff",  fn:()=>updateLeg(leg.id,{optType:"call",strike:null,strikeInput:""})},
+                      {label:"Put",  active:leg.optType==="put",  bg:"#B37CFF", col:"#fff",  fn:()=>updateLeg(leg.id,{optType:"put",strike:null,strikeInput:""})},
+                    ].map(({label,active,bg,col,fn})=>(
+                      <button key={label} onClick={fn}
+                        style={{flex:1,padding:"7px 0",borderRadius:7,
+                          border:`1px solid ${active?bg+"66":"#1B2A3A"}`,
+                          cursor:"pointer",fontFamily:"DM Mono,monospace",fontSize:12,fontWeight:700,
+                          letterSpacing:.3,transition:"all .15s",
+                          background:active?bg:"#0B131D",
+                          color:active?col:"#7D91AA",
+                          boxShadow:active?`0 0 12px ${bg}44`:"none"}}>
+                        {label}
+                      </button>
+                    ))}
                     {legs.length>1&&(
                       <button onClick={()=>setLegs(p=>p.filter(l=>l.id!==leg.id))}
-                        style={{background:"none",border:"1px solid #FF4D6D44",borderRadius:4,color:"#FF4D6D",cursor:"pointer",fontSize:11,padding:"2px 6px",lineHeight:1}}>✕</button>
+                        style={{background:"none",border:"1px solid #FF4D6D44",borderRadius:4,color:"#FF4D6D",cursor:"pointer",fontSize:11,padding:"2px 6px",lineHeight:1,flexShrink:0}}>✕</button>
                     )}
                   </div>
                   {legStrikes.length>0&&(
@@ -1639,8 +1656,8 @@ function SimulatorPanel({ onSaveManualTrade }) {
                 const isDebit=netDebit>=0;
                 return[
                   ["Net "+(isDebit?"Debit":"Credit"),(isDebit?"-":"+")+`$${(Math.abs(netDebit)*100).toFixed(0)}`,isDebit?"#FF4D6D":"#63E6BE"],
-                  ["Max Loss",maxLoss===-Infinity?"Unlimited":"$"+Math.abs(maxLoss).toFixed(0),"#FF4D6D"],
-                  ["Max Profit",maxProfit===Infinity?"Unlimited":"$"+maxProfit.toFixed(0),"#63E6BE"],
+                  ["Max Loss",maxLoss===-Infinity?"Unlimited":`-$${Math.abs(maxLoss).toFixed(0)}`,"#FF4D6D"],
+                  ["Max Profit",maxProfit===Infinity?"Unlimited":`+$${maxProfit.toFixed(0)}`,"#63E6BE"],
                   ["Breakeven",breakeven>0?`$${breakeven.toFixed(2)}`:"—","#FFD84D"],
                 ];
               })().map(([l,v,c])=>(
@@ -1716,7 +1733,13 @@ function SimulatorPanel({ onSaveManualTrade }) {
         )}
 
         {activePremium>0&&(
-          <button className="btn" style={{width:"100%",padding:9,fontSize:11,fontWeight:600}} onClick={()=>setShowQuickAdd(p=>!p)}>
+          <button onClick={()=>setShowQuickAdd(p=>!p)}
+            style={{width:"100%",padding:"11px 0",marginTop:"auto",
+              background:showQuickAdd?"#FF4D6D15":"#63E6BE14",
+              border:`1px solid ${showQuickAdd?"#FF4D6D55":"#63E6BE55"}`,borderRadius:8,
+              color:showQuickAdd?"#FF4D6D":"#63E6BE",fontFamily:"DM Mono,monospace",fontSize:12,fontWeight:700,
+              cursor:"pointer",letterSpacing:.5,display:"flex",alignItems:"center",justifyContent:"center",gap:7,
+              boxShadow:showQuickAdd?"none":"0 0 18px rgba(99,230,190,.1)",transition:"all .2s"}}>
             {showQuickAdd?"✕ Cancel":"+ Add Trade"}
           </button>
         )}
@@ -1763,62 +1786,67 @@ function SimulatorPanel({ onSaveManualTrade }) {
           return(
           <div style={{display:"flex",gap:0,borderBottom:"1px solid #1B2A3A",background:"#071019"}}>
             {/* LEFT: Probabilities */}
-            <div style={{flex:"0 0 45%",padding:"15px 17px",borderRight:"1px solid #1B2A3A",display:"flex",flexDirection:"column",gap:11,background:"#071019"}}>
-              <div className="sim-slbl" style={{margin:0,letterSpacing:2}}>Probabilities</div>
+            <div style={{flex:"0 0 44%",padding:"14px 16px",borderRight:"1px solid #1B2A3A",display:"flex",flexDirection:"column",gap:10,background:"#071019"}}>
+              <div style={{display:"flex",alignItems:"center",gap:6}}>
+                <div className="sim-slbl" style={{margin:0,letterSpacing:2}}>Probabilities</div>
+                <button style={{width:15,height:15,borderRadius:"50%",background:"#1B2A3A",border:"1px solid #2a3a4a",
+                  color:"#6a8aaa",fontSize:9,cursor:"default",display:"flex",alignItems:"center",justifyContent:"center",
+                  fontFamily:"DM Mono,monospace",padding:0,flexShrink:0}}>?</button>
+              </div>
 
               {/* Top row — 4 large metrics */}
-              <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:8}}>
+              <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:10}}>
                 <div>
-                  <div style={{fontSize:9,color:"#4A6A8A",marginBottom:5,letterSpacing:.5}}>Chance of Profit</div>
-                  <div style={{fontFamily:"Syne,sans-serif",fontSize:27,fontWeight:800,color:"#5B8CFF",lineHeight:1}}>{(chanceOfProfit*100).toFixed(1)}%</div>
+                  <div style={{fontSize:8,color:"#4A6A8A",marginBottom:5,letterSpacing:.5,fontFamily:"DM Mono,monospace"}}>Chance of Profit</div>
+                  <div style={{fontFamily:"Syne,sans-serif",fontSize:28,fontWeight:800,color:"#5B8CFF",lineHeight:1}}>{(chanceOfProfit*100).toFixed(1)}%</div>
                 </div>
                 <div>
-                  <div style={{fontSize:9,color:"#4A6A8A",marginBottom:5,letterSpacing:.5}}>Delta</div>
-                  <div style={{fontFamily:"Syne,sans-serif",fontSize:27,fontWeight:800,color:deltaDirColor,lineHeight:1}}>{Math.abs(delta).toFixed(2)}</div>
-                  <div style={{fontSize:10,color:deltaDirColor,marginTop:3,fontWeight:500}}>{deltaDir}</div>
+                  <div style={{fontSize:8,color:"#4A6A8A",marginBottom:5,letterSpacing:.5,fontFamily:"DM Mono,monospace"}}>Delta</div>
+                  <div style={{fontFamily:"Syne,sans-serif",fontSize:28,fontWeight:800,color:deltaDirColor,lineHeight:1}}>{Math.abs(delta).toFixed(2)}</div>
+                  <div style={{fontSize:9,color:deltaDirColor,marginTop:4,fontWeight:600,fontFamily:"DM Mono,monospace"}}>{deltaDir}</div>
                 </div>
                 <div>
-                  <div style={{fontSize:9,color:"#4A6A8A",marginBottom:5,letterSpacing:.5}}>IV (option)</div>
-                  <div style={{fontFamily:"Syne,sans-serif",fontSize:27,fontWeight:800,color:"#FFD84D",lineHeight:1}}>{(iv*100).toFixed(1)}%</div>
-                  <div style={{fontSize:10,color:ivColor,marginTop:3,fontWeight:500}}>{ivLbl}</div>
+                  <div style={{fontSize:8,color:"#4A6A8A",marginBottom:5,letterSpacing:.5,fontFamily:"DM Mono,monospace"}}>IV (option)</div>
+                  <div style={{fontFamily:"Syne,sans-serif",fontSize:28,fontWeight:800,color:"#FFD84D",lineHeight:1}}>{(iv*100).toFixed(1)}%</div>
+                  <div style={{fontSize:9,color:ivColor,marginTop:4,fontWeight:600,fontFamily:"DM Mono,monospace"}}>{ivLbl}</div>
                 </div>
                 <div>
-                  <div style={{fontSize:9,color:"#4A6A8A",marginBottom:5,letterSpacing:.5}}>IV Rank (stock)</div>
-                  <div style={{fontFamily:"Syne,sans-serif",fontSize:27,fontWeight:800,color:ivRankColor,lineHeight:1}}>{ivRankVal!=null?ivRankVal:"—"}</div>
-                  {ivRankVal!=null&&<div style={{fontSize:10,color:ivRankColor,marginTop:3,fontWeight:500}}>{ivRankLbl}</div>}
+                  <div style={{fontSize:8,color:"#4A6A8A",marginBottom:5,letterSpacing:.5,fontFamily:"DM Mono,monospace"}}>IV Rank (stock)</div>
+                  <div style={{fontFamily:"Syne,sans-serif",fontSize:28,fontWeight:800,color:ivRankColor,lineHeight:1}}>{ivRankVal!=null?ivRankVal:"—"}</div>
+                  {ivRankVal!=null&&<div style={{fontSize:9,color:ivRankColor,marginTop:4,fontWeight:600,fontFamily:"DM Mono,monospace"}}>{ivRankLbl}</div>}
                 </div>
               </div>
 
               {/* Progress bar */}
               <div style={{height:4,background:"#1B2A3A",borderRadius:2,overflow:"hidden"}}>
-                <div style={{height:"100%",width:`${chanceOfProfit*100}%`,background:"linear-gradient(90deg,#5B8CFF,#63E6BE)",borderRadius:2,transition:"width .3s"}}/>
+                <div style={{height:"100%",width:`${chanceOfProfit*100}%`,background:"linear-gradient(90deg,#5B8CFF,#63E6BE)",borderRadius:2,transition:"width .4s"}}/>
               </div>
 
               {/* Bottom row — 4 smaller metric cards */}
               <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:6}}>
-                <div style={{background:"#0B131D",border:"1px solid #1B2A3A",borderRadius:9,padding:"9px 11px"}}>
-                  <div style={{fontSize:8,color:"#4A6A8A",marginBottom:3,letterSpacing:.5}}>Prob ITM</div>
-                  <div style={{fontSize:13,fontWeight:600,color:"#5B8CFF"}}>{(probITM*100).toFixed(1)}%</div>
+                <div style={{background:"#0B131D",border:"1px solid #1B2A3A",borderRadius:9,padding:"9px 10px"}}>
+                  <div style={{fontSize:8,color:"#4A6A8A",marginBottom:4,letterSpacing:.5,fontFamily:"DM Mono,monospace"}}>Prob ITM</div>
+                  <div style={{fontSize:13,fontWeight:700,color:"#5B8CFF",fontFamily:"DM Mono,monospace"}}>{(probITM*100).toFixed(1)}%</div>
                 </div>
-                <div style={{background:"#0B131D",border:"1px solid #1B2A3A",borderRadius:9,padding:"9px 11px"}}>
-                  <div style={{fontSize:8,color:"#4A6A8A",marginBottom:3,letterSpacing:.5}}>Prob Touch</div>
-                  <div style={{fontSize:13,fontWeight:600,color:"#B37CFF"}}>{(probTouch*100).toFixed(1)}%</div>
+                <div style={{background:"#0B131D",border:"1px solid #1B2A3A",borderRadius:9,padding:"9px 10px"}}>
+                  <div style={{fontSize:8,color:"#4A6A8A",marginBottom:4,letterSpacing:.5,fontFamily:"DM Mono,monospace"}}>Prob Touch</div>
+                  <div style={{fontSize:13,fontWeight:700,color:"#B37CFF",fontFamily:"DM Mono,monospace"}}>{(probTouch*100).toFixed(1)}%</div>
                 </div>
-                <div style={{background:"#0B131D",border:"1px solid #1B2A3A",borderRadius:9,padding:"9px 11px"}}>
-                  <div style={{fontSize:8,color:"#4A6A8A",marginBottom:3,letterSpacing:.5}}>Assignment Risk</div>
+                <div style={{background:"#0B131D",border:"1px solid #1B2A3A",borderRadius:9,padding:"9px 10px"}}>
+                  <div style={{fontSize:8,color:"#4A6A8A",marginBottom:4,letterSpacing:.5,fontFamily:"DM Mono,monospace"}}>Assignment Risk</div>
                   {side==="sell"?(
                     <>
-                      <div style={{fontSize:13,fontWeight:600,color:arColor}}>{assignmentRisk}</div>
-                      <div style={{fontSize:10,color:arColor,marginTop:1}}>{(probITM*100).toFixed(0)}%</div>
+                      <div style={{fontSize:13,fontWeight:700,color:arColor,fontFamily:"DM Mono,monospace"}}>{assignmentRisk}</div>
+                      <div style={{fontSize:9,color:arColor,marginTop:2,fontFamily:"DM Mono,monospace"}}>{(probITM*100).toFixed(0)}%</div>
                     </>
                   ):<div style={{fontSize:11,color:"#2a4a6a"}}>N/A</div>}
                 </div>
-                <div style={{background:"#0B131D",border:"1px solid #1B2A3A",borderRadius:9,padding:"9px 11px"}}>
-                  <div style={{fontSize:8,color:"#4A6A8A",marginBottom:3,letterSpacing:.5}}>Expected Value</div>
+                <div style={{background:"#0B131D",border:"1px solid #1B2A3A",borderRadius:9,padding:"9px 10px"}}>
+                  <div style={{fontSize:8,color:"#4A6A8A",marginBottom:4,letterSpacing:.5,fontFamily:"DM Mono,monospace"}}>Expected Value</div>
                   {expectedValue!=null?(
                     <>
-                      <div style={{fontSize:13,fontWeight:600,color:evColor}}>{expectedValue>=0?"+":""}{expectedValue.toFixed(0)}</div>
-                      {evPct!=null&&<div style={{fontSize:10,color:evColor,marginTop:1}}>{evPct>=0?"+":""}{evPct.toFixed(1)}%</div>}
+                      <div style={{fontSize:13,fontWeight:700,color:evColor,fontFamily:"DM Mono,monospace"}}>{expectedValue>=0?"+$":"$"}{Math.abs(expectedValue).toFixed(0)}</div>
+                      {evPct!=null&&<div style={{fontSize:9,color:evColor,marginTop:2,fontFamily:"DM Mono,monospace"}}>{evPct>=0?"+":""}{evPct.toFixed(1)}%</div>}
                     </>
                   ):<div style={{fontSize:11,color:"#2a4a6a"}}>—</div>}
                 </div>
@@ -1828,13 +1856,14 @@ function SimulatorPanel({ onSaveManualTrade }) {
             {/* RIGHT: Payoff Chart */}
             <div style={{flex:1,minWidth:0,padding:"14px 16px 0"}}>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
-                <div style={{fontSize:8,letterSpacing:1.5,textTransform:"uppercase",color:"#4A6A8A"}}>
-                  Payoff at Expiration — {strategy}
+                <div style={{fontSize:9,letterSpacing:1.5,textTransform:"uppercase",color:"#4A6A8A",fontFamily:"DM Mono,monospace",fontWeight:500}}>
+                  Payoff at Expiration — <span style={{color:"#7D91AA"}}>{strategy}</span>
                 </div>
                 <button onClick={()=>setShowGreeks(p=>!p)}
-                  style={{display:"flex",alignItems:"center",gap:4,background:"#1B2A3A",border:"1px solid #2a4a6a",borderRadius:5,
-                    color:"#5B8CFF",fontSize:10,cursor:"pointer",padding:"3px 9px",fontFamily:"DM Mono,monospace",letterSpacing:.5}}>
-                  <span style={{fontSize:12}}>{showGreeks?"⊙":"○"}</span> {showGreeks?"Hide":"Show"} Greeks
+                  style={{display:"flex",alignItems:"center",gap:5,background:"#0B131D",border:"1px solid #1B2A3A",borderRadius:6,
+                    color:"#5B8CFF",fontSize:10,cursor:"pointer",padding:"4px 10px",fontFamily:"DM Mono,monospace",letterSpacing:.5,
+                    transition:"all .15s"}}>
+                  <span style={{fontSize:11}}>{showGreeks?"⊙":"○"}</span> {showGreeks?"Hide":"Show"} Greeks
                 </button>
               </div>
               <PayoffChart spot={activeSpot||spot} pnlAt={combinedPnlAt} breakeven={breakeven} singleLeg={legs.length===1?primaryLeg:null} height={230}/>
