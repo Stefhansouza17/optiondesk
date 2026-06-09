@@ -620,7 +620,8 @@ function AssetDashboard({ asset, onClose, onSaveTrade, onUpdateTrade, onDeleteTr
     return a;
   },0);
   const totalDollar = totalCollected*100;
-  const costBasis = leapAvg - totalDollar;
+  const premiumPerLeap = leapContracts>0 ? totalDollar/leapContracts : 0;
+  const costBasis = leapAvg - premiumPerLeap;
   const recovPct = Math.min(totalLeapCost>0?totalDollar/totalLeapCost:0,1);
   const openTrades = trades.filter(t=>t.status==="open").sort((a,b)=>new Date(a.expiration)-new Date(b.expiration));
   const closedTrades = trades.filter(t=>t.status==="closed").sort((a,b)=>new Date(b.date)-new Date(a.date));
@@ -749,7 +750,7 @@ function AssetDashboard({ asset, onClose, onSaveTrade, onUpdateTrade, onDeleteTr
                 [color,"Premium collected",`$${fmt(totalDollar)}`,`${(recovPct*100).toFixed(2)}% of LEAP cost`],
                 ["#5B8CFF","Current cost basis",`$${fmt(costBasis)}`,`avg was $${fmt(leapAvg)}`],
                 ["#FFD84D","Open positions",openTrades.filter(t=>t.action==="SELL").length,`${closedTrades.length} closed`],
-                ["#FF4D6D","Accumulated P&L",`${totalDollar>=0?"+":""}$${fmt(totalDollar)}`,`${fmt(totalCollected/leapAvg*100)}% return`],
+                ["#FF4D6D","Accumulated P&L",`${totalDollar>=0?"+":""}$${fmt(totalDollar)}`,`${fmt(totalLeapCost>0?(totalDollar/totalLeapCost)*100:0)}% return`],
               ]:[
                 [color,"Open P&L","—","mark to market"],
                 ["#5B8CFF","Cost basis",`$${fmt(asset.leapCost*100)}`,`${strategy}`],
@@ -2167,7 +2168,9 @@ function Home({ assets, onSelectAsset, onShowPositions, onSaveManualTrade, onEdi
     const openPremium=openSells.reduce((acc,t)=>acc+parseFloat(t.premium||0)*parseInt(t.contracts||1),0);
     const nearestExp=[...openSells].sort((a,b)=>new Date(a.expiration)-new Date(b.expiration))[0];
     const daysLeft=nearestExp?Math.ceil((new Date(nearestExp.expiration)-new Date())/(1000*60*60*24)):null;
-    return {...a,leaps,leapCost,leapContracts,leapAvg,col,colDollar:col*100,basis:leapAvg-col*100,openTrades,openSells,openPremium,nearestExp,daysLeft};
+    const colDollar = col*100;
+    const premiumPerLeap = leapContracts>0 ? colDollar/leapContracts : 0;
+    return {...a,leaps,leapCost,leapContracts,leapAvg,col,colDollar,basis:leapAvg-premiumPerLeap,openTrades,openSells,openPremium,nearestExp,daysLeft};
   }),[assets]);
   const grandCol=useMemo(()=>totals.reduce((a,t)=>a+t.colDollar,0),[totals]);
   const grandCost=useMemo(()=>totals.reduce((a,t)=>a+t.leapCost,0),[totals]);
@@ -2180,7 +2183,7 @@ function Home({ assets, onSelectAsset, onShowPositions, onSaveManualTrade, onEdi
     .sort((a,b)=>{
       if(sortBy==="expiration")return(a.daysLeft||999)-(b.daysLeft||999);
       if(sortBy==="ticker")return a.ticker.localeCompare(b.ticker);
-      if(sortBy==="recovery")return(b.col/b.leapAvg)-(a.col/a.leapAvg);
+      if(sortBy==="recovery")return((b.leapCost>0?b.colDollar/b.leapCost:0)-(a.leapCost>0?a.colDollar/a.leapCost:0));
       return 0;
     }),[totals,stratFilter,sortBy]);
 
