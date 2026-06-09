@@ -3,11 +3,22 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = process.env.REACT_APP_SUPABASE_URL;
 const supabaseKey = process.env.REACT_APP_SUPABASE_ANON_KEY;
 
-export const supabase = createClient(supabaseUrl, supabaseKey);
+const missingSupabaseEnv = !supabaseUrl || !supabaseKey;
+
+export const supabase = missingSupabaseEnv
+  ? null
+  : createClient(supabaseUrl, supabaseKey);
+
+function requireSupabase() {
+  if (!supabase) {
+    throw new Error("Missing Supabase environment variables. Set REACT_APP_SUPABASE_URL and REACT_APP_SUPABASE_ANON_KEY.");
+  }
+  return supabase;
+}
 
 // ── Assets ────────────────────────────────────────────────────────────────────
 export async function fetchAssets() {
-  const { data, error } = await supabase
+  const { data, error } = await requireSupabase()
     .from('assets')
     .select('*, leaps(*), trades(*)')
     .eq('active', true)
@@ -52,7 +63,7 @@ export async function fetchAssets() {
 }
 
 export async function addAsset(asset) {
-  const { data, error } = await supabase.from('assets').upsert({
+  const { data, error } = await requireSupabase().from('assets').upsert({
     id: asset.id,
     ticker: asset.ticker,
     strategy: asset.strategy || null,
@@ -68,7 +79,7 @@ export async function addAsset(asset) {
 }
 
 export async function addLeap(assetId, leap) {
-  const { data, error } = await supabase.from('leaps').insert({
+  const { data, error } = await requireSupabase().from('leaps').insert({
     id: leap.id || `${assetId}_${Date.now()}`,
     asset_id: assetId,
     date: leap.date,
@@ -119,7 +130,7 @@ export async function addTrade(assetId, trade) {
     || trade.tradeGroup !== undefined || trade.strategy !== undefined;
 
   if (hasExtended && _extendedColumnsKnown !== false) {
-    const { data, error } = await supabase
+    const { data, error } = await requireSupabase()
       .from('trades').insert(extendedTradePayload(assetId, trade)).select().single();
 
     if (!error) {
@@ -137,19 +148,19 @@ export async function addTrade(assetId, trade) {
     }
   }
 
-  const { data, error } = await supabase
+  const { data, error } = await requireSupabase()
     .from('trades').insert(coreTradePayload(assetId, trade)).select().single();
   if (error) throw error;
   return { ...trade, id: data.id };
 }
 
 export async function updateTrade(id, changes) {
-  const { error } = await supabase.from('trades').update(changes).eq('id', id);
+  const { error } = await requireSupabase().from('trades').update(changes).eq('id', id);
   if (!error) return;
   if (error.code === '42703' || error.message?.toLowerCase().includes('column')) {
     // Extended columns missing — retry with only core columns
     const {option_type, fees, notes, tags, trade_group, strategy, ...core} = changes;
-    const { error: e2 } = await supabase.from('trades').update(core).eq('id', id);
+    const { error: e2 } = await requireSupabase().from('trades').update(core).eq('id', id);
     if (e2) throw e2;
   } else {
     throw error;
@@ -157,22 +168,22 @@ export async function updateTrade(id, changes) {
 }
 
 export async function deleteTrade(id) {
-  const { error } = await supabase.from('trades').delete().eq('id', id);
+  const { error } = await requireSupabase().from('trades').delete().eq('id', id);
   if (error) throw error;
 }
 
 export async function updateLeap(id, changes) {
-  const { error } = await supabase.from('leaps').update(changes).eq('id', id);
+  const { error } = await requireSupabase().from('leaps').update(changes).eq('id', id);
   if (error) throw error;
 }
 
 export async function deleteLeap(id) {
-  const { error } = await supabase.from('leaps').delete().eq('id', id);
+  const { error } = await requireSupabase().from('leaps').delete().eq('id', id);
   if (error) throw error;
 }
 
 export async function fetchOpenTrades(assetId) {
-  const { data, error } = await supabase
+  const { data, error } = await requireSupabase()
     .from('trades')
     .select('*')
     .eq('asset_id', assetId)
@@ -182,6 +193,6 @@ export async function fetchOpenTrades(assetId) {
 }
 
 export async function closeAsset(id) {
-  const { error } = await supabase.from('assets').update({ active: false }).eq('id', id);
+  const { error } = await requireSupabase().from('assets').update({ active: false }).eq('id', id);
   if (error) throw error;
 }
