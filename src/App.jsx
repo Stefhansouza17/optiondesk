@@ -1,5 +1,20 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
-import { fetchAssets, addAsset as dbAddAsset, addLeap, addTrade, updateTrade, deleteTrade, updateLeap, deleteLeap, closeAsset as dbCloseAsset } from "./supabase";
+import {
+  fetchAssets,
+  addAsset as dbAddAsset,
+  addLeap,
+  addTrade,
+  updateTrade,
+  deleteTrade,
+  updateLeap,
+  deleteLeap,
+  closeAsset as dbCloseAsset,
+  fetchStrategies,
+  createStrategy as dbCreateStrategy,
+  linkTradeToStrategy,
+  detachTradeFromStrategy,
+  moveTradeToStrategy,
+} from "./supabase";
 
 // ── API ───────────────────────────────────────────────────────────────────────
 async function fetchQuote(symbol) {
@@ -68,7 +83,79 @@ const STRATEGIES = {
 };
 
 const isPremiumStrategy = (s) => ["PMCC","Covered Call","Cash Secured Put","Iron Condor"].includes(s);
-const SIM_STRATEGIES = ["Long Call","Long Put","Covered Call","Cash Secured Put","PMCC","Bull Call Spread","Bear Put Spread","Bull Put Spread","Bear Call Spread","Iron Condor","Straddle","Strangle"];
+const STRATEGY_TYPES = ["Long Call","Long Put","Covered Call","Cash Secured Put","PMCC","Bull Call Spread","Bear Put Spread","Bull Put Spread","Bear Call Spread","Iron Condor","Straddle","Strangle"];
+const SIM_STRATEGIES = STRATEGY_TYPES;
+
+const strategyLabelForTrade = (trade) => {
+  const action = (trade?.action||"").toUpperCase();
+  const type = trade?.option_type || "call";
+  if(action==="BUY" && type==="call") return "Long Call";
+  if(action==="BUY" && type==="put") return "Long Put";
+  if(action==="SELL" && type==="put") return "Cash Secured Put";
+  if(action==="SELL" && type==="call") return "Covered Call";
+  return "Long Call";
+};
+
+const activeStrategyLink = (trade) => trade?.strategyLink || null;
+
+const getAssignedStrategy = (trade, strategies=[]) => {
+  const link = activeStrategyLink(trade);
+  return link ? strategies.find(s=>s.id===link.strategy_id) || link.strategy : null;
+};
+
+const normalizeTicker = (v) => (v||"").toUpperCase();
+
+function buildStrategySuggestions({ trade, asset, strategies=[] }) {
+  const ticker = normalizeTicker(asset?.ticker || trade?.ticker || asset?.id);
+  const action = (trade?.action||"").toUpperCase();
+  const optType = trade?.option_type || "call";
+  const existing = strategies
+    .filter(s=>s.status!=="archived" && normalizeTicker(s.ticker)===ticker)
+    .map(s=>({
+      kind:"existing",
+      strategy:s,
+      title:s.name,
+      strategyType:s.strategy_type,
+      confidence:"Possible match",
+      reason:`Existing ${s.strategy_type} for ${ticker}.`,
+    }));
+
+  const newTypes = [];
+  const hasLeaps = (asset?.leaps||[]).length > 0;
+  const openTrades = (asset?.trades||[]).filter(t=>t.status==="open" && t.id!==trade?.id);
+  const sameExp = openTrades.filter(t=>t.expiration===trade?.expiration);
+  const hasSameExpCall = sameExp.some(t=>(t.option_type||"call")==="call" && t.action!==action);
+  const hasSameExpPut = sameExp.some(t=>(t.option_type||"call")==="put" && t.action!==action);
+  const hasCallAndPut = sameExp.some(t=>(t.option_type||"call")==="call") && sameExp.some(t=>(t.option_type||"call")==="put");
+
+  const pushNew = (strategyType, confidence, reason) => {
+    if(!newTypes.some(s=>s.strategyType===strategyType)) {
+      newTypes.push({kind:"new", strategyType, title:strategyType, confidence, reason});
+    }
+  };
+
+  if(action==="BUY" && optType==="call") pushNew("Long Call","Strong match","Buying a call can be tracked as a Long Call.");
+  if(action==="BUY" && optType==="put") pushNew("Long Put","Strong match","Buying a put can be tracked as a Long Put.");
+  if(action==="SELL" && optType==="put") pushNew("Cash Secured Put","Strong match","Selling a put can be tracked as a Cash Secured Put.");
+  if(action==="SELL" && optType==="call") {
+    pushNew("Covered Call","Possible match","Use this if the short call is secured by shares.");
+    pushNew("PMCC",hasLeaps?"Strong match":"Possible match",hasLeaps?"You have an open long-dated call/LEAP on this ticker.":"Use this if the short call belongs against a LEAP.");
+  }
+  if(optType==="call" && hasSameExpCall) {
+    pushNew(action==="BUY" ? "Bull Call Spread" : "Bear Call Spread","Possible match","There is an open call with the same expiration.");
+  }
+  if(optType==="put" && hasSameExpPut) {
+    pushNew(action==="BUY" ? "Bear Put Spread" : "Bull Put Spread","Possible match","There is an open put with the same expiration.");
+  }
+  if(hasCallAndPut) {
+    pushNew("Straddle","Weak match","There are calls and puts with the same expiration.");
+    pushNew("Strangle","Weak match","There are calls and puts with the same expiration.");
+    pushNew("Iron Condor","Weak match","Multiple same-expiration option legs may form a defined-risk income strategy.");
+  }
+  if(!newTypes.length) pushNew(strategyLabelForTrade(trade),"Possible match","This is the closest single-leg strategy type.");
+
+  return [...existing, ...newTypes].slice(0, 8);
+}
 
 const exportCSV = (trades, ticker) => {
   const header = "Date,Action,Strike,Expiration,Premium,Contracts,Value $,Status\n";
@@ -308,9 +395,159 @@ function Tooltip({ text }) {
 
 // ── Strategy Badge ────────────────────────────────────────────────────────────
 function StratBadge({ strategy }) {
-  const colors = { PMCC:"#5B8CFF", "Covered Call":"#FFD84D", "Cash Secured Put":"#fb923c", "Long Call":"#63E6BE", "Long Put":"#ff6b9d", "Bull Call Spread":"#B37CFF", "Bear Put Spread":"#FF4D6D", "Iron Condor":"#63E6BE", Straddle:"#FFD84D", Strangle:"#7D91AA" };
+  const colors = { PMCC:"#5B8CFF", "Covered Call":"#FFD84D", "Cash Secured Put":"#fb923c", "Long Call":"#63E6BE", "Long Put":"#ff6b9d", "Bull Call Spread":"#B37CFF", "Bear Put Spread":"#FF4D6D", "Bull Put Spread":"#63E6BE", "Bear Call Spread":"#FF4D6D", "Iron Condor":"#63E6BE", Straddle:"#FFD84D", Strangle:"#7D91AA" };
   const c = colors[strategy] || "#7D91AA";
   return <span style={{fontSize:11,padding:"2px 8px",borderRadius:4,background:c+"20",color:c,border:`1px solid ${c}44`}}>{strategy||"PMCC"}</span>;
+}
+
+function TradeStrategyBadge({ trade, strategies=[] }) {
+  const strategy = getAssignedStrategy(trade, strategies);
+  if(!strategy) {
+    return <span style={{fontSize:10,padding:"2px 7px",borderRadius:4,background:"#1B2A3A",border:"1px solid #2a3a4a",color:"#7D91AA",whiteSpace:"nowrap"}}>Unassigned</span>;
+  }
+  return (
+    <span style={{display:"inline-flex",alignItems:"center",gap:5,whiteSpace:"nowrap"}}>
+      <StratBadge strategy={strategy.strategy_type}/>
+      <span style={{fontSize:11,color:"#D6E2F0"}}>{strategy.name}</span>
+    </span>
+  );
+}
+
+function CreateStrategyModal({ asset, onCreate, onClose }) {
+  const [strategyType, setStrategyType] = useState(asset?.strategy && STRATEGY_TYPES.includes(asset.strategy) ? asset.strategy : "Long Call");
+  const [name, setName] = useState(`${asset?.ticker||"Strategy"} ${strategyType}`);
+  const [notes, setNotes] = useState("");
+  useEffect(()=>{ setName(`${asset?.ticker||"Strategy"} ${strategyType}`); },[asset?.ticker,strategyType]);
+  return (
+    <div className="overlay" onClick={e=>e.target===e.currentTarget&&onClose()}>
+      <div className="fbox" style={{width:520,maxWidth:"95vw"}}>
+        <div className="ftitle">Create Strategy</div>
+        <div className="fgrp" style={{marginBottom:10}}>
+          <label className="flbl">Strategy type</label>
+          <select className="fsel" value={strategyType} onChange={e=>setStrategyType(e.target.value)}>
+            {STRATEGY_TYPES.map(t=><option key={t} value={t}>{t}</option>)}
+          </select>
+        </div>
+        <div className="fgrp" style={{marginBottom:10}}>
+          <label className="flbl">Strategy name</label>
+          <input className="finput" value={name} onChange={e=>setName(e.target.value)} />
+        </div>
+        <div className="fgrp" style={{marginBottom:12}}>
+          <label className="flbl">Notes</label>
+          <textarea className="finput" value={notes} onChange={e=>setNotes(e.target.value)} rows={3} style={{resize:"vertical"}}/>
+        </div>
+        <div className="factions">
+          <button className="btn bneutral bfull" onClick={onClose}>Cancel</button>
+          <button className="btn bfull" disabled={!name.trim()} onClick={()=>onCreate({name:name.trim(),strategy_type:strategyType,notes})}>Create</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function StrategyAssignmentModal({ asset, trade, strategies=[], suggestions=[], mode="assign", onConfirm, onClose }) {
+  const ticker = asset?.ticker || trade?.ticker || asset?.id || "";
+  const matchingStrategies = strategies.filter(s=>s.status!=="archived" && normalizeTicker(s.ticker)===normalizeTicker(ticker));
+  const current = getAssignedStrategy(trade, strategies);
+  const [choice, setChoice] = useState("");
+  const [existingId, setExistingId] = useState(current?.id || matchingStrategies[0]?.id || "");
+  const [newType, setNewType] = useState(strategyLabelForTrade(trade));
+  const [newName, setNewName] = useState(`${ticker} ${strategyLabelForTrade(trade)}`);
+
+  const chooseSuggestion = (s) => {
+    if(s.kind==="existing") {
+      setChoice("existing");
+      setExistingId(s.strategy.id);
+    } else {
+      setChoice("new");
+      setNewType(s.strategyType);
+      setNewName(`${ticker} ${s.strategyType}`);
+    }
+  };
+
+  const submit = () => {
+    if(choice==="existing" && existingId) return onConfirm({type:"existing", strategyId:existingId});
+    if(choice==="new" && newName.trim()) return onConfirm({type:"new", strategyType:newType, name:newName.trim()});
+    if(choice==="isolated") return onConfirm({type:"isolated"});
+    if(choice==="detach") return onConfirm({type:"detach"});
+  };
+
+  return (
+    <div className="overlay" onClick={e=>e.target===e.currentTarget&&onClose()}>
+      <div className="fbox" style={{width:620,maxWidth:"96vw"}}>
+        <div className="ftitle">{mode==="change"?"Change Strategy Assignment":"Assign Trade to Strategy"}</div>
+        <div style={{background:"#071019",border:"1px solid #1B2A3A",borderRadius:8,padding:12,marginBottom:14}}>
+          <div style={{display:"flex",justifyContent:"space-between",gap:14,alignItems:"center",flexWrap:"wrap"}}>
+            <div>
+              <div style={{fontFamily:"Syne,sans-serif",fontSize:16,fontWeight:800,color:"#fff"}}>{ticker}</div>
+              <div style={{fontSize:11,color:"#8aaac8",marginTop:3}}>
+                {(trade?.action||"").toUpperCase()} {(trade?.option_type||"call").toUpperCase()} ${trade?.strike} exp {trade?.expiration}
+              </div>
+            </div>
+            <div style={{fontSize:12,color:"#FFD84D",fontFamily:"DM Mono,monospace"}}>
+              {trade?.contracts||1} contract{(trade?.contracts||1)>1?"s":""} @ ${fmt(trade?.premium)}
+            </div>
+          </div>
+          {current&&<div style={{marginTop:9,fontSize:11,color:"#7D91AA"}}>Current: <TradeStrategyBadge trade={trade} strategies={strategies}/></div>}
+        </div>
+
+        {suggestions.length>0&&(
+          <div style={{marginBottom:14}}>
+            <div className="flbl" style={{marginBottom:7}}>Suggested matches</div>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+              {suggestions.map((s,i)=>(
+                <button key={`${s.kind}-${s.strategy?.id||s.strategyType}-${i}`} type="button" onClick={()=>chooseSuggestion(s)}
+                  style={{textAlign:"left",background:choice==="existing"&&s.strategy?.id===existingId||choice==="new"&&s.strategyType===newType?"#0F2A66":"#071019",border:"1px solid #1B2A3A",borderRadius:8,padding:"10px 12px",cursor:"pointer"}}>
+                  <div style={{display:"flex",justifyContent:"space-between",gap:8,marginBottom:5}}>
+                    <span style={{fontSize:12,fontWeight:800,color:"#D6E2F0"}}>{s.title}</span>
+                    <span style={{fontSize:9,color:s.confidence==="Strong match"?"#63E6BE":s.confidence==="Weak match"?"#7D91AA":"#FFD84D"}}>{s.confidence}</span>
+                  </div>
+                  <div style={{fontSize:10,color:"#7D91AA",lineHeight:1.45}}>{s.reason}</div>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:14}}>
+          <div>
+            <label className="flbl">Choose existing strategy</label>
+            <div style={{display:"flex",gap:8,marginTop:5}}>
+              <select className="fsel" value={existingId} onChange={e=>{setChoice("existing");setExistingId(e.target.value);}}>
+                {matchingStrategies.length===0?<option value="">No existing strategies</option>:matchingStrategies.map(s=><option key={s.id} value={s.id}>{s.name} - {s.strategy_type}</option>)}
+              </select>
+              <button className="btn bsm bneutral" disabled={!existingId} onClick={()=>setChoice("existing")}>Use</button>
+            </div>
+          </div>
+          <div>
+            <label className="flbl">Create new strategy</label>
+            <select className="fsel" value={newType} onChange={e=>{setChoice("new");setNewType(e.target.value);setNewName(`${ticker} ${e.target.value}`);}} style={{marginTop:5}}>
+              {STRATEGY_TYPES.map(t=><option key={t} value={t}>{t}</option>)}
+            </select>
+          </div>
+        </div>
+        {choice==="new"&&(
+          <div className="fgrp" style={{marginBottom:14}}>
+            <label className="flbl">New strategy name</label>
+            <input className="finput" value={newName} onChange={e=>setNewName(e.target.value)} />
+          </div>
+        )}
+
+        <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:14}}>
+          <button className="btn bneutral" onClick={()=>setChoice("isolated")}>Save as isolated</button>
+          {mode==="change"&&<button className="btn bwarn" onClick={()=>setChoice("detach")}>Detach from strategy</button>}
+          <span style={{fontSize:11,color:"#4A6A8A",alignSelf:"center"}}>No automatic assignment is made.</span>
+        </div>
+
+        <div className="factions">
+          <button className="btn bneutral bfull" onClick={onClose}>Cancel</button>
+          <button className="btn bfull" disabled={!choice || (choice==="existing"&&!existingId) || (choice==="new"&&!newName.trim())} onClick={submit}>
+            {choice==="isolated"?"Confirm isolated":choice==="detach"?"Confirm detach":"Confirm assignment"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 // ── Market Tab ────────────────────────────────────────────────────────────────
@@ -579,7 +816,7 @@ function UnifiedTradeModal({ title="Add Trade", initial={}, asset=null, isEdit=f
 }
 
 // ── Asset Dashboard ───────────────────────────────────────────────────────────
-function AssetDashboard({ asset, onClose, onSaveTrade, onUpdateTrade, onDeleteTrade, onDeleteLeap, onUpdateLeap, onDeleteAsset, onSaveLeap }) {
+function AssetDashboard({ asset, strategies=[], onCreateStrategy, onChangeTradeStrategy, onDetachTradeStrategy, onClose, onSaveTrade, onUpdateTrade, onDeleteTrade, onDeleteLeap, onUpdateLeap, onDeleteAsset, onSaveLeap }) {
   const trades = asset.trades;
   const [etfPrice, setEtfPrice] = useState(asset.initialPrice||0);
   const [liveData, setLiveData] = useState(null);
@@ -592,6 +829,8 @@ function AssetDashboard({ asset, onClose, onSaveTrade, onUpdateTrade, onDeleteTr
   const [showCR, setShowCR] = useState(null);
   const [showClose, setShowClose] = useState(false);
   const [showDelete, setShowDelete] = useState(false);
+  const [showCreateStrategy, setShowCreateStrategy] = useState(false);
+  const [strategyEditorTrade, setStrategyEditorTrade] = useState(null);
   const [closeLeap, setCloseLeap] = useState(null);
   const [closeLeapPrem, setCloseLeapPrem] = useState("");
   const [editLeapData, setEditLeapData] = useState(null);
@@ -630,6 +869,7 @@ function AssetDashboard({ asset, onClose, onSaveTrade, onUpdateTrade, onDeleteTr
   const closedTrades = trades.filter(t=>t.status==="closed").sort((a,b)=>new Date(b.date)-new Date(a.date));
   const expiredTrades = trades.filter(t=>t.status==="expired").sort((a,b)=>new Date(b.date)-new Date(a.date));
   const filteredTrades = (statusFilter==="open"?openTrades:statusFilter==="closed"?closedTrades:statusFilter==="expired"?expiredTrades:trades).sort((a,b)=>new Date(b.date)-new Date(a.date));
+  const assetStrategies = strategies.filter(s=>normalizeTicker(s.ticker)===normalizeTicker(asset.ticker));
   const pmccShortCalls = trades
     .filter(t=>(t.option_type||"call")==="call"&&t.action==="SELL")
     .sort((a,b)=>new Date(a.date||0)-new Date(b.date||0));
@@ -716,6 +956,20 @@ function AssetDashboard({ asset, onClose, onSaveTrade, onUpdateTrade, onDeleteTr
   }
   async function removeTrade(id){
     await onDeleteTrade(id);
+  }
+  async function createStrategyFromDashboard(payload){
+    await onCreateStrategy({...payload,asset_id:asset.id,ticker:asset.ticker});
+    setShowCreateStrategy(false);
+  }
+  async function confirmStrategyEditor(choice){
+    if(!strategyEditorTrade) return;
+    if(choice.type==="detach"||choice.type==="isolated") await onDetachTradeStrategy(strategyEditorTrade.id);
+    if(choice.type==="existing") await onChangeTradeStrategy(strategyEditorTrade.id, choice.strategyId);
+    if(choice.type==="new"){
+      const created = await onCreateStrategy({asset_id:asset.id,ticker:asset.ticker,name:choice.name,strategy_type:choice.strategyType});
+      await onChangeTradeStrategy(strategyEditorTrade.id, created.id);
+    }
+    setStrategyEditorTrade(null);
   }
   function openCR(t){
     const group=openTrades.filter(o=>parseFloat(o.strike)===parseFloat(t.strike)&&o.expiration===t.expiration);
@@ -1002,11 +1256,14 @@ function AssetDashboard({ asset, onClose, onSaveTrade, onUpdateTrade, onDeleteTr
             <div className="sec">
               <div className="sechdr">
                 <div className="sectitle">{isPremium?"Short calls open":"Open positions"}</div>
-                <button className="btn" onClick={openAdd} style={{color,borderColor:color+"44",background:color+"15"}}>+ Add trade</button>
+                <div style={{display:"flex",gap:8}}>
+                  <button className="btn bneutral" onClick={()=>setShowCreateStrategy(true)}>+ Strategy</button>
+                  <button className="btn" onClick={openAdd} style={{color,borderColor:color+"44",background:color+"15"}}>+ Add trade</button>
+                </div>
               </div>
               {openTrades.length===0?<div className="empty">No open positions</div>:(
                 <table>
-                  <thead><tr><th>Date</th><th>Strike</th><th>Premium</th><th>Contracts</th><th>Value $</th><th>Expiration</th><th></th></tr></thead>
+                  <thead><tr><th>Date</th><th>Strategy</th><th>Strike</th><th>Premium</th><th>Contracts</th><th>Value $</th><th>Expiration</th><th></th></tr></thead>
                   <tbody>
                     {openTrades.map(t=>{
                       const dl=Math.ceil((new Date(t.expiration)-new Date())/(1000*60*60*24));
@@ -1014,6 +1271,7 @@ function AssetDashboard({ asset, onClose, onSaveTrade, onUpdateTrade, onDeleteTr
                       const bw=Math.min(Math.max((dl/21)*100,4),100);
                       return (<tr key={t.id}>
                         <td style={{color:"#7D91AA"}}>{t.date}</td>
+                        <td><TradeStrategyBadge trade={t} strategies={strategies}/></td>
                         <td><span style={{color:"#FFD84D"}}>${t.strike}</span></td>
                         <td style={{color}}>${fmt(t.premium)}</td>
                         <td style={{color:"#8aaac8"}}>{t.contracts||1}</td>
@@ -1026,6 +1284,7 @@ function AssetDashboard({ asset, onClose, onSaveTrade, onUpdateTrade, onDeleteTr
                         </td>
                         <td><div style={{display:"flex",gap:5}}>
                           <button className="btn bsm bneutral" onClick={()=>openEdit(t)}>Edit</button>
+                          <button className="btn bsm bneutral" onClick={()=>setStrategyEditorTrade(t)}>Strategy</button>
                           {isPremium&&<button className="btn bsm bwarn" onClick={()=>openCR(t)}>Close/Roll</button>}
                           <button className="btn bsm bdanger" onClick={()=>removeTrade(t.id)}>✕</button>
                         </div></td>
@@ -1049,17 +1308,19 @@ function AssetDashboard({ asset, onClose, onSaveTrade, onUpdateTrade, onDeleteTr
                   ))}
                 </div>
                 <button className="btn bsm" onClick={()=>exportCSV(trades,asset.ticker)} style={{color,borderColor:color+"44",background:color+"15"}}>↓ CSV</button>
+                <button className="btn bsm bneutral" onClick={()=>setShowCreateStrategy(true)}>+ Strategy</button>
                 <button className="btn" onClick={openAdd} style={{color,borderColor:color+"44",background:color+"15"}}>+ Add trade</button>
               </div>
             </div>
             {filteredTrades.length===0?<div className="empty">No trades found</div>:(
               <table>
-                <thead><tr><th>Date</th><th>Action</th><th>Strike</th><th>Expiration</th><th>Premium</th><th>Contracts</th><th>Value $</th><th>Status</th><th></th></tr></thead>
+                <thead><tr><th>Date</th><th>Action</th><th>Strategy</th><th>Strike</th><th>Expiration</th><th>Premium</th><th>Contracts</th><th>Value $</th><th>Status</th><th></th></tr></thead>
                 <tbody>
                   {filteredTrades.map(t=>(
                     <tr key={t.id}>
                       <td style={{color:"#7D91AA"}}>{t.date}</td>
                       <td><span style={{color:t.action==="SELL"?color:"#FF4D6D"}}>{t.action==="SELL"?"SELL":"BUY"}</span></td>
+                      <td><TradeStrategyBadge trade={t} strategies={strategies}/></td>
                       <td><span style={{color:"#FFD84D"}}>${t.strike}</span></td>
                       <td>{t.expiration}</td>
                       <td style={{color:t.action==="SELL"?color:"#FF4D6D"}}>{t.action==="SELL"?"+":"-"}${fmt(t.premium)}</td>
@@ -1068,6 +1329,7 @@ function AssetDashboard({ asset, onClose, onSaveTrade, onUpdateTrade, onDeleteTr
                       <td>{t.status==="open"?<span className="stopen" style={{color,borderColor:color+"44",background:color+"15"}}>Open</span>:t.status==="expired"?<span className="stexpired">Expired</span>:<span className="stclosed">Closed</span>}</td>
                       <td><div style={{display:"flex",gap:5}}>
                         <button className="btn bsm bneutral" onClick={()=>openEdit(t)}>Edit</button>
+                        <button className="btn bsm bneutral" onClick={()=>setStrategyEditorTrade(t)}>Strategy</button>
                         <button className="btn bsm bdanger" onClick={()=>removeTrade(t.id)}>✕</button>
                       </div></td>
                     </tr>
@@ -1277,6 +1539,24 @@ function AssetDashboard({ asset, onClose, onSaveTrade, onUpdateTrade, onDeleteTr
           onSave={saveTrade}
           onSaveLeap={onSaveLeap}
           onClose={()=>setShowForm(false)}
+        />
+      )}
+      {showCreateStrategy&&(
+        <CreateStrategyModal
+          asset={asset}
+          onCreate={createStrategyFromDashboard}
+          onClose={()=>setShowCreateStrategy(false)}
+        />
+      )}
+      {strategyEditorTrade&&(
+        <StrategyAssignmentModal
+          mode="change"
+          asset={asset}
+          trade={strategyEditorTrade}
+          strategies={assetStrategies}
+          suggestions={buildStrategySuggestions({trade:strategyEditorTrade,asset,strategies:assetStrategies})}
+          onConfirm={confirmStrategyEditor}
+          onClose={()=>setStrategyEditorTrade(null)}
         />
       )}
     </div>
@@ -2310,7 +2590,7 @@ function SimulatorPanel({ onSaveManualTrade }) {
 }
 
 // ── Home ──────────────────────────────────────────────────────────────────────
-function Home({ assets, onSelectAsset, onShowPositions, onSaveManualTrade, onEditTrade }) {
+function Home({ assets, strategies=[], onSelectAsset, onShowPositions, onSaveManualTrade, onEditTrade }) {
   const [stratFilter, setStratFilter] = useState("all");
   const [sortBy, setSortBy] = useState("expiration");
 
@@ -2474,7 +2754,7 @@ function Home({ assets, onSelectAsset, onShowPositions, onSaveManualTrade, onEdi
           <div className="empty">Nenhuma posição aberta — adicione um trade abaixo</div>
         ):(
           <table>
-            <thead><tr><th>Ticker</th><th>Type</th><th>Action</th><th>Strike</th><th>Premium</th><th>Contracts</th><th>Expiration</th><th>Days</th><th></th></tr></thead>
+            <thead><tr><th>Ticker</th><th>Type</th><th>Strategy</th><th>Action</th><th>Strike</th><th>Premium</th><th>Contracts</th><th>Expiration</th><th>Days</th><th></th></tr></thead>
             <tbody>
               {allOpenRows.map((r,i)=>{
                 const dl=Math.ceil((new Date(r.expiration)-new Date())/(1000*60*60*24));
@@ -2484,6 +2764,7 @@ function Home({ assets, onSelectAsset, onShowPositions, onSaveManualTrade, onEdi
                   <tr key={i} onClick={()=>onSelectAsset&&onSelectAsset(r.assetId)} style={{cursor:"pointer"}}>
                     <td><span style={{fontFamily:"Syne,sans-serif",fontWeight:700,fontSize:14,color:r.color}}>{r.ticker}</span></td>
                     <td><span style={{fontSize:10,padding:"2px 8px",borderRadius:3,background:isSell?"#63E6BE15":"#ff6b9d15",border:`1px solid ${isSell?"#63E6BE44":"#ff6b9d44"}`,color:isSell?"#63E6BE":"#ff6b9d"}}>{r.label}</span></td>
+                    <td>{r.isLeap?<span style={{fontSize:10,color:"#4A6A8A"}}>-</span>:<TradeStrategyBadge trade={r} strategies={strategies}/>}</td>
                     <td><span style={{color:isSell?"#63E6BE":"#ff6b9d",fontWeight:600}}>{r.action}</span></td>
                     <td style={{color:"#FFD84D",fontWeight:600}}>${r.strike}</td>
                     <td style={{color:isSell?"#63E6BE":"#ff6b9d"}}>{isSell?"+":"-"}${fmt(r.premium*100)}</td>
@@ -2696,7 +2977,7 @@ function AddAssetModal({ onAdd, onClose, usedColors }) {
 }
 
 // ── All Positions Modal ───────────────────────────────────────────────────────
-function AllPositionsModal({ assets, onClose }) {
+function AllPositionsModal({ assets, strategies=[], onClose }) {
   const allOpen = assets.filter(a=>a.active).flatMap(a=>{
     const rows = [];
     // LEAPs — one row per contract with individual cost
@@ -2739,7 +3020,7 @@ function AllPositionsModal({ assets, onClose }) {
         <table>
           <thead>
             <tr>
-              <th>Ticker</th><th>Type</th><th>Action</th><th>Strike</th>
+              <th>Ticker</th><th>Type</th><th>Strategy</th><th>Action</th><th>Strike</th>
               <th>Expiration</th><th>Cost / Premium</th><th>Contracts</th>
             </tr>
           </thead>
@@ -2748,6 +3029,7 @@ function AllPositionsModal({ assets, onClose }) {
               <tr key={i}>
                 <td><span style={{fontFamily:"Syne,sans-serif",fontWeight:700,color:p.color}}>{p.ticker}</span></td>
                 <td><span style={{fontSize:11,padding:"2px 8px",borderRadius:4,background:p.type==="LEAP"?"#5B8CFF20":p.action==="BUY"?"#5B8CFF20":"#63E6BE15",color:p.type==="LEAP"?"#5B8CFF":p.action==="BUY"?"#5B8CFF":"#63E6BE",border:`1px solid ${p.type==="LEAP"?"#5B8CFF44":p.action==="BUY"?"#5B8CFF44":"#63E6BE44"}`}}>{p.type}</span></td>
+                <td>{p.type==="LEAP"?<span style={{fontSize:10,color:"#4A6A8A"}}>-</span>:<TradeStrategyBadge trade={p} strategies={strategies}/>}</td>
                 <td><span style={{color:p.action==="SELL"?"#63E6BE":"#FF4D6D"}}>{p.action}</span></td>
                 <td style={{color:"#FFD84D"}}>{p.strike}</td>
                 <td>
@@ -3169,6 +3451,7 @@ function ManualTradeModal({ onClose, onSave, defaultData }) {
 
 function App() {
   const [assets, setAssets] = useState([]);
+  const [strategies, setStrategies] = useState([]);
   const [closedAssets, setClosedAssets] = useState([]);
   const [active, setActive] = useState("home");
   const [showAdd, setShowAdd] = useState(false);
@@ -3182,12 +3465,36 @@ function App() {
   const duplicateResolver = useRef(null);
   const [closePrompt, setClosePrompt] = useState(null);
   const closeResolver = useRef(null);
+  const [strategyPrompt, setStrategyPrompt] = useState(null);
+  const strategyResolver = useRef(null);
+
+  const strategyByTradeId = useMemo(()=>{
+    const map = {};
+    strategies.forEach(strategy=>{
+      (strategy.links||[])
+        .filter(l=>l.assignment_status==="confirmed"&&!l.detached_at)
+        .forEach(link=>{ map[link.trade_id] = {...link,strategy}; });
+    });
+    return map;
+  },[strategies]);
+
+  const assetsWithStrategyLinks = useMemo(()=>assets.map(asset=>({
+    ...asset,
+    trades:(asset.trades||[]).map(t=>({...t,strategyLink:strategyByTradeId[t.id]||null})),
+  })),[assets,strategyByTradeId]);
+
+  const loadPortfolio = useCallback(async()=>{
+    const [freshAssets, freshStrategies] = await Promise.all([fetchAssets(), fetchStrategies()]);
+    setAssets(freshAssets);
+    setStrategies(freshStrategies);
+    return {freshAssets, freshStrategies};
+  },[]);
 
   useEffect(()=>{
     const today=new Date().toISOString().slice(0,10);
-    fetchAssets()
-      .then(data=>{
-        const fresh=data;
+    loadPortfolio()
+      .then(({freshAssets})=>{
+        const fresh=freshAssets;
         setAssets(fresh);
         const expired=fresh.flatMap(a=>
           a.trades
@@ -3198,12 +3505,12 @@ function App() {
         setLoading(false);
       })
       .catch(err=>{ console.error(err); setLoading(false); });
-  },[]);
+  },[loadPortfolio]);
 
   useEffect(()=>{
     if(active==="home"||active==="closed") return;
-    fetchAssets().then(setAssets).catch(e=>console.error("nav reload:",e));
-  },[active]);
+    loadPortfolio().catch(e=>console.error("nav reload:",e));
+  },[active,loadPortfolio]);
 
   const handleExpiredResolution = async (resolvedTrades) => {
     await Promise.all(resolvedTrades.map(t=>updateTrade(t.id,{status:t.decision})));
@@ -3233,8 +3540,7 @@ function App() {
         await addLeap(a.id, leap);
       }
       if(a.leaps) for(const l of a.leaps) await addLeap(a.id, l);
-      const fresh = await fetchAssets();
-      setAssets(fresh);
+      await loadPortfolio();
       setActive(a.id);
     } catch(e){ console.error(e); }
   };
@@ -3330,6 +3636,70 @@ function App() {
     if(resolve) resolve(choice);
   };
 
+  const requestStrategyAssignment = (payload) => new Promise(resolve => {
+    strategyResolver.current = resolve;
+    setStrategyPrompt(payload);
+  });
+
+  const closeStrategyPrompt = (choice) => {
+    const resolve = strategyResolver.current;
+    strategyResolver.current = null;
+    setStrategyPrompt(null);
+    if(resolve) resolve(choice);
+  };
+
+  const handleCreateStrategy = async (payload) => {
+    const created = await dbCreateStrategy(payload);
+    const fresh = await fetchStrategies();
+    setStrategies(fresh);
+    return created;
+  };
+
+  const handleDetachTradeStrategy = async (tradeId) => {
+    await detachTradeFromStrategy(tradeId);
+    const fresh = await fetchStrategies();
+    setStrategies(fresh);
+    showToast("Trade detached from strategy.");
+  };
+
+  const handleChangeTradeStrategy = async (tradeId, strategyId) => {
+    await moveTradeToStrategy(tradeId, strategyId);
+    const fresh = await fetchStrategies();
+    setStrategies(fresh);
+    showToast("Strategy assignment updated.");
+  };
+
+  const applyStrategyAssignmentChoice = async ({asset, trade, choice}) => {
+    if(!trade || !choice || choice.type==="cancel") {
+      showToast("Trade saved as unassigned.", true);
+      return;
+    }
+    if(choice.type==="isolated") {
+      showToast("Trade saved as isolated.");
+      return;
+    }
+    try {
+      if(choice.type==="existing") {
+        await moveTradeToStrategy(trade.id, choice.strategyId);
+      }
+      if(choice.type==="new") {
+        const created = await dbCreateStrategy({
+          asset_id: asset?.id || trade.asset_id || null,
+          ticker: asset?.ticker || trade.ticker || asset?.id || "",
+          name: choice.name,
+          strategy_type: choice.strategyType,
+        });
+        await linkTradeToStrategy(trade.id, created.id);
+      }
+      const fresh = await fetchStrategies();
+      setStrategies(fresh);
+      showToast("Trade assigned to strategy.");
+    } catch(e) {
+      console.error("strategy assignment failed:", e);
+      showToast("Trade saved, but strategy assignment failed. It remains isolated.", false);
+    }
+  };
+
   const getOppositeOpenMatches = (asset, trade) => {
     const normalized = normalizeTradeForLifecycle(trade);
     const oppositeAction = normalized.action==="BUY"?"SELL":"BUY";
@@ -3396,6 +3766,7 @@ function App() {
     try {
       const asset = assets.find(a=>a.id===assetId);
       let normalized = normalizeTradeForLifecycle(trade);
+      normalized = {...normalized, strategy:null};
       if(normalized.positionEffect==="auto" && normalized.action==="BUY") {
         const closeMatches = getOppositeOpenMatches(asset, normalized);
         if(closeMatches.length) {
@@ -3423,6 +3794,14 @@ function App() {
       }
       const result = await saveTradeLifecycle(assetId, normalized);
       const closedContracts = result?.closingPlan.reduce((sum,p)=>sum+p.consumed,0) || 0;
+      if(result?.saved && !options.skipStrategyAssignment) {
+        const assignmentAsset = options.assignmentAsset || asset || {id:assetId,ticker:assetId,trades:[],leaps:[]};
+        const assetStrategies = strategies.filter(s=>normalizeTicker(s.ticker)===normalizeTicker(assignmentAsset.ticker||assetId));
+        const savedWithContext = {...result.saved,ticker:assignmentAsset.ticker||assetId};
+        const suggestions = buildStrategySuggestions({trade:savedWithContext,asset:assignmentAsset,strategies:assetStrategies});
+        const choice = await requestStrategyAssignment({asset:assignmentAsset,trade:savedWithContext,strategies:assetStrategies,suggestions});
+        await applyStrategyAssignmentChoice({asset:assignmentAsset,trade:savedWithContext,choice});
+      }
       return result?.saved ? {...result.saved, closedCount:closedContracts} : null;
     } catch(e){ console.error("handleSaveTrade error:",e); showToast(`Trade save failed: ${e?.message||e?.code||"unknown"}`,false); }
   };
@@ -3455,7 +3834,7 @@ function App() {
   };
 
   const reloadAssets = async () => {
-    try { const fresh = await fetchAssets(); setAssets(fresh); } catch(e){ console.error("reloadAssets error:",e); }
+    try { await loadPortfolio(); } catch(e){ console.error("reloadAssets error:",e); }
   };
 
   const autoStrategy = (action, optType) => {
@@ -3483,10 +3862,12 @@ function App() {
         const ok = await addAssetSilent(newAsset);
         if(ok===false) { showToast(`Falha ao criar ativo ${ticker} no banco.`,false); return; }
         assetId = ticker;
+        await loadPortfolio();
       } else {
         assetId = existing.id;
       }
-      const saved = await handleSaveTrade(assetId, {...trade, strategy: detectedStrategy});
+      const assignmentAsset = existing || {id:ticker,ticker,color:"#63E6BE",leaps:[],trades:[],strategy:detectedStrategy};
+      const saved = await handleSaveTrade(assetId, {...trade, strategy: detectedStrategy}, {assignmentAsset});
       if(saved) {
         showToast(`Trade salvo: ${ticker} ${trade.action} $${trade.strike}`);
         await reloadAssets();
@@ -3530,9 +3911,13 @@ function App() {
         )}
       </div>
 
-      {active==="home"&&<Home assets={assets} onSelectAsset={id=>setActive(id)} onShowPositions={()=>setShowPositions(true)} onSaveManualTrade={handleSaveManualTrade} onEditTrade={r=>{const a=assets.find(x=>x.id===r.assetId);setEditTrade({r,asset:a});}}/>}
-      {assets.filter(a=>a.active).map(a=>active===a.id&&(
+      {active==="home"&&<Home assets={assetsWithStrategyLinks} strategies={strategies} onSelectAsset={id=>setActive(id)} onShowPositions={()=>setShowPositions(true)} onSaveManualTrade={handleSaveManualTrade} onEditTrade={r=>{const a=assetsWithStrategyLinks.find(x=>x.id===r.assetId);setEditTrade({r,asset:a});}}/>}
+      {assetsWithStrategyLinks.filter(a=>a.active).map(a=>active===a.id&&(
         <AssetDashboard key={a.id} asset={a} onClose={closeAsset}
+          strategies={strategies}
+          onCreateStrategy={handleCreateStrategy}
+          onChangeTradeStrategy={handleChangeTradeStrategy}
+          onDetachTradeStrategy={handleDetachTradeStrategy}
           onSaveTrade={(t)=>handleSaveTrade(a.id,t)}
           onUpdateTrade={(id,c)=>handleUpdateTrade(a.id,id,c)}
           onDeleteTrade={(id)=>handleDeleteTrade(a.id,id)}
@@ -3544,8 +3929,18 @@ function App() {
       ))}
       {active==="closed"&&<ClosedStrategies closedAssets={closedAssets}/>}
       {showAdd&&<AddAssetModal onAdd={addAsset} onClose={()=>setShowAdd(false)} usedColors={assets.map(a=>a.color)}/>}
-      {showPositions&&<AllPositionsModal assets={assets} onClose={()=>setShowPositions(false)}/>}
+      {showPositions&&<AllPositionsModal assets={assetsWithStrategyLinks} strategies={strategies} onClose={()=>setShowPositions(false)}/>}
       {expiredPending.length>0&&<ExpirationAlertModal trades={expiredPending} onResolve={handleExpiredResolution}/>}
+      {strategyPrompt&&(
+        <StrategyAssignmentModal
+          asset={strategyPrompt.asset}
+          trade={strategyPrompt.trade}
+          strategies={strategyPrompt.strategies||strategies}
+          suggestions={strategyPrompt.suggestions||[]}
+          onConfirm={closeStrategyPrompt}
+          onClose={()=>closeStrategyPrompt({type:"cancel"})}
+        />
+      )}
       {duplicatePrompt&&(
         <div className="overlay" onClick={e=>e.target===e.currentTarget&&resolveDuplicatePrompt(false)}>
           <div className="fbox" style={{width:420,maxWidth:"94vw"}}>
