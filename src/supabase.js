@@ -196,3 +196,87 @@ export async function closeAsset(id) {
   const { error } = await requireSupabase().from('assets').update({ active: false }).eq('id', id);
   if (error) throw error;
 }
+
+export async function fetchStrategies() {
+  const { data, error } = await requireSupabase()
+    .from('strategies')
+    .select('*, trade_strategy_links(*)')
+    .order('created_at', { ascending: true });
+  if (error) {
+    if (error.code === '42P01' || error.code === 'PGRST200' || error.message?.toLowerCase().includes('strategies')) {
+      return [];
+    }
+    throw error;
+  }
+  return (data||[]).map(s => ({
+    id: s.id,
+    user_id: s.user_id,
+    asset_id: s.asset_id,
+    ticker: s.ticker,
+    name: s.name,
+    strategy_type: s.strategy_type,
+    status: s.status,
+    notes: s.notes,
+    created_at: s.created_at,
+    updated_at: s.updated_at,
+    links: (s.trade_strategy_links||[]).map(l => ({
+      id: l.id,
+      trade_id: l.trade_id,
+      strategy_id: l.strategy_id,
+      assignment_status: l.assignment_status,
+      assigned_at: l.assigned_at,
+      detached_at: l.detached_at,
+    })),
+  }));
+}
+
+export async function createStrategy(strategy) {
+  const { data, error } = await requireSupabase()
+    .from('strategies')
+    .insert({
+      asset_id: strategy.asset_id || null,
+      ticker: (strategy.ticker || '').toUpperCase(),
+      name: strategy.name,
+      strategy_type: strategy.strategy_type,
+      status: strategy.status || 'open',
+      notes: strategy.notes || null,
+    })
+    .select()
+    .single();
+  if (error) throw error;
+  return { ...data, links: [] };
+}
+
+export async function linkTradeToStrategy(tradeId, strategyId) {
+  const { data, error } = await requireSupabase()
+    .from('trade_strategy_links')
+    .insert({
+      trade_id: tradeId,
+      strategy_id: strategyId,
+      assignment_status: 'confirmed',
+    })
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+export async function detachTradeFromStrategy(tradeId) {
+  const { data, error } = await requireSupabase()
+    .from('trade_strategy_links')
+    .update({
+      assignment_status: 'detached',
+      detached_at: new Date().toISOString(),
+    })
+    .eq('trade_id', tradeId)
+    .eq('assignment_status', 'confirmed')
+    .is('detached_at', null)
+    .select();
+  if (error) throw error;
+  return data || [];
+}
+
+export async function moveTradeToStrategy(tradeId, strategyId) {
+  await detachTradeFromStrategy(tradeId);
+  return linkTradeToStrategy(tradeId, strategyId);
+}
