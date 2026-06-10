@@ -1289,7 +1289,7 @@ function PayoffChart({ spot, pnlAt, breakeven, singleLeg, height=185 }) {
   const isUnlimited = singleLeg?.side==="buy" && singleLeg?.optType==="call";
   const isUnlimitedLoss = singleLeg?.side==="sell" && singleLeg?.optType==="call";
   const W = 600, H = height;
-  const PAD = { l: 52, r: 22, t: 34, b: 30 };
+  const PAD = { l: 68, r: 22, t: 32, b: 30 };
   const cW = W - PAD.l - PAD.r, cH = H - PAD.t - PAD.b;
   const pMin = spot * 0.76, pMax = spot * 1.24;
 
@@ -1304,7 +1304,8 @@ function PayoffChart({ spot, pnlAt, breakeven, singleLeg, height=185 }) {
   const curvePts = pts.map(p => `${xOf(p).toFixed(1)},${yOf(pnlAt(p)).toFixed(1)}`).join(" ");
   const polyPts = `${PAD.l},${yZero} ${curvePts} ${W - PAD.r},${yZero}`;
 
-  const gridVals = [-200, -100, 0, 100, 200].filter(v => v >= yMin - 1 && v <= yMax + 1);
+  const gridCandidates = cH < 150 ? [-200, 0, 200] : [-200, -100, 0, 100, 200];
+  const gridVals = gridCandidates.filter(v => v >= yMin - 1 && v <= yMax + 1);
 
   const xLabels = Array.from({ length: 7 }, (_, i) => pMin + (i / 6) * (pMax - pMin));
   const uid = spot.toFixed(0) + "-" + (breakeven||0).toFixed(0);
@@ -1336,7 +1337,7 @@ function PayoffChart({ spot, pnlAt, breakeven, singleLeg, height=185 }) {
       {gridVals.map(v => (
         <g key={v}>
           <line x1={PAD.l} y1={yOf(v)} x2={W - PAD.r} y2={yOf(v)} stroke={v === 0 ? "#2A4A6A" : "#102033"} strokeWidth={v === 0 ? 1.2 : 0.7} />
-          <text x={PAD.l - 8} y={yOf(v) + 3.5} textAnchor="end" fontSize={9} fill="#9EB9E9" fontFamily="DM Mono,monospace">{v > 0 ? "+" : ""}{v}</text>
+          <text x={PAD.l - 10} y={yOf(v) + 4} textAnchor="end" fontSize={11} fill="#B7C9EA" fontFamily="DM Mono,monospace">{v > 0 ? "+$" : v < 0 ? "-$" : "$"}{Math.abs(v)}</text>
         </g>
       ))}
 
@@ -1377,7 +1378,7 @@ function PayoffChart({ spot, pnlAt, breakeven, singleLeg, height=185 }) {
       {xLabels.map((p, i) => (
         <text key={i} x={xOf(p)} y={H - PAD.b + 18} textAnchor="middle" fontSize={9} fill="#9EB9E9" fontFamily="DM Mono,monospace">${p.toFixed(0)}</text>
       ))}
-      <text x={12} y={H / 2} textAnchor="middle" fontSize={9} fill="#9EB9E9" transform={`rotate(-90,12,${H / 2})`} fontFamily="DM Mono,monospace">P&L ($)</text>
+      <text x={18} y={H / 2} textAnchor="middle" fontSize={10} fill="#B7C9EA" transform={`rotate(-90,18,${H / 2})`} fontFamily="DM Mono,monospace">P&L ($)</text>
     </svg>
   );
 }
@@ -2034,19 +2035,14 @@ function SimulatorPanel({ onSaveManualTrade }) {
             </div>
 
             {/* RIGHT: Payoff Chart */}
-            <div style={{minWidth:0,padding:"14px 20px 0",background:"radial-gradient(circle at 50% 0%,rgba(91,140,255,.08),transparent 42%),#050A0F"}}>
-              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
-                <div style={{fontSize:13,letterSpacing:1.5,textTransform:"uppercase",color:"#9EB9E9",fontFamily:"DM Mono,monospace",fontWeight:600}}>
+            <div style={{minWidth:0,padding:"15px 20px 0",background:"radial-gradient(circle at 50% 0%,rgba(91,140,255,.08),transparent 42%),#050A0F"}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+                <div style={{fontSize:11,letterSpacing:2,textTransform:"uppercase",color:"#B7C9EA",fontFamily:"DM Mono,monospace",fontWeight:700}}>
                   Payoff at Expiration — <span style={{color:"#D6E2F0"}}>{strategy}</span>
                 </div>
-                <button onClick={()=>setShowGreeks(p=>!p)}
-                  style={{display:"flex",alignItems:"center",gap:5,background:"#0B131D",border:"1px solid #1B2A3A",borderRadius:6,
-                    color:"#5B8CFF",fontSize:10,cursor:"pointer",padding:"4px 10px",fontFamily:"DM Mono,monospace",letterSpacing:.5,
-                    transition:"all .15s"}}>
-                  <span style={{fontSize:11}}>{showGreeks?"⊙":"○"}</span> {showGreeks?"Hide":"Show"} Greeks
-                </button>
+
               </div>
-              <PayoffChart spot={activeSpot||spot} pnlAt={combinedPnlAt} breakeven={breakeven} singleLeg={legs.length===1?primaryLeg:null} height={165}/>
+              <PayoffChart spot={activeSpot||spot} pnlAt={combinedPnlAt} breakeven={breakeven} singleLeg={legs.length===1?primaryLeg:null} height={188}/>
             </div>
           </div>
           );
