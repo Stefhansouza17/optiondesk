@@ -2034,8 +2034,8 @@ function SimulatorPanel({ onSaveManualTrade }) {
             </div>
 
             {/* RIGHT: Payoff Chart */}
-            <div style={{minWidth:0,padding:"20px 20px 0",background:"radial-gradient(circle at 50% 0%,rgba(91,140,255,.08),transparent 42%),#050A0F"}}>
-              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+            <div style={{minWidth:0,padding:"14px 20px 0",background:"radial-gradient(circle at 50% 0%,rgba(91,140,255,.08),transparent 42%),#050A0F"}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
                 <div style={{fontSize:13,letterSpacing:1.5,textTransform:"uppercase",color:"#9EB9E9",fontFamily:"DM Mono,monospace",fontWeight:600}}>
                   Payoff at Expiration — <span style={{color:"#D6E2F0"}}>{strategy}</span>
                 </div>
@@ -2046,7 +2046,7 @@ function SimulatorPanel({ onSaveManualTrade }) {
                   <span style={{fontSize:11}}>{showGreeks?"⊙":"○"}</span> {showGreeks?"Hide":"Show"} Greeks
                 </button>
               </div>
-              <PayoffChart spot={activeSpot||spot} pnlAt={combinedPnlAt} breakeven={breakeven} singleLeg={legs.length===1?primaryLeg:null} height={250}/>
+              <PayoffChart spot={activeSpot||spot} pnlAt={combinedPnlAt} breakeven={breakeven} singleLeg={legs.length===1?primaryLeg:null} height={165}/>
             </div>
           </div>
           );
