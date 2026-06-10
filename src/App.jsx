@@ -1304,8 +1304,8 @@ function PayoffChart({ spot, pnlAt, breakeven, singleLeg, height=185 }) {
   const curvePts = pts.map(p => `${xOf(p).toFixed(1)},${yOf(pnlAt(p)).toFixed(1)}`).join(" ");
   const polyPts = `${PAD.l},${yZero} ${curvePts} ${W - PAD.r},${yZero}`;
 
-  const gridCandidates = cH < 150 ? [-200, 0, 200] : [-200, -100, 0, 100, 200];
-  const gridVals = gridCandidates.filter(v => v >= yMin - 1 && v <= yMax + 1);
+  const axisTick = Math.max(100, Math.floor((absMax * 0.82) / 100) * 100);
+  const gridVals = [-axisTick, 0, axisTick].filter(v => v >= yMin - 1 && v <= yMax + 1);
 
   const xLabels = Array.from({ length: 7 }, (_, i) => pMin + (i / 6) * (pMax - pMin));
   const uid = spot.toFixed(0) + "-" + (breakeven||0).toFixed(0);
