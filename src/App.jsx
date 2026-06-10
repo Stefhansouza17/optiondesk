@@ -1416,11 +1416,11 @@ function SimulatorPanel({ onSaveManualTrade }) {
   const [qaExp,       setQaExp]         = useState("");
   const [tooltip, setTooltip] = useState(null);
   const [tipPos, setTipPos]   = useState({x:0,y:0});
-  const [rangeShift, setRangeShift] = useState(0); // percentage offset for matrix center
+  const [priceRangePct, setPriceRangePct] = useState(20);
   const [showGreeks, setShowGreeks] = useState(true);
 
   const spot = quote?.last || 0;
-  const activeSpot = rangeShift !== 0 ? spot * (1 + rangeShift / 100) : spot;
+  const activeSpot = spot;
 
   const filteredChain = useMemo(()=>
     chain.filter(o=>o.option_type===optType).sort((a,b)=>a.strike-b.strike),
@@ -1475,15 +1475,14 @@ function SimulatorPanel({ onSaveManualTrade }) {
   // Sync premium input when market price changes (new chain load)
   useEffect(()=>{ if(premium>0) setPremiumInput(premium.toFixed(2)); },[premium]);
 
-  // Reset range shift on new symbol
-  useEffect(()=>{ setRangeShift(0); },[sym]);
+  // Reset displayed heatmap width on new symbol
+  useEffect(()=>{ setPriceRangePct(20); },[sym]);
 
   // Populate Add Trade modal fields when opened
   useEffect(()=>{
     if(showQuickAdd){ setQaContracts(1); setQaPremium(activePremium.toFixed(2)); setQaStrike(selStrike); setQaExp(selExp); }
   },[showQuickAdd]);
   const iv       = Math.max(selOption?.greeks?.smv_vol||0.3, 0.05);
-  const iv30     = quote?.iv30 || 0;
   const delta    = selOption?.greeks?.delta||0;
   const theta    = selOption?.greeks?.theta||0;
   const gamma    = selOption?.greeks?.gamma||0;
@@ -1602,15 +1601,18 @@ function SimulatorPanel({ onSaveManualTrade }) {
 
 
   // P&L matrix using Black-Scholes — sums all legs
-  const allChainStrikes = useMemo(()=>[...new Set(chain.map(o=>o.strike))].sort((a,b)=>a-b),[chain]);
+  const heatmapPrices = useMemo(()=>{
+    if(!activeSpot) return [];
+    const rowCount=11;
+    const mid=Math.floor(rowCount/2);
+    const step=(activeSpot*(priceRangePct/100))/mid;
+    return Array.from({length:rowCount},(_,i)=>+(activeSpot+(i-mid)*step).toFixed(2)).reverse();
+  },[activeSpot,priceRangePct]);
   const matrixRows = useMemo(()=>{
     if(!chain.length||!selExp||!legs.some(l=>l.strike&&getLegPremium(l)>0)) return [];
     const r=0.05;
     const expDate=new Date(selExp+"T16:00:00");
-    const priceRows=allChainStrikes
-      .filter(s=>activeSpot>0?(s>=activeSpot*0.78&&s<=activeSpot*1.22):true)
-      .slice().reverse();
-    return priceRows.map(rowPrice=>{
+    return heatmapPrices.map(rowPrice=>{
       const pct=activeSpot>0?((rowPrice-activeSpot)/activeSpot*100).toFixed(1):"0.0";
       const cols=colExps.map(exp=>{
         const colDate=new Date(exp+"T16:00:00");
@@ -1626,7 +1628,7 @@ function SimulatorPanel({ onSaveManualTrade }) {
       });
       return{price:rowPrice,pct:parseFloat(pct),cols};
     });
-  },[chain,allChainStrikes,colExps,selExp,legs,getLegPremium,getLegIV,activeSpot]);
+  },[chain,heatmapPrices,colExps,selExp,legs,getLegPremium,getLegIV,activeSpot]);
 
   const atmRowIdx = useMemo(()=>{
     if(!matrixRows.length||!activeSpot) return -1;
@@ -1945,17 +1947,18 @@ function SimulatorPanel({ onSaveManualTrade }) {
         {/* Probabilities + Payoff Chart side by side */}
         {selOption&&selStrike&&activePremium>0&&(()=>{
           const arColor=assignmentRisk==="High"?"#FF4D6D":assignmentRisk==="Med"?"#FFD84D":"#63E6BE";
-          const ivRankVal=iv30>0?Math.round(iv30*100):null;
-          const ivRankLbl=ivRankVal===null?"—":ivRankVal>60?"High":ivRankVal>30?"Med":"Low";
-          const ivRankColor=ivRankVal===null?"#4A6A8A":ivRankVal>60?"#FF4D6D":ivRankVal>30?"#FFD84D":"#63E6BE";
           const ivLbl=iv>0.4?"High":iv>0.2?"Med":"Low";
           const ivColor=iv>0.4?"#FF4D6D":iv>0.2?"#FFD84D":"#63E6BE";
           const evColor=expectedValue!=null&&expectedValue>=0?"#63E6BE":"#FF4D6D";
           const evPct=expectedValue!=null&&activePremium>0?((expectedValue/Math.abs(activePremium*100))*100):null;
+          const lowerCardStyle={background:"linear-gradient(180deg,#0B131D,#071019)",border:"1px solid #22364A",borderRadius:7,padding:"10px 12px",minHeight:66,display:"flex",flexDirection:"column",justifyContent:"space-between",alignItems:"flex-start",boxSizing:"border-box"};
+          const lowerLabelStyle={fontSize:9,color:"#9EB9E9",letterSpacing:.45,fontWeight:700,fontFamily:"DM Mono,monospace",textTransform:"uppercase",lineHeight:1.2};
+          const lowerValueStyle={fontSize:14,fontWeight:800,fontFamily:"DM Mono,monospace",lineHeight:1.05};
+          const lowerSubStyle={fontSize:10,fontFamily:"DM Mono,monospace",lineHeight:1.05,marginTop:2};
           return(
           <div style={{display:"grid",gridTemplateColumns:"minmax(470px,47%) minmax(430px,1fr)",gap:0,borderBottom:"1px solid #22364A",background:"#071019"}}>
             {/* LEFT: Probabilities */}
-            <div style={{padding:"21px 20px 16px",borderRight:"1px solid #22364A",display:"flex",flexDirection:"column",gap:16,background:"linear-gradient(180deg,#071019,#050A0F)"}}>
+            <div style={{padding:"17px 20px 12px",borderRight:"1px solid #22364A",display:"flex",flexDirection:"column",gap:12,background:"linear-gradient(180deg,#071019,#050A0F)"}}>
               <div style={{display:"flex",alignItems:"center",gap:6}}>
                 <div className="sim-slbl" style={{margin:0,letterSpacing:2}}>Probabilities</div>
                 <button style={{width:15,height:15,borderRadius:"50%",background:"#1B2A3A",border:"1px solid #2a3a4a",
@@ -1963,26 +1966,21 @@ function SimulatorPanel({ onSaveManualTrade }) {
                   fontFamily:"DM Mono,monospace",padding:0,flexShrink:0}}>?</button>
               </div>
 
-              {/* Top row — 4 large metrics */}
-              <div style={{display:"grid",gridTemplateColumns:"1.15fr .78fr .9fr .78fr",gap:8,alignItems:"start"}}>
+              {/* Top row — primary metrics */}
+              <div style={{display:"grid",gridTemplateColumns:"1.15fr 1fr 1fr",gap:10,alignItems:"start"}}>
                 <div>
-                  <div style={{fontSize:11,color:"#B7C9EA",marginBottom:8,letterSpacing:.35,fontFamily:"DM Mono,monospace"}}>Chance of Profit</div>
+                  <div style={{fontSize:10,color:"#B7C9EA",marginBottom:7,letterSpacing:.35,fontFamily:"DM Mono,monospace"}}>Chance of Profit</div>
                   <div style={{fontFamily:"Syne,sans-serif",fontSize:29,fontWeight:800,color:"#5B8CFF",lineHeight:1,letterSpacing:.1,textShadow:"0 0 18px rgba(91,140,255,.18)"}}>{(chanceOfProfit*100).toFixed(1)}%</div>
                 </div>
                 <div>
-                  <div style={{fontSize:11,color:"#B7C9EA",marginBottom:8,letterSpacing:.35,fontFamily:"DM Mono,monospace"}}>Delta</div>
+                  <div style={{fontSize:10,color:"#B7C9EA",marginBottom:7,letterSpacing:.35,fontFamily:"DM Mono,monospace"}}>Delta</div>
                   <div style={{fontFamily:"Syne,sans-serif",fontSize:23,fontWeight:800,color:deltaDirColor,lineHeight:1,textShadow:"0 0 16px rgba(91,140,255,.14)"}}>{Math.abs(delta).toFixed(2)}</div>
                   <div style={{fontSize:10,color:deltaDirColor,marginTop:5,fontWeight:700,fontFamily:"DM Mono,monospace"}}>{deltaDir}</div>
                 </div>
                 <div>
-                  <div style={{fontSize:11,color:"#B7C9EA",marginBottom:8,letterSpacing:.35,fontFamily:"DM Mono,monospace"}}>IV (option)</div>
+                  <div style={{fontSize:10,color:"#B7C9EA",marginBottom:7,letterSpacing:.35,fontFamily:"DM Mono,monospace"}}>IV (option)</div>
                   <div style={{fontFamily:"Syne,sans-serif",fontSize:23,fontWeight:800,color:"#FFD84D",lineHeight:1,textShadow:"0 0 16px rgba(255,216,77,.14)"}}>{(iv*100).toFixed(1)}%</div>
                   <div style={{fontSize:10,color:ivColor,marginTop:5,fontWeight:700,fontFamily:"DM Mono,monospace"}}>{ivLbl}</div>
-                </div>
-                <div>
-                  <div style={{fontSize:11,color:"#B7C9EA",marginBottom:8,letterSpacing:.35,fontFamily:"DM Mono,monospace"}}>IV Rank</div>
-                  <div style={{fontFamily:"Syne,sans-serif",fontSize:23,fontWeight:800,color:ivRankColor,lineHeight:1}}>{ivRankVal!=null?ivRankVal:"—"}</div>
-                  {ivRankVal!=null&&<div style={{fontSize:10,color:ivRankColor,marginTop:5,fontWeight:700,fontFamily:"DM Mono,monospace"}}>{ivRankLbl}</div>}
                 </div>
               </div>
 
@@ -1992,32 +1990,32 @@ function SimulatorPanel({ onSaveManualTrade }) {
               </div>
 
               {/* Bottom row — 4 smaller metric cards */}
-              <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:11}}>
-                <div style={{background:"linear-gradient(180deg,#0B131D,#071019)",border:"1px solid #22364A",borderRadius:7,padding:"13px 14px"}}>
-                  <div style={{fontSize:10,color:"#9EB9E9",marginBottom:6,letterSpacing:.45,fontWeight:600,fontFamily:"DM Mono,monospace"}}>Prob ITM</div>
-                  <div style={{fontSize:14,fontWeight:800,color:"#5B8CFF",fontFamily:"DM Mono,monospace"}}>{(probITM*100).toFixed(1)}%</div>
+              <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:8,alignItems:"stretch"}}>
+                <div style={lowerCardStyle}>
+                  <div style={lowerLabelStyle}>Prob ITM</div>
+                  <div style={{...lowerValueStyle,color:"#5B8CFF"}}>{(probITM*100).toFixed(1)}%</div>
                 </div>
-                <div style={{background:"linear-gradient(180deg,#0B131D,#071019)",border:"1px solid #22364A",borderRadius:7,padding:"13px 14px"}}>
-                  <div style={{fontSize:10,color:"#9EB9E9",marginBottom:6,letterSpacing:.45,fontWeight:600,fontFamily:"DM Mono,monospace"}}>Prob Touch</div>
-                  <div style={{fontSize:14,fontWeight:800,color:"#B37CFF",fontFamily:"DM Mono,monospace"}}>{(probTouch*100).toFixed(1)}%</div>
+                <div style={lowerCardStyle}>
+                  <div style={lowerLabelStyle}>Prob Touch</div>
+                  <div style={{...lowerValueStyle,color:"#B37CFF"}}>{(probTouch*100).toFixed(1)}%</div>
                 </div>
-                <div style={{background:"linear-gradient(180deg,#0B131D,#071019)",border:"1px solid #22364A",borderRadius:7,padding:"13px 14px"}}>
-                  <div style={{fontSize:10,color:"#9EB9E9",marginBottom:6,letterSpacing:.45,fontWeight:600,fontFamily:"DM Mono,monospace"}}>Assignment Risk</div>
+                <div style={lowerCardStyle}>
+                  <div style={lowerLabelStyle}>Assignment Risk</div>
                   {side==="sell"?(
-                    <>
-                      <div style={{fontSize:14,fontWeight:800,color:arColor,fontFamily:"DM Mono,monospace"}}>{assignmentRisk}</div>
-                      <div style={{fontSize:10,color:arColor,marginTop:3,fontFamily:"DM Mono,monospace"}}>{(probITM*100).toFixed(0)}%</div>
-                    </>
-                  ):<div style={{fontSize:11,color:"#2a4a6a"}}>N/A</div>}
+                    <div>
+                      <div style={{...lowerValueStyle,color:arColor}}>{assignmentRisk}</div>
+                      <div style={{...lowerSubStyle,color:arColor}}>{(probITM*100).toFixed(0)}%</div>
+                    </div>
+                  ):<div style={{...lowerValueStyle,color:"#2a4a6a"}}>N/A</div>}
                 </div>
-                <div style={{background:"linear-gradient(180deg,#0B131D,#071019)",border:"1px solid #22364A",borderRadius:7,padding:"13px 14px"}}>
-                  <div style={{fontSize:10,color:"#9EB9E9",marginBottom:6,letterSpacing:.45,fontWeight:600,fontFamily:"DM Mono,monospace"}}>Expected Value</div>
+                <div style={lowerCardStyle}>
+                  <div style={lowerLabelStyle}>Expected Value</div>
                   {expectedValue!=null?(
-                    <>
-                      <div style={{fontSize:14,fontWeight:800,color:evColor,fontFamily:"DM Mono,monospace"}}>{expectedValue>=0?"+$":"$"}{Math.abs(expectedValue).toFixed(0)}</div>
-                      {evPct!=null&&<div style={{fontSize:10,color:evColor,marginTop:3,fontFamily:"DM Mono,monospace"}}>{evPct>=0?"+":""}{evPct.toFixed(1)}%</div>}
-                    </>
-                  ):<div style={{fontSize:11,color:"#2a4a6a"}}>—</div>}
+                    <div>
+                      <div style={{...lowerValueStyle,color:evColor}}>{expectedValue>=0?"+$":"$"}{Math.abs(expectedValue).toFixed(0)}</div>
+                      {evPct!=null&&<div style={{...lowerSubStyle,color:evColor}}>{evPct>=0?"+":""}{evPct.toFixed(1)}%</div>}
+                    </div>
+                  ):<div style={{...lowerValueStyle,color:"#2a4a6a"}}>—</div>}
                 </div>
               </div>
             </div>
@@ -2065,21 +2063,21 @@ function SimulatorPanel({ onSaveManualTrade }) {
         {/* Range slider */}
         {matrixRows.length>0&&(
           <div style={{display:"flex",alignItems:"center",gap:16,padding:"14px 18px",borderBottom:"1px solid #22364A",background:"#071019"}}>
-            <span style={{fontSize:11,letterSpacing:1.4,textTransform:"uppercase",color:"#9EB9E9",flexShrink:0,fontWeight:700}}>Range</span>
-            <button onClick={()=>setRangeShift(v=>Math.max(-75,+(v-0.5).toFixed(1)))}
-              style={{background:"none",border:"none",color:"#7D91AA",cursor:"pointer",fontSize:13,padding:"0 2px",lineHeight:1}}>◀</button>
-            <input className="sim-range-track" type="range" min={-75} max={75} step={0.5} value={rangeShift}
-              onChange={e=>setRangeShift(parseFloat(e.target.value))}
+            <span style={{fontSize:11,letterSpacing:1.4,textTransform:"uppercase",color:"#9EB9E9",flexShrink:0,fontWeight:700}}>Price Range</span>
+            <button onClick={()=>setPriceRangePct(v=>Math.max(10,v-5))}
+              style={{background:"none",border:"none",color:"#7D91AA",cursor:"pointer",fontSize:13,padding:"0 2px",lineHeight:1}}>&lt;</button>
+            <input className="sim-range-track" type="range" min={10} max={50} step={5} value={priceRangePct}
+              onChange={e=>setPriceRangePct(parseFloat(e.target.value))}
               style={{flex:1,cursor:"pointer"}}/>
-            <button onClick={()=>setRangeShift(v=>Math.min(75,+(v+0.5).toFixed(1)))}
-              style={{background:"none",border:"none",color:"#7D91AA",cursor:"pointer",fontSize:13,padding:"0 2px",lineHeight:1}}>▶</button>
-            <span style={{fontFamily:"DM Mono,monospace",fontSize:10,color:rangeShift===0?"#4A6A8A":rangeShift>0?"#63E6BE":"#FF4D6D",minWidth:42,textAlign:"right"}}>
-              {rangeShift===0?"0.0%":(rangeShift>0?"+":"")+rangeShift.toFixed(1)+"%"}
+            <button onClick={()=>setPriceRangePct(v=>Math.min(50,v+5))}
+              style={{background:"none",border:"none",color:"#7D91AA",cursor:"pointer",fontSize:13,padding:"0 2px",lineHeight:1}}>&gt;</button>
+            <span style={{fontFamily:"DM Mono,monospace",fontSize:10,color:"#63E6BE",minWidth:42,textAlign:"right"}}>
+              &plusmn;{priceRangePct}%
             </span>
-            {rangeShift!==0&&(
-              <button onClick={()=>setRangeShift(0)}
-                title="Reset to market price"
-                style={{fontSize:9,color:"#5B8CFF",background:"none",border:"1px solid #5B8CFF44",borderRadius:3,cursor:"pointer",padding:"1px 5px",fontFamily:"DM Mono,monospace"}}>↺</button>
+            {priceRangePct!==20&&(
+              <button onClick={()=>setPriceRangePct(20)}
+                title="Reset price range"
+                style={{fontSize:9,color:"#5B8CFF",background:"none",border:"1px solid #5B8CFF44",borderRadius:3,cursor:"pointer",padding:"1px 5px",fontFamily:"DM Mono,monospace"}}>R</button>
             )}
           </div>
         )}
@@ -2091,7 +2089,7 @@ function SimulatorPanel({ onSaveManualTrade }) {
               <thead>
                 <tr>
                   <th className="sim-th sp1">Price</th>
-                  <th className="sim-th sp2">Chg%</th>
+                  <th className="sim-th sp2">Move %</th>
                   {colExps.map((exp,ci)=>{
                     const d=new Date(exp+"T12:00:00");
                     const isSel=exp===selExp;
@@ -2106,7 +2104,7 @@ function SimulatorPanel({ onSaveManualTrade }) {
               <tbody>
                 {matrixRows.map((row,ri)=>{
                   const isAtm=ri===atmRowIdx;
-                  const isBe=ri===beRowIdx&&ri!==atmRowIdx;
+                  const isBe=ri===beRowIdx;
                   const cost=activePremium*100;
                   return(
                     <tr key={row.price}
