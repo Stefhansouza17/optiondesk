@@ -1416,7 +1416,7 @@ function SimulatorPanel({ onSaveManualTrade }) {
   const [qaExp,       setQaExp]         = useState("");
   const [tooltip, setTooltip] = useState(null);
   const [tipPos, setTipPos]   = useState({x:0,y:0});
-  const [priceRangePct, setPriceRangePct] = useState(20);
+  const [priceRangeLevel, setPriceRangeLevel] = useState(20);
   const [showGreeks, setShowGreeks] = useState(true);
 
   const spot = quote?.last || 0;
@@ -1476,7 +1476,7 @@ function SimulatorPanel({ onSaveManualTrade }) {
   useEffect(()=>{ if(premium>0) setPremiumInput(premium.toFixed(2)); },[premium]);
 
   // Reset displayed heatmap width on new symbol
-  useEffect(()=>{ setPriceRangePct(20); },[sym]);
+  useEffect(()=>{ setPriceRangeLevel(20); },[sym]);
 
   // Populate Add Trade modal fields when opened
   useEffect(()=>{
@@ -1601,13 +1601,21 @@ function SimulatorPanel({ onSaveManualTrade }) {
 
 
   // P&L matrix using Black-Scholes — sums all legs
+  const downsideRangePct = 10 + priceRangeLevel * 0.6;
+  const upsideRangePct = 50 + priceRangeLevel;
   const heatmapPrices = useMemo(()=>{
     if(!activeSpot) return [];
-    const rowCount=11;
-    const mid=Math.floor(rowCount/2);
-    const step=(activeSpot*(priceRangePct/100))/mid;
-    return Array.from({length:rowCount},(_,i)=>+(activeSpot+(i-mid)*step).toFixed(2)).reverse();
-  },[activeSpot,priceRangePct]);
+    const levels=7;
+    const above=Array.from({length:levels},(_,i)=>{
+      const pct=upsideRangePct*((levels-i)/levels);
+      return +(activeSpot*(1+pct/100)).toFixed(2);
+    });
+    const below=Array.from({length:levels},(_,i)=>{
+      const pct=downsideRangePct*((i+1)/levels);
+      return +(activeSpot*(1-pct/100)).toFixed(2);
+    });
+    return [...above,+activeSpot.toFixed(2),...below];
+  },[activeSpot,downsideRangePct,upsideRangePct]);
   const matrixRows = useMemo(()=>{
     if(!chain.length||!selExp||!legs.some(l=>l.strike&&getLegPremium(l)>0)) return [];
     const r=0.05;
@@ -1712,6 +1720,11 @@ function SimulatorPanel({ onSaveManualTrade }) {
               </button>
             </div>
             {quote?.description&&<div style={{fontSize:11,color:"#9EB9E9",marginBottom:2,lineHeight:1.3}}>{quote.description}</div>}
+            {spot>0&&(
+              <div style={{fontSize:11,color:"#7D91AA",marginTop:6,fontFamily:"DM Mono,monospace",letterSpacing:.3}}>
+                Price: <span style={{color:"#D6E2F0",fontWeight:800}}>${spot.toFixed(2)}</span>
+              </div>
+            )}
             {error&&<div style={{fontSize:10,color:"#FF4D6D",marginTop:4}}>{error}</div>}
           </div>
         ):(
@@ -1951,14 +1964,14 @@ function SimulatorPanel({ onSaveManualTrade }) {
           const ivColor=iv>0.4?"#FF4D6D":iv>0.2?"#FFD84D":"#63E6BE";
           const evColor=expectedValue!=null&&expectedValue>=0?"#63E6BE":"#FF4D6D";
           const evPct=expectedValue!=null&&activePremium>0?((expectedValue/Math.abs(activePremium*100))*100):null;
-          const lowerCardStyle={background:"linear-gradient(180deg,#0B131D,#071019)",border:"1px solid #22364A",borderRadius:7,padding:"10px 12px",minHeight:66,display:"flex",flexDirection:"column",justifyContent:"space-between",alignItems:"flex-start",boxSizing:"border-box"};
+          const lowerCardStyle={background:"linear-gradient(180deg,#0B131D,#071019)",border:"1px solid #22364A",borderRadius:7,padding:"9px 11px",minHeight:58,display:"flex",flexDirection:"column",justifyContent:"center",alignItems:"flex-start",gap:7,boxSizing:"border-box"};
           const lowerLabelStyle={fontSize:9,color:"#9EB9E9",letterSpacing:.45,fontWeight:700,fontFamily:"DM Mono,monospace",textTransform:"uppercase",lineHeight:1.2};
           const lowerValueStyle={fontSize:14,fontWeight:800,fontFamily:"DM Mono,monospace",lineHeight:1.05};
           const lowerSubStyle={fontSize:10,fontFamily:"DM Mono,monospace",lineHeight:1.05,marginTop:2};
           return(
           <div style={{display:"grid",gridTemplateColumns:"minmax(470px,47%) minmax(430px,1fr)",gap:0,borderBottom:"1px solid #22364A",background:"#071019"}}>
             {/* LEFT: Probabilities */}
-            <div style={{padding:"17px 20px 12px",borderRight:"1px solid #22364A",display:"flex",flexDirection:"column",gap:12,background:"linear-gradient(180deg,#071019,#050A0F)"}}>
+            <div style={{padding:"15px 20px 10px",borderRight:"1px solid #22364A",display:"flex",flexDirection:"column",gap:10,background:"linear-gradient(180deg,#071019,#050A0F)"}}>
               <div style={{display:"flex",alignItems:"center",gap:6}}>
                 <div className="sim-slbl" style={{margin:0,letterSpacing:2}}>Probabilities</div>
                 <button style={{width:15,height:15,borderRadius:"50%",background:"#1B2A3A",border:"1px solid #2a3a4a",
@@ -2002,7 +2015,7 @@ function SimulatorPanel({ onSaveManualTrade }) {
                 <div style={lowerCardStyle}>
                   <div style={lowerLabelStyle}>Assignment Risk</div>
                   {side==="sell"?(
-                    <div>
+                    <div style={{display:"flex",alignItems:"baseline",gap:6}}>
                       <div style={{...lowerValueStyle,color:arColor}}>{assignmentRisk}</div>
                       <div style={{...lowerSubStyle,color:arColor}}>{(probITM*100).toFixed(0)}%</div>
                     </div>
@@ -2011,7 +2024,7 @@ function SimulatorPanel({ onSaveManualTrade }) {
                 <div style={lowerCardStyle}>
                   <div style={lowerLabelStyle}>Expected Value</div>
                   {expectedValue!=null?(
-                    <div>
+                    <div style={{display:"flex",alignItems:"baseline",gap:6}}>
                       <div style={{...lowerValueStyle,color:evColor}}>{expectedValue>=0?"+$":"$"}{Math.abs(expectedValue).toFixed(0)}</div>
                       {evPct!=null&&<div style={{...lowerSubStyle,color:evColor}}>{evPct>=0?"+":""}{evPct.toFixed(1)}%</div>}
                     </div>
@@ -2064,18 +2077,18 @@ function SimulatorPanel({ onSaveManualTrade }) {
         {matrixRows.length>0&&(
           <div style={{display:"flex",alignItems:"center",gap:16,padding:"14px 18px",borderBottom:"1px solid #22364A",background:"#071019"}}>
             <span style={{fontSize:11,letterSpacing:1.4,textTransform:"uppercase",color:"#9EB9E9",flexShrink:0,fontWeight:700}}>Price Range</span>
-            <button onClick={()=>setPriceRangePct(v=>Math.max(10,v-5))}
+            <button onClick={()=>setPriceRangeLevel(v=>Math.max(0,v-5))}
               style={{background:"none",border:"none",color:"#7D91AA",cursor:"pointer",fontSize:13,padding:"0 2px",lineHeight:1}}>&lt;</button>
-            <input className="sim-range-track" type="range" min={10} max={50} step={5} value={priceRangePct}
-              onChange={e=>setPriceRangePct(parseFloat(e.target.value))}
+            <input className="sim-range-track" type="range" min={0} max={100} step={5} value={priceRangeLevel}
+              onChange={e=>setPriceRangeLevel(parseFloat(e.target.value))}
               style={{flex:1,cursor:"pointer"}}/>
-            <button onClick={()=>setPriceRangePct(v=>Math.min(50,v+5))}
+            <button onClick={()=>setPriceRangeLevel(v=>Math.min(100,v+5))}
               style={{background:"none",border:"none",color:"#7D91AA",cursor:"pointer",fontSize:13,padding:"0 2px",lineHeight:1}}>&gt;</button>
-            <span style={{fontFamily:"DM Mono,monospace",fontSize:10,color:"#63E6BE",minWidth:42,textAlign:"right"}}>
-              &plusmn;{priceRangePct}%
+            <span style={{fontFamily:"DM Mono,monospace",fontSize:10,color:"#63E6BE",minWidth:92,textAlign:"right"}}>
+              -{downsideRangePct.toFixed(0)}% / +{upsideRangePct.toFixed(0)}%
             </span>
-            {priceRangePct!==20&&(
-              <button onClick={()=>setPriceRangePct(20)}
+            {priceRangeLevel!==20&&(
+              <button onClick={()=>setPriceRangeLevel(20)}
                 title="Reset price range"
                 style={{fontSize:9,color:"#5B8CFF",background:"none",border:"1px solid #5B8CFF44",borderRadius:3,cursor:"pointer",padding:"1px 5px",fontFamily:"DM Mono,monospace"}}>R</button>
             )}
@@ -2121,7 +2134,7 @@ function SimulatorPanel({ onSaveManualTrade }) {
                         </span>
                       </td>
                       <td className="sim-td-pct" style={{color:row.pct>=0?"#63E6BE":"#FF4D6D"}}>
-                        {row.pct>=0?"+":""}{row.pct}%
+                        {row.pct>=0?"+":""}{row.pct===0?"0":row.pct.toFixed(1)}%
                       </td>
                       {row.cols.map((v,ci)=>{
                         const isSel=colExps[ci]===selExp;
