@@ -1969,9 +1969,9 @@ function SimulatorPanel({ onSaveManualTrade }) {
           const lowerValueStyle={fontSize:14,fontWeight:800,fontFamily:"DM Mono,monospace",lineHeight:1.05};
           const lowerSubStyle={fontSize:10,fontFamily:"DM Mono,monospace",lineHeight:1.05,marginTop:2};
           return(
-          <div style={{display:"grid",gridTemplateColumns:"minmax(470px,47%) minmax(430px,1fr)",gap:0,borderBottom:"1px solid #22364A",background:"#071019"}}>
+          <div style={{display:"grid",gridTemplateColumns:"minmax(470px,47%) minmax(430px,1fr)",gap:0,alignItems:"start",borderBottom:"1px solid #22364A",background:"#071019"}}>
             {/* LEFT: Probabilities */}
-            <div style={{padding:"15px 20px 10px",borderRight:"1px solid #22364A",display:"flex",flexDirection:"column",gap:10,background:"linear-gradient(180deg,#071019,#050A0F)"}}>
+            <div style={{padding:"15px 20px 18px",borderRight:"1px solid #22364A",borderBottom:"1px solid #22364A",display:"flex",flexDirection:"column",gap:10,alignSelf:"start",background:"linear-gradient(180deg,#071019,#050A0F)"}}>
               <div style={{display:"flex",alignItems:"center",gap:6}}>
                 <div className="sim-slbl" style={{margin:0,letterSpacing:2}}>Probabilities</div>
                 <button style={{width:15,height:15,borderRadius:"50%",background:"#1B2A3A",border:"1px solid #2a3a4a",
@@ -2034,8 +2034,8 @@ function SimulatorPanel({ onSaveManualTrade }) {
             </div>
 
             {/* RIGHT: Payoff Chart */}
-            <div style={{minWidth:0,padding:"20px 20px 0",background:"radial-gradient(circle at 50% 0%,rgba(91,140,255,.08),transparent 42%),#050A0F"}}>
-              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+            <div style={{minWidth:0,padding:"14px 20px 0",background:"radial-gradient(circle at 50% 0%,rgba(91,140,255,.08),transparent 42%),#050A0F"}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
                 <div style={{fontSize:13,letterSpacing:1.5,textTransform:"uppercase",color:"#9EB9E9",fontFamily:"DM Mono,monospace",fontWeight:600}}>
                   Payoff at Expiration — <span style={{color:"#D6E2F0"}}>{strategy}</span>
                 </div>
@@ -2046,7 +2046,7 @@ function SimulatorPanel({ onSaveManualTrade }) {
                   <span style={{fontSize:11}}>{showGreeks?"⊙":"○"}</span> {showGreeks?"Hide":"Show"} Greeks
                 </button>
               </div>
-              <PayoffChart spot={activeSpot||spot} pnlAt={combinedPnlAt} breakeven={breakeven} singleLeg={legs.length===1?primaryLeg:null} height={250}/>
+              <PayoffChart spot={activeSpot||spot} pnlAt={combinedPnlAt} breakeven={breakeven} singleLeg={legs.length===1?primaryLeg:null} height={165}/>
             </div>
           </div>
           );
