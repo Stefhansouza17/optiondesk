@@ -34,7 +34,7 @@ create table if not exists strategies (
 create table if not exists trade_strategy_links (
   id uuid primary key default gen_random_uuid(),
   user_id uuid default auth.uid(),
-  trade_id uuid not null references trades(id) on delete cascade,
+  trade_id bigint not null references trades(id) on delete cascade,
   strategy_id uuid not null references strategies(id) on delete cascade,
   assignment_status text not null default 'confirmed',
   assigned_at timestamptz not null default now(),
