@@ -453,6 +453,9 @@ function StrategyAssignmentModal({ asset, trade, strategies=[], suggestions=[], 
   const [existingId, setExistingId] = useState(current?.id || matchingStrategies[0]?.id || "");
   const [newType, setNewType] = useState(strategyLabelForTrade(trade));
   const [newName, setNewName] = useState(`${ticker} ${strategyLabelForTrade(trade)}`);
+  const canConfirm = choice==="existing" ? !!existingId
+    : choice==="new" ? !!newType && !!newName.trim()
+    : choice==="isolated" || choice==="detach";
 
   const chooseSuggestion = (s) => {
     if(s.kind==="existing") {
@@ -466,8 +469,9 @@ function StrategyAssignmentModal({ asset, trade, strategies=[], suggestions=[], 
   };
 
   const submit = () => {
+    if(!canConfirm) return;
     if(choice==="existing" && existingId) return onConfirm({type:"existing", strategyId:existingId});
-    if(choice==="new" && newName.trim()) return onConfirm({type:"new", strategyType:newType, name:newName.trim()});
+    if(choice==="new" && newType && newName.trim()) return onConfirm({type:"new", strategyType:newType, name:newName.trim()});
     if(choice==="isolated") return onConfirm({type:"isolated"});
     if(choice==="detach") return onConfirm({type:"detach"});
   };
@@ -521,7 +525,7 @@ function StrategyAssignmentModal({ asset, trade, strategies=[], suggestions=[], 
           </div>
           <div>
             <label className="flbl">Create new strategy</label>
-            <select className="fsel" value={newType} onChange={e=>{setChoice("new");setNewType(e.target.value);setNewName(`${ticker} ${e.target.value}`);}} style={{marginTop:5}}>
+            <select className="fsel" value={newType} onFocus={()=>setChoice("new")} onChange={e=>{setChoice("new");setNewType(e.target.value);setNewName(`${ticker} ${e.target.value}`);}} style={{marginTop:5}}>
               {STRATEGY_TYPES.map(t=><option key={t} value={t}>{t}</option>)}
             </select>
           </div>
@@ -529,7 +533,7 @@ function StrategyAssignmentModal({ asset, trade, strategies=[], suggestions=[], 
         {choice==="new"&&(
           <div className="fgrp" style={{marginBottom:14}}>
             <label className="flbl">New strategy name</label>
-            <input className="finput" value={newName} onChange={e=>setNewName(e.target.value)} />
+            <input className="finput" value={newName} onFocus={()=>setChoice("new")} onChange={e=>{setChoice("new");setNewName(e.target.value);}} />
           </div>
         )}
 
@@ -541,7 +545,7 @@ function StrategyAssignmentModal({ asset, trade, strategies=[], suggestions=[], 
 
         <div className="factions">
           <button className="btn bneutral bfull" onClick={onClose}>Cancel</button>
-          <button className="btn bfull" disabled={!choice || (choice==="existing"&&!existingId) || (choice==="new"&&!newName.trim())} onClick={submit}>
+          <button className="btn bfull" disabled={!canConfirm} onClick={submit}>
             {choice==="isolated"?"Confirm isolated":choice==="detach"?"Confirm detach":"Confirm assignment"}
           </button>
         </div>
