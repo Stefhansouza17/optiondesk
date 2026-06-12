@@ -103,6 +103,21 @@ const getAssignedStrategy = (trade, strategies=[]) => {
   return link ? strategies.find(s=>s.id===link.strategy_id) || link.strategy : null;
 };
 
+const withConfirmedStrategyLink = (strategies, strategyId, link, fallbackStrategy=null) => {
+  if(!strategyId || !link) return strategies;
+  const normalizedLink = {...link, strategy_id:strategyId, assignment_status:"confirmed", detached_at:null};
+  const upsertLink = (strategy) => ({
+    ...strategy,
+    links:[
+      ...((strategy.links||[]).filter(l=>l.trade_id!==normalizedLink.trade_id)),
+      normalizedLink,
+    ],
+  });
+  const found = strategies.some(s=>s.id===strategyId);
+  if(found) return strategies.map(s=>s.id===strategyId ? upsertLink(s) : s);
+  return fallbackStrategy ? [...strategies, upsertLink({...fallbackStrategy, links:[]})] : strategies;
+};
+
 const normalizeTicker = (v) => (v||"").toUpperCase();
 
 function buildStrategySuggestions({ trade, asset, strategies=[] }) {
@@ -449,12 +464,18 @@ function StrategyAssignmentModal({ asset, trade, strategies=[], suggestions=[], 
   const ticker = asset?.ticker || trade?.ticker || asset?.id || "";
   const matchingStrategies = strategies.filter(s=>s.status!=="archived" && normalizeTicker(s.ticker)===normalizeTicker(ticker));
   const current = getAssignedStrategy(trade, strategies);
-  const [choice, setChoice] = useState("");
+  const [choice, setChoice] = useState(matchingStrategies.length ? "existing" : "new");
   const [existingId, setExistingId] = useState(current?.id || matchingStrategies[0]?.id || "");
   const [newType, setNewType] = useState(strategyLabelForTrade(trade));
   const [newName, setNewName] = useState(`${ticker} ${strategyLabelForTrade(trade)}`);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
+  const canConfirm = choice==="existing" ? !!existingId
+    : choice==="new" ? !!newType && !!newName.trim()
+    : choice==="isolated" || choice==="detach";
 
   const chooseSuggestion = (s) => {
+    setError("");
     if(s.kind==="existing") {
       setChoice("existing");
       setExistingId(s.strategy.id);
@@ -465,11 +486,24 @@ function StrategyAssignmentModal({ asset, trade, strategies=[], suggestions=[], 
     }
   };
 
-  const submit = () => {
-    if(choice==="existing" && existingId) return onConfirm({type:"existing", strategyId:existingId});
-    if(choice==="new" && newName.trim()) return onConfirm({type:"new", strategyType:newType, name:newName.trim()});
-    if(choice==="isolated") return onConfirm({type:"isolated"});
-    if(choice==="detach") return onConfirm({type:"detach"});
+  const submit = async () => {
+    if(!canConfirm || submitting) return;
+    const payload = choice==="existing" && existingId ? {type:"existing", strategyId:existingId}
+      : choice==="new" && newType && newName.trim() ? {type:"new", strategyType:newType, name:newName.trim()}
+      : choice==="isolated" ? {type:"isolated"}
+      : choice==="detach" ? {type:"detach"}
+      : null;
+    if(!payload) return;
+    setSubmitting(true);
+    setError("");
+    try {
+      await onConfirm(payload);
+    } catch(e) {
+      console.error("strategy assignment confirm failed:", e);
+      setError(e?.message || e?.code || "Strategy assignment failed.");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -513,36 +547,35 @@ function StrategyAssignmentModal({ asset, trade, strategies=[], suggestions=[], 
           <div>
             <label className="flbl">Choose existing strategy</label>
             <div style={{display:"flex",gap:8,marginTop:5}}>
-              <select className="fsel" value={existingId} onChange={e=>{setChoice("existing");setExistingId(e.target.value);}}>
+              <select className="fsel" value={existingId} onFocus={()=>{setError("");setChoice("existing");}} onClick={()=>{setError("");setChoice("existing");}} onChange={e=>{setError("");setChoice("existing");setExistingId(e.target.value);}}>
                 {matchingStrategies.length===0?<option value="">No existing strategies</option>:matchingStrategies.map(s=><option key={s.id} value={s.id}>{s.name} - {s.strategy_type}</option>)}
               </select>
-              <button className="btn bsm bneutral" disabled={!existingId} onClick={()=>setChoice("existing")}>Use</button>
+              <button className="btn bsm bneutral" disabled={!existingId} onClick={()=>{setError("");setChoice("existing");}}>Use</button>
             </div>
           </div>
           <div>
             <label className="flbl">Create new strategy</label>
-            <select className="fsel" value={newType} onChange={e=>{setChoice("new");setNewType(e.target.value);setNewName(`${ticker} ${e.target.value}`);}} style={{marginTop:5}}>
+            <select className="fsel" value={newType} onFocus={()=>{setError("");setChoice("new");}} onClick={()=>{setError("");setChoice("new");}} onChange={e=>{setError("");setChoice("new");setNewType(e.target.value);setNewName(`${ticker} ${e.target.value}`);}} style={{marginTop:5}}>
               {STRATEGY_TYPES.map(t=><option key={t} value={t}>{t}</option>)}
             </select>
           </div>
         </div>
-        {choice==="new"&&(
-          <div className="fgrp" style={{marginBottom:14}}>
-            <label className="flbl">New strategy name</label>
-            <input className="finput" value={newName} onChange={e=>setNewName(e.target.value)} />
-          </div>
-        )}
+        <div className="fgrp" style={{marginBottom:14}}>
+          <label className="flbl">New strategy name</label>
+          <input className="finput" value={newName} onFocus={()=>{setError("");setChoice("new");}} onClick={()=>{setError("");setChoice("new");}} onChange={e=>{setError("");setChoice("new");setNewName(e.target.value);}} />
+        </div>
 
         <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:14}}>
-          <button className="btn bneutral" onClick={()=>setChoice("isolated")}>Save as isolated</button>
-          {mode==="change"&&<button className="btn bwarn" onClick={()=>setChoice("detach")}>Detach from strategy</button>}
+          <button className="btn bneutral" onClick={()=>{setError("");setChoice("isolated");}}>Save as isolated</button>
+          {mode==="change"&&<button className="btn bwarn" onClick={()=>{setError("");setChoice("detach");}}>Detach from strategy</button>}
           <span style={{fontSize:11,color:"#4A6A8A",alignSelf:"center"}}>No automatic assignment is made.</span>
         </div>
+        {error&&<div style={{fontSize:11,color:"#FF4D6D",marginBottom:10}}>{error}</div>}
 
         <div className="factions">
           <button className="btn bneutral bfull" onClick={onClose}>Cancel</button>
-          <button className="btn bfull" disabled={!choice || (choice==="existing"&&!existingId) || (choice==="new"&&!newName.trim())} onClick={submit}>
-            {choice==="isolated"?"Confirm isolated":choice==="detach"?"Confirm detach":"Confirm assignment"}
+          <button className="btn bfull" disabled={!canConfirm || submitting} onClick={submit}>
+            {submitting?"Assigning...":choice==="isolated"?"Confirm isolated":choice==="detach"?"Confirm detach":"Confirm assignment"}
           </button>
         </div>
       </div>
@@ -3663,9 +3696,9 @@ function App() {
   };
 
   const handleChangeTradeStrategy = async (tradeId, strategyId) => {
-    await moveTradeToStrategy(tradeId, strategyId);
+    const link = await moveTradeToStrategy(tradeId, strategyId);
     const fresh = await fetchStrategies();
-    setStrategies(fresh);
+    setStrategies(withConfirmedStrategyLink(fresh, strategyId, link));
     showToast("Strategy assignment updated.");
   };
 
@@ -3680,7 +3713,11 @@ function App() {
     }
     try {
       if(choice.type==="existing") {
-        await moveTradeToStrategy(trade.id, choice.strategyId);
+        const link = await moveTradeToStrategy(trade.id, choice.strategyId);
+        const fresh = await fetchStrategies();
+        setStrategies(withConfirmedStrategyLink(fresh, choice.strategyId, link));
+        showToast("Trade assigned to strategy.");
+        return;
       }
       if(choice.type==="new") {
         const created = await dbCreateStrategy({
@@ -3689,11 +3726,12 @@ function App() {
           name: choice.name,
           strategy_type: choice.strategyType,
         });
-        await linkTradeToStrategy(trade.id, created.id);
+        const link = await linkTradeToStrategy(trade.id, created.id);
+        const fresh = await fetchStrategies();
+        setStrategies(withConfirmedStrategyLink(fresh, created.id, link, created));
+        showToast("Trade assigned to strategy.");
+        return;
       }
-      const fresh = await fetchStrategies();
-      setStrategies(fresh);
-      showToast("Trade assigned to strategy.");
     } catch(e) {
       console.error("strategy assignment failed:", e);
       showToast("Trade saved, but strategy assignment failed. It remains isolated.", false);
