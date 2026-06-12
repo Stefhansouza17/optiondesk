@@ -449,10 +449,12 @@ function StrategyAssignmentModal({ asset, trade, strategies=[], suggestions=[], 
   const ticker = asset?.ticker || trade?.ticker || asset?.id || "";
   const matchingStrategies = strategies.filter(s=>s.status!=="archived" && normalizeTicker(s.ticker)===normalizeTicker(ticker));
   const current = getAssignedStrategy(trade, strategies);
-  const [choice, setChoice] = useState("");
+  const [choice, setChoice] = useState(matchingStrategies.length ? "existing" : "new");
   const [existingId, setExistingId] = useState(current?.id || matchingStrategies[0]?.id || "");
   const [newType, setNewType] = useState(strategyLabelForTrade(trade));
   const [newName, setNewName] = useState(`${ticker} ${strategyLabelForTrade(trade)}`);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
   const canConfirm = choice==="existing" ? !!existingId
     : choice==="new" ? !!newType && !!newName.trim()
     : choice==="isolated" || choice==="detach";
@@ -468,12 +470,24 @@ function StrategyAssignmentModal({ asset, trade, strategies=[], suggestions=[], 
     }
   };
 
-  const submit = () => {
-    if(!canConfirm) return;
-    if(choice==="existing" && existingId) return onConfirm({type:"existing", strategyId:existingId});
-    if(choice==="new" && newType && newName.trim()) return onConfirm({type:"new", strategyType:newType, name:newName.trim()});
-    if(choice==="isolated") return onConfirm({type:"isolated"});
-    if(choice==="detach") return onConfirm({type:"detach"});
+  const submit = async () => {
+    if(!canConfirm || submitting) return;
+    const payload = choice==="existing" && existingId ? {type:"existing", strategyId:existingId}
+      : choice==="new" && newType && newName.trim() ? {type:"new", strategyType:newType, name:newName.trim()}
+      : choice==="isolated" ? {type:"isolated"}
+      : choice==="detach" ? {type:"detach"}
+      : null;
+    if(!payload) return;
+    setSubmitting(true);
+    setError("");
+    try {
+      await onConfirm(payload);
+    } catch(e) {
+      console.error("strategy assignment confirm failed:", e);
+      setError(e?.message || e?.code || "Strategy assignment failed.");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -530,23 +544,22 @@ function StrategyAssignmentModal({ asset, trade, strategies=[], suggestions=[], 
             </select>
           </div>
         </div>
-        {choice==="new"&&(
-          <div className="fgrp" style={{marginBottom:14}}>
-            <label className="flbl">New strategy name</label>
-            <input className="finput" value={newName} onFocus={()=>setChoice("new")} onChange={e=>{setChoice("new");setNewName(e.target.value);}} />
-          </div>
-        )}
+        <div className="fgrp" style={{marginBottom:14}}>
+          <label className="flbl">New strategy name</label>
+          <input className="finput" value={newName} onFocus={()=>setChoice("new")} onChange={e=>{setChoice("new");setNewName(e.target.value);}} />
+        </div>
 
         <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:14}}>
           <button className="btn bneutral" onClick={()=>setChoice("isolated")}>Save as isolated</button>
           {mode==="change"&&<button className="btn bwarn" onClick={()=>setChoice("detach")}>Detach from strategy</button>}
           <span style={{fontSize:11,color:"#4A6A8A",alignSelf:"center"}}>No automatic assignment is made.</span>
         </div>
+        {error&&<div style={{fontSize:11,color:"#FF4D6D",marginBottom:10}}>{error}</div>}
 
         <div className="factions">
           <button className="btn bneutral bfull" onClick={onClose}>Cancel</button>
-          <button className="btn bfull" disabled={!canConfirm} onClick={submit}>
-            {choice==="isolated"?"Confirm isolated":choice==="detach"?"Confirm detach":"Confirm assignment"}
+          <button className="btn bfull" disabled={!canConfirm || submitting} onClick={submit}>
+            {submitting?"Assigning...":choice==="isolated"?"Confirm isolated":choice==="detach"?"Confirm detach":"Confirm assignment"}
           </button>
         </div>
       </div>
