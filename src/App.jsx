@@ -91,14 +91,41 @@ const tradeContracts = (trade) => Math.max(1, parseInt(trade?.contracts||1));
 const tradePremium = (trade) => parseFloat(trade?.premium||0);
 const tradeDollarValue = (trade) => tradePremium(trade) * tradeContracts(trade) * 100;
 const optionType = (trade) => trade?.option_type || "call";
+const normalizeActionValue = (value) => {
+  const raw = (value||"").toString().trim().toUpperCase();
+  if(raw==="BTO" || raw==="BTC" || raw.startsWith("BUY")) return "BUY";
+  if(raw==="STO" || raw==="STC" || raw.startsWith("SELL")) return "SELL";
+  return raw || "SELL";
+};
+const normalizeDateValue = (value) => {
+  if(!value) return value;
+  if(value instanceof Date && !isNaN(value)) return value.toISOString().slice(0,10);
+  const raw = String(value).trim();
+  if(!raw || raw==="unknown") return raw;
+  const iso = raw.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+  if(iso) return `${iso[1]}-${iso[2].padStart(2,"0")}-${iso[3].padStart(2,"0")}`;
+  const slash = raw.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2}|\d{4})$/);
+  if(slash) {
+    const year = slash[3].length===2 ? `20${slash[3]}` : slash[3];
+    return `${year}-${slash[1].padStart(2,"0")}-${slash[2].padStart(2,"0")}`;
+  }
+  const dash = raw.match(/^(\d{1,2})-(\d{1,2})-(\d{2}|\d{4})$/);
+  if(dash) {
+    const year = dash[3].length===2 ? `20${dash[3]}` : dash[3];
+    return `${year}-${dash[1].padStart(2,"0")}-${dash[2].padStart(2,"0")}`;
+  }
+  const compact = raw.match(/^(\d{4})(\d{2})(\d{2})$/);
+  if(compact) return `${compact[1]}-${compact[2]}-${compact[3]}`;
+  return raw.slice(0,10);
+};
 const tradeDteAtOpen = (trade) => {
   if(!trade?.date || !trade?.expiration) return null;
-  return Math.ceil((new Date(trade.expiration)-new Date(trade.date))/(1000*60*60*24));
+  return Math.ceil((new Date(normalizeDateValue(trade.expiration))-new Date(normalizeDateValue(trade.date)))/(1000*60*60*24));
 };
 const isLeapCloseTrade = (trade) => {
   const strategy = trade?.strategy || "";
   const notes = (trade?.notes||"").toLowerCase();
-  const longDatedClosedSell = (trade?.action||"").toUpperCase()==="SELL"
+  const longDatedClosedSell = normalizeActionValue(trade?.action)==="SELL"
     && trade?.status==="closed"
     && tradeDteAtOpen(trade)>180;
   return THETA_EXCLUDED_STRATEGIES.has(strategy)
@@ -107,11 +134,11 @@ const isLeapCloseTrade = (trade) => {
     || longDatedClosedSell;
 };
 const isThetaShortCallTrade = (trade) =>
-  (trade?.action||"").toUpperCase()==="SELL"
+  normalizeActionValue(trade?.action)==="SELL"
   && optionType(trade)==="call"
   && !isLeapCloseTrade(trade);
 const isThetaClosingBuyTrade = (trade) =>
-  (trade?.action||"").toUpperCase()==="BUY"
+  normalizeActionValue(trade?.action)==="BUY"
   && optionType(trade)==="call"
   && trade?.status!=="open"
   && !isLeapCloseTrade(trade);
@@ -3649,22 +3676,28 @@ function App() {
     } catch(e){ console.error(e); showToast(`Leap save error: ${e?.message||e?.code||"unknown"}`,false); }
   };
 
-  const normalizeTradeForLifecycle = (trade) => ({
-    ...trade,
-    action: (trade.action||"SELL").toUpperCase(),
-    option_type: trade.option_type || "call",
-    strike: parseFloat(trade.strike),
-    premium: parseFloat(trade.premium)||0,
-    contracts: Math.max(1, parseInt(trade.contracts)||1),
-    positionEffect: trade.positionEffect || (trade.status==="closed" ? "close" : "auto"),
-    status: trade.positionEffect==="close" ? "closed" : (trade.status || "open"),
-  });
+  const normalizeTradeForLifecycle = (trade) => {
+    const status = (trade.status || "open").toLowerCase();
+    const positionEffect = trade.positionEffect || (status==="closed" ? "close" : "auto");
+    return {
+      ...trade,
+      action: normalizeActionValue(trade.action),
+      option_type: (trade.option_type || "call").toLowerCase(),
+      strike: parseFloat(trade.strike),
+      date: normalizeDateValue(trade.date),
+      expiration: normalizeDateValue(trade.expiration),
+      premium: parseFloat(trade.premium)||0,
+      contracts: Math.max(1, parseInt(trade.contracts)||1),
+      positionEffect,
+      status: positionEffect==="close" ? "closed" : status,
+    };
+  };
 
   const sameTradeCore = (a,b) =>
-    (a.action||"").toUpperCase()===(b.action||"").toUpperCase() &&
-    (a.option_type||"call")===(b.option_type||"call") &&
+    normalizeActionValue(a.action)===normalizeActionValue(b.action) &&
+    (a.option_type||"call").toLowerCase()===(b.option_type||"call").toLowerCase() &&
     Math.abs(parseFloat(a.strike)-parseFloat(b.strike))<0.01 &&
-    a.expiration===b.expiration;
+    normalizeDateValue(a.expiration)===normalizeDateValue(b.expiration);
 
   const findDuplicateTrade = (asset, trade) => {
     const normalized = normalizeTradeForLifecycle(trade);
@@ -3775,11 +3808,11 @@ function App() {
     const oppositeAction = normalized.action==="BUY"?"SELL":"BUY";
     return (asset?.trades||[])
       .filter(t =>
-        t.status==="open" &&
-        t.action===oppositeAction &&
-        (t.option_type||"call")===normalized.option_type &&
+        (t.status||"open").toLowerCase()==="open" &&
+        normalizeActionValue(t.action)===oppositeAction &&
+        (t.option_type||"call").toLowerCase()===normalized.option_type &&
         Math.abs(parseFloat(t.strike)-normalized.strike)<0.01 &&
-        t.expiration===normalized.expiration
+        normalizeDateValue(t.expiration)===normalized.expiration
       )
       .sort((a,b)=>new Date(a.date||0)-new Date(b.date||0));
   };
