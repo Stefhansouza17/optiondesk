@@ -83,8 +83,38 @@ const STRATEGIES = {
 };
 
 const isPremiumStrategy = (s) => ["PMCC","Covered Call","Cash Secured Put","Iron Condor"].includes(s);
+const THETA_EXCLUDED_STRATEGIES = new Set(["LEAP_CLOSE","LEAP Close","LEAP close"]);
 const STRATEGY_TYPES = ["Long Call","Long Put","Covered Call","Cash Secured Put","PMCC","Bull Call Spread","Bear Put Spread","Bull Put Spread","Bear Call Spread","Iron Condor","Straddle","Strangle"];
 const SIM_STRATEGIES = STRATEGY_TYPES;
+
+const tradeContracts = (trade) => Math.max(1, parseInt(trade?.contracts||1));
+const tradePremium = (trade) => parseFloat(trade?.premium||0);
+const tradeDollarValue = (trade) => tradePremium(trade) * tradeContracts(trade) * 100;
+const optionType = (trade) => trade?.option_type || "call";
+const tradeDteAtOpen = (trade) => {
+  if(!trade?.date || !trade?.expiration) return null;
+  return Math.ceil((new Date(trade.expiration)-new Date(trade.date))/(1000*60*60*24));
+};
+const isLeapCloseTrade = (trade) => {
+  const strategy = trade?.strategy || "";
+  const notes = (trade?.notes||"").toLowerCase();
+  const longDatedClosedSell = (trade?.action||"").toUpperCase()==="SELL"
+    && trade?.status==="closed"
+    && tradeDteAtOpen(trade)>180;
+  return THETA_EXCLUDED_STRATEGIES.has(strategy)
+    || notes.includes("leap close")
+    || notes.includes("closing leap")
+    || longDatedClosedSell;
+};
+const isThetaShortCallTrade = (trade) =>
+  (trade?.action||"").toUpperCase()==="SELL"
+  && optionType(trade)==="call"
+  && !isLeapCloseTrade(trade);
+const isThetaClosingBuyTrade = (trade) =>
+  (trade?.action||"").toUpperCase()==="BUY"
+  && optionType(trade)==="call"
+  && trade?.status!=="open"
+  && !isLeapCloseTrade(trade);
 
 const strategyLabelForTrade = (trade) => {
   const action = (trade?.action||"").toUpperCase();
@@ -890,8 +920,8 @@ function AssetDashboard({ asset, strategies=[], onCreateStrategy, onChangeTradeS
   const leapAvgPerShare = leapContracts>0 ? leaps.reduce((s,l)=>s+l.cost*l.contracts,0)/leapContracts : 0;
 
   const totalCollected = trades.reduce((a,t)=>{
-    if(t.action==="SELL") return a+parseFloat(t.premium||0)*parseInt(t.contracts||1);
-    if(t.action==="BUY"&&t.status!=="open") return a-parseFloat(t.premium||0)*parseInt(t.contracts||1);
+    if(isThetaShortCallTrade(t)) return a+tradePremium(t)*tradeContracts(t);
+    if(isThetaClosingBuyTrade(t)) return a-tradePremium(t)*tradeContracts(t);
     return a;
   },0);
   const totalDollar = totalCollected*100;
@@ -904,20 +934,20 @@ function AssetDashboard({ asset, strategies=[], onCreateStrategy, onChangeTradeS
   const filteredTrades = (statusFilter==="open"?openTrades:statusFilter==="closed"?closedTrades:statusFilter==="expired"?expiredTrades:trades).sort((a,b)=>new Date(b.date)-new Date(a.date));
   const assetStrategies = strategies.filter(s=>normalizeTicker(s.ticker)===normalizeTicker(asset.ticker));
   const pmccShortCalls = trades
-    .filter(t=>(t.option_type||"call")==="call"&&t.action==="SELL")
+    .filter(isThetaShortCallTrade)
     .sort((a,b)=>new Date(a.date||0)-new Date(b.date||0));
   const pmccClosingBuys = trades
-    .filter(t=>(t.option_type||"call")==="call"&&t.action==="BUY"&&t.status!=="open")
+    .filter(isThetaClosingBuyTrade)
     .sort((a,b)=>new Date(a.date||0)-new Date(b.date||0));
   const pmccCycles = pmccShortCalls.map((sell,idx)=>{
-    const contracts = Math.max(1,parseInt(sell.contracts||1));
+    const contracts = tradeContracts(sell);
     const close = pmccClosingBuys.find(b=>
       Math.abs(parseFloat(b.strike)-parseFloat(sell.strike))<0.01 &&
       b.expiration===sell.expiration &&
       new Date(b.date||sell.date)>=new Date(sell.date||0)
     );
-    const credit = parseFloat(sell.premium||0)*contracts*100;
-    const debit = close?parseFloat(close.premium||0)*Math.min(contracts,parseInt(close.contracts||1))*100:0;
+    const credit = tradePremium(sell)*contracts*100;
+    const debit = close?tradePremium(close)*Math.min(contracts,tradeContracts(close))*100:0;
     const net = credit-debit;
     const dte = sell.expiration?Math.max(Math.ceil((new Date(sell.expiration)-new Date())/(1000*60*60*24)),0):0;
     return {
@@ -1047,7 +1077,9 @@ function AssetDashboard({ asset, strategies=[], onCreateStrategy, onChangeTradeS
     const saved = await onSaveTrade({
       date:today, action:"SELL", strike:closeLeap.strike,
       expiration:closeLeap.expiration, premium:parseFloat(closeLeapPrem),
-      contracts:closeLeap.contracts||1, status:"closed"
+      contracts:closeLeap.contracts||1, status:"closed",
+      option_type:"call", strategy:"LEAP_CLOSE",
+      notes:`LEAP close for ${asset.ticker}`
     });
     await onDeleteLeap(closeLeap.id);
     setCloseLeap(null);
@@ -1134,14 +1166,14 @@ function AssetDashboard({ asset, strategies=[], onCreateStrategy, onChangeTradeS
                 <div style={{display:"grid",gridTemplateColumns:"1.2fr 1fr",gap:14,marginBottom:16}}>
                   <div className="sec" style={{marginBottom:0}}>
                     <div className="sechdr">
-                      <div className="sectitle">PMCC Cycle Tracker</div>
-                      <div style={{fontSize:11,color:"#7D91AA"}}>{pmccCycles.length} cycle{pmccCycles.length!==1?"s":""}</div>
+                      <div className="sectitle">Theta Engine - {asset.ticker}</div>
+                      <div style={{fontSize:11,color:"#7D91AA"}}>{pmccCycles.length} short-call cycle{pmccCycles.length!==1?"s":""}</div>
                     </div>
                     {pmccCycles.length===0?<div className="empty">No short-call cycles yet</div>:(
                       <table>
                         <thead><tr><th>#</th><th>Short Call</th><th>Status</th><th>Credit</th><th>Debit</th><th>Net</th></tr></thead>
                         <tbody>
-                          {pmccCycles.slice(-5).map(c=>(
+                          {pmccCycles.map(c=>(
                             <tr key={c.id}>
                               <td style={{color:"#7D91AA"}}>{c.number}</td>
                               <td><span style={{color:"#FFD84D"}}>${c.short.strike}C</span> <span style={{color:"#7D91AA"}}>{c.short.expiration}</span></td>
@@ -2633,23 +2665,23 @@ function Home({ assets, strategies=[], onSelectAsset, onShowPositions, onSaveMan
     const leapContracts = leaps.reduce((s,l)=>s+l.contracts,0);
     const leapAvg = leapContracts>0 ? leapCost/leapContracts : 0; // dollars per contract
     const col=a.trades.reduce((acc,t)=>{
-      if(t.action==="SELL") return acc+parseFloat(t.premium||0)*parseInt(t.contracts||1);
-      if(t.action==="BUY"&&t.status!=="open") return acc-parseFloat(t.premium||0)*parseInt(t.contracts||1);
+      if(isThetaShortCallTrade(t)) return acc+tradePremium(t)*tradeContracts(t);
+      if(isThetaClosingBuyTrade(t)) return acc-tradePremium(t)*tradeContracts(t);
       return acc;
     },0);
     const openTrades=a.trades.filter(t=>t.status==="open");
-    const openSells=openTrades.filter(t=>t.action==="SELL");
-    const openPremium=openSells.reduce((acc,t)=>acc+parseFloat(t.premium||0)*parseInt(t.contracts||1),0);
+    const openSells=openTrades.filter(isThetaShortCallTrade);
+    const openPremium=openSells.reduce((acc,t)=>acc+tradePremium(t)*tradeContracts(t),0);
     const nearestExp=[...openSells].sort((a,b)=>new Date(a.expiration)-new Date(b.expiration))[0];
     const daysLeft=nearestExp?Math.ceil((new Date(nearestExp.expiration)-new Date())/(1000*60*60*24)):null;
     const colDollar = col*100;
     const premiumPerLeap = leapContracts>0 ? colDollar/leapContracts : 0;
-    return {...a,leaps,leapCost,leapContracts,leapAvg,col,colDollar,basis:leapAvg-premiumPerLeap,openTrades,openSells,openPremium,nearestExp,daysLeft};
-  }),[assets]);
+    const hasOpenPosition = leapContracts>0 || openTrades.length>0;
+    return {...a,leaps,leapCost,leapContracts,leapAvg,col,colDollar,basis:leapAvg-premiumPerLeap,openTrades,openSells,openPremium,nearestExp,daysLeft,hasOpenPosition};
+  }).filter(a=>a.hasOpenPosition),[assets]);
   const grandCol=useMemo(()=>totals.reduce((a,t)=>a+t.colDollar,0),[totals]);
   const grandCost=useMemo(()=>totals.reduce((a,t)=>a+t.leapCost,0),[totals]);
   const openPositions=useMemo(()=>totals.reduce((a,t)=>a+t.openTrades.length,0)+totals.reduce((a,t)=>a+t.leapContracts,0),[totals]);
-  const currentCycle=useMemo(()=>totals.reduce((a,t)=>a+t.openPremium*100,0),[totals]);
   const avgRecovery=useMemo(()=>grandCost>0?(grandCol/grandCost)*100:0,[grandCol,grandCost]);
 
   const filteredTotals=useMemo(()=>totals
@@ -2681,7 +2713,7 @@ function Home({ assets, strategies=[], onSelectAsset, onShowPositions, onSaveMan
       {/* KPI Cards */}
       <div className="cards" style={{gridTemplateColumns:"repeat(4,1fr)"}}>
         <div className="card" style={{"--top":"#63E6BE",borderColor:"#63E6BE22"}}>
-          <div className="clbl">Income Generated <Tooltip text="Total premium collected from all closed short calls across all cycles and assets."/></div>
+          <div className="clbl">Income Generated <Tooltip text="Net short-call premium from assets that still have an open position. LEAP sale proceeds are excluded."/></div>
           <div className="cval" style={{color:"#63E6BE",textShadow:"0 0 20px rgba(0,212,170,0.3)"}}>${fmt(grandCol)}</div>
           <div className="csub">{fmt(avgRecovery,1)}% avg recovered</div>
         </div>
@@ -2693,7 +2725,7 @@ function Home({ assets, strategies=[], onSelectAsset, onShowPositions, onSaveMan
         <div className="card" style={{"--top":"#5B8CFF"}}>
           <div className="clbl">Capital at Risk <Tooltip text="Total cost of your active LEAPs — the maximum you could lose if all expire worthless."/></div>
           <div className="cval">${fmt(grandCost)}</div>
-          <div className="csub">{assets.filter(a=>a.active).length} LEAPs active</div>
+          <div className="csub">{totals.length} active asset{totals.length!==1?"s":""}</div>
         </div>
         <div className="card" style={{"--top":"#FFD84D"}}>
           <div className="clbl">Open Positions <Tooltip text="Total number of open orders across all active strategies — LEAPs, short calls, puts, etc."/></div>
@@ -2706,7 +2738,7 @@ function Home({ assets, strategies=[], onSelectAsset, onShowPositions, onSaveMan
       {totals.length>0&&(
         <div className="sec" style={{marginBottom:18}}>
           <div className="sechdr">
-            <div className="sectitle">Theta Engine <Tooltip text="Overall progress toward making all your LEAPs free through premium collection."/></div>
+            <div className="sectitle">Theta Engine <Tooltip text="Progress toward making open LEAP positions free using short-call premium only."/></div>
             <div style={{fontSize:11,color:"#7D91AA"}}><span style={{color:"#63E6BE"}}>${fmt(grandCol)}</span> of <span style={{color:"#D6E2F0"}}>${fmt(grandCost)}</span> target</div>
           </div>
           <div style={{padding:"18px 20px"}}>
@@ -2749,13 +2781,13 @@ function Home({ assets, strategies=[], onSelectAsset, onShowPositions, onSaveMan
             {(()=>{
               const fourWeeksAgo = new Date(); fourWeeksAgo.setDate(fourWeeksAgo.getDate()-28);
               const recentPremium = totals.reduce((acc,t)=>{
-                const recent = t.trades.filter(tr=>tr.action==="SELL"&&tr.status==="closed"&&new Date(tr.date)>=fourWeeksAgo);
-                return acc + recent.reduce((s,tr)=>s+parseFloat(tr.premium||0)*parseInt(tr.contracts||1)*100,0);
+                const recent = t.trades.filter(tr=>isThetaShortCallTrade(tr)&&new Date(tr.date)>=fourWeeksAgo);
+                return acc + recent.reduce((s,tr)=>s+tradeDollarValue(tr),0);
               },0);
               const weeklyVelocity = recentPremium / 4;
               const remaining = Math.max(grandCost - grandCol, 0);
               const daysToFree = weeklyVelocity > 0 ? Math.ceil((remaining / weeklyVelocity) * 7) : null;
-              const annualized = weeklyVelocity > 0 ? (weeklyVelocity * 52 / grandCost * 100) : 0;
+              const annualized = weeklyVelocity > 0 && grandCost > 0 ? (weeklyVelocity * 52 / grandCost * 100) : 0;
               return (
                 <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:10,marginTop:16,paddingTop:16,borderTop:"1px solid #1B2A3A"}}>
                   <div style={{textAlign:"center"}}>
@@ -2871,8 +2903,8 @@ function ClosedStrategies({ closedAssets }) {
       ):(
         closedAssets.map(a=>{
           const total=a.trades.reduce((acc,t)=>{
-            if(t.action==="SELL") return acc+parseFloat(t.premium||0)*parseInt(t.contracts||1);
-            if(t.action==="BUY"&&t.status!=="open") return acc-parseFloat(t.premium||0)*parseInt(t.contracts||1);
+            if(isThetaShortCallTrade(t)) return acc+tradePremium(t)*tradeContracts(t);
+            if(isThetaClosingBuyTrade(t)) return acc-tradePremium(t)*tradeContracts(t);
             return acc;
           },0);
           return (
@@ -2886,7 +2918,7 @@ function ClosedStrategies({ closedAssets }) {
                 </div>
                 <div style={{display:"flex",gap:16,fontSize:12}}>
                   <span style={{color:"#7D91AA"}}>LEAP: <span style={{color:"#D6E2F0"}}>${a.leapStrike} {a.leapExpiration}</span></span>
-                  <span style={{color:"#7D91AA"}}>Total collected: <span style={{color:total>=0?"#63E6BE":"#FF4D6D"}}>${fmt(total*100)}</span></span>
+                  <span style={{color:"#7D91AA"}}>Theta collected: <span style={{color:total>=0?"#63E6BE":"#FF4D6D"}}>${fmt(total*100)}</span></span>
                 </div>
               </div>
               <table>
