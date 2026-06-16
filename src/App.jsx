@@ -339,28 +339,34 @@ tr:hover td{background:#101e2c}
 @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
 .pulse{display:inline-block;width:7px;height:7px;border-radius:50%;background:#63E6BE;margin-right:6px;animation:pulse 1.8s infinite}
 @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(0,212,170,0.5)}70%{box-shadow:0 0 0 7px rgba(0,212,170,0)}100%{box-shadow:0 0 0 0 rgba(0,212,170,0)}}
-.learn-head{display:flex;justify-content:space-between;align-items:flex-end;gap:18px;margin:8px 0 18px}
-.learn-kicker{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#63E6BE;margin-bottom:7px}
-.learn-title{font-family:'Syne',sans-serif;font-size:28px;font-weight:800;color:#fff;line-height:1.05}
-.learn-copy{font-size:12px;color:#8aaac8;line-height:1.6;max-width:620px}
-.learn-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:14px}
-.calc-card-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:14px}
-.learn-card{background:#0B131D;border:1px solid #1B2A3A;border-radius:8px;padding:16px;position:relative;min-height:150px;display:flex;flex-direction:column;justify-content:space-between;transition:all .18s;cursor:pointer;overflow:hidden}
-.learn-card:hover{border-color:var(--accent,#63E6BE);transform:translateY(-1px);box-shadow:0 14px 40px rgba(0,0,0,.28)}
-.learn-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--accent,#63E6BE)}
-.learn-icon{width:34px;height:34px;border-radius:7px;border:1px solid color-mix(in srgb,var(--accent,#63E6BE) 42%,transparent);background:color-mix(in srgb,var(--accent,#63E6BE) 14%,transparent);color:var(--accent,#63E6BE);display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-size:15px;font-weight:800;margin-bottom:14px}
-.learn-card-title{font-family:'Syne',sans-serif;font-size:17px;font-weight:800;color:#fff;margin-bottom:7px}
-.learn-card-copy{font-size:12px;color:#8aaac8;line-height:1.55}
-.learn-card-action{font-size:11px;color:var(--accent,#63E6BE);letter-spacing:.5px;margin-top:14px}
+.learn-main{padding-top:34px;max-width:1180px}
+.learn-head{display:flex;justify-content:space-between;align-items:flex-end;gap:24px;margin:0 0 34px}
+.learn-kicker{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#63E6BE;margin-bottom:9px}
+.learn-title{font-family:'Syne',sans-serif;font-size:34px;font-weight:800;color:#fff;line-height:1.05}
+.learn-copy{font-size:13px;color:#8aaac8;line-height:1.65;max-width:420px}
+.learn-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:18px}
+.learn-card{background:#0B131D;border:1px solid #1B2A3A;border-radius:8px;padding:28px;position:relative;min-height:270px;display:flex;flex-direction:column;justify-content:space-between;transition:all .18s;cursor:pointer;overflow:hidden}
+.learn-card:hover{border-color:var(--accent,#63E6BE);transform:translateY(-2px);box-shadow:0 22px 56px rgba(0,0,0,.32)}
+.learn-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--accent,#63E6BE);opacity:.8}
+.learn-icon{width:38px;height:38px;border-radius:8px;border:1px solid color-mix(in srgb,var(--accent,#63E6BE) 34%,transparent);background:color-mix(in srgb,var(--accent,#63E6BE) 10%,transparent);color:var(--accent,#63E6BE);display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-size:14px;font-weight:800;margin-bottom:26px}
+.learn-card-title{font-family:'Syne',sans-serif;font-size:24px;font-weight:800;color:#fff;margin-bottom:10px}
+.learn-card-copy{font-size:13px;color:#9EB9E9;line-height:1.55;max-width:220px}
+.learn-card-action{align-self:flex-start;font-size:11px;color:var(--accent,#63E6BE);letter-spacing:.7px;margin-top:28px;padding:7px 12px;border:1px solid color-mix(in srgb,var(--accent,#63E6BE) 32%,transparent);border-radius:4px;background:color-mix(in srgb,var(--accent,#63E6BE) 8%,transparent)}
 .learn-card.disabled{cursor:default;opacity:.72}
 .learn-card.disabled:hover{transform:none;border-color:#1B2A3A;box-shadow:none}
-.calc-wrap{display:grid;grid-template-columns:minmax(300px,440px) 1fr;gap:14px;align-items:start}
-.calc-panel{background:#0B131D;border:1px solid #1B2A3A;border-radius:8px;padding:16px}
-.calc-form{display:grid;gap:12px}
-.calc-results{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
-.calc-result{background:#071019;border:1px solid #1B2A3A;border-radius:8px;padding:14px}
-.calc-result-label{font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:#7D91AA;margin-bottom:7px}
-.calc-result-value{font-family:'Syne',sans-serif;font-size:24px;font-weight:800;color:#fff}
+.calc-page{padding-top:28px;max-width:1180px}
+.calc-subtitle{font-size:13px;color:#8aaac8;margin-top:8px}
+.calc-wrap{display:grid;grid-template-columns:minmax(320px,380px) 1fr;gap:18px;align-items:stretch}
+.calc-panel{background:#0B131D;border:1px solid #1B2A3A;border-radius:8px;padding:22px;min-width:0}
+.calc-form{display:grid;gap:14px}
+.calc-results{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-bottom:18px}
+.calc-result{background:#071019;border:1px solid #1B2A3A;border-radius:8px;padding:16px;min-width:0;overflow:hidden}
+.calc-result-label{font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:#7D91AA;margin-bottom:9px}
+.calc-result-value{font-family:'Syne',sans-serif;font-size:clamp(15px,1.35vw,20px);font-weight:800;color:#fff;line-height:1;white-space:nowrap}
+.calc-chart{height:180px;background:#071019;border:1px solid #1B2A3A;border-radius:8px;padding:12px}
+.calc-cta{margin-top:18px;background:#0B131D;border:1px solid #1B2A3A;border-radius:8px;padding:20px 22px;display:flex;align-items:center;justify-content:space-between;gap:18px}
+.calc-cta-title{font-family:'Syne',sans-serif;font-size:18px;font-weight:800;color:#fff;margin-bottom:6px}
+.calc-cta-copy{font-size:12px;color:#8aaac8;line-height:1.55;max-width:720px}
 .learn-shortcut{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px;background:linear-gradient(90deg,#0B131D,#071019);border:1px solid #1B2A3A;border-radius:8px;padding:13px 16px;cursor:pointer;transition:all .18s}
 .learn-shortcut:hover{border-color:#63E6BE66;background:#0B131D}
 /* ── Simulator ── */
@@ -414,11 +420,12 @@ tr:hover .sim-td,.sim-row-atm:hover .sim-td-price,.sim-row-atm:hover .sim-td-pct
   .main{padding:14px 12px;box-sizing:border-box;max-width:100%;overflow-x:hidden}
   .pbar{margin:10px 8px 0;padding:8px 12px;box-sizing:border-box}
   .cards{grid-template-columns:1fr 1fr}
+  .learn-main,.calc-page{padding-top:18px}
   .learn-head{align-items:flex-start;flex-direction:column}
   .learn-grid{grid-template-columns:1fr}
-  .calc-card-grid{grid-template-columns:1fr}
   .calc-wrap{grid-template-columns:1fr}
   .calc-results{grid-template-columns:1fr}
+  .calc-cta{align-items:flex-start;flex-direction:column}
   .lgrid{grid-template-columns:1fr 1fr}
   .sec table{display:block;overflow-x:auto;width:100%;-webkit-overflow-scrolling:touch}
   .sim-wrap{flex-direction:column;overflow-x:hidden;max-width:100%}
@@ -2896,10 +2903,10 @@ function Home({ assets, strategies=[], onSelectAsset, onShowPositions, onSaveMan
 
 // ── Learn ───────────────────────────────────────────────────────────────────
 const LEARN_SECTIONS = [
-  { id:"learn-courses", title:"Courses", icon:"01", accent:"#63E6BE", copy:"Structured lessons for options foundations, income mechanics, and portfolio routines." },
-  { id:"learn-playbook", title:"Playbook", icon:"02", accent:"#5B8CFF", copy:"Reusable setups, entry criteria, management rules, and review checklists." },
-  { id:"learn-glossary", title:"Glossary", icon:"03", accent:"#FFD84D", copy:"Plain-English references for options terms, Greeks, order actions, and risk language." },
-  { id:"learn-calculators", title:"Calculators", icon:"04", accent:"#B37CFF", copy:"Fast planning tools for compounding, sizing, risk, covered calls, and PMCCs." },
+  { id:"learn-courses", title:"Courses", icon:"01", accent:"#63E6BE", copy:"Video lessons and strategy education." },
+  { id:"learn-playbook", title:"Playbook", icon:"02", accent:"#5B8CFF", copy:"Step-by-step strategy guides." },
+  { id:"learn-glossary", title:"Glossary", icon:"03", accent:"#FFD84D", copy:"Options terminology explained." },
+  { id:"learn-calculators", title:"Calculators", icon:"04", accent:"#B37CFF", copy:"Financial planning and strategy tools." },
 ];
 
 function LearnHeader({ title, copy, action }) {
@@ -2919,10 +2926,10 @@ function LearnHeader({ title, copy, action }) {
 
 function LearnPage({ onNavigate }) {
   return (
-    <div className="main fade-in">
+    <div className="main learn-main fade-in">
       <LearnHeader
-        title="Education center"
-        copy="A working desk for learning, reference, and planning tools that sit beside the trading dashboard."
+        title="Learn"
+        copy="Focused tools and references for building an options process."
       />
       <div className="learn-grid">
         {LEARN_SECTIONS.map(section=>(
@@ -2937,27 +2944,9 @@ function LearnPage({ onNavigate }) {
               <div className="learn-card-title">{section.title}</div>
               <div className="learn-card-copy">{section.copy}</div>
             </div>
-            <div className="learn-card-action">Open {section.title} &rarr;</div>
+            <div className="learn-card-action">Open</div>
           </button>
         ))}
-      </div>
-      <div className="sec">
-        <div className="sechdr">
-          <div className="sectitle">Study queue</div>
-          <span style={{fontSize:11,color:"#7D91AA"}}>Courses, playbook, glossary, calculators</span>
-        </div>
-        <div style={{padding:16,display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:12}}>
-          {[
-            ["PMCC workflow","Plan entries, short call selection, rolls, and exit conditions.","#5B8CFF"],
-            ["Risk sizing","Keep every idea inside a defined account-risk box.","#FF4D6D"],
-            ["Compounding","Project how steady deposits and time change the portfolio curve.","#63E6BE"],
-          ].map(([title,copy,color])=>(
-            <div key={title} style={{background:"#071019",border:"1px solid #1B2A3A",borderRadius:8,padding:14}}>
-              <div style={{fontFamily:"Syne,sans-serif",fontSize:15,fontWeight:800,color,marginBottom:6}}>{title}</div>
-              <div style={{fontSize:12,color:"#8aaac8",lineHeight:1.55}}>{copy}</div>
-            </div>
-          ))}
-        </div>
       </div>
     </div>
   );
@@ -3012,32 +3001,35 @@ function CalculatorsPage({ onNavigate }) {
   },[initialValue, monthlyContribution, monthlyRate, months]);
   const totalContributions = initialValue + monthlyContribution * months;
   const totalGrowth = finalValue - totalContributions;
-  const calculatorCards = [
-    ["Compound Interest Calculator","Project portfolio value with monthly compounding and contributions.","#63E6BE",true],
-    ["Position Size Calculator","Placeholder for account-risk sizing.","#5B8CFF",false],
-    ["Risk / Reward Calculator","Placeholder for setup reward-to-risk planning.","#FFD84D",false],
-    ["Covered Call Calculator","Placeholder for share-backed call income math.","#fb923c",false],
-    ["PMCC Calculator","Placeholder for LEAP basis and short-call recovery planning.","#B37CFF",false],
-  ];
+  const chartPoints = useMemo(()=>{
+    const steps = Math.min(Math.max(months, 1), 240);
+    const interval = Math.max(1, Math.ceil(Math.max(months, 1) / steps));
+    let value = initialValue;
+    const points = [{month:0,value}];
+    for(let month=1;month<=months;month++){
+      value = value * (1 + monthlyRate);
+      value += monthlyContribution;
+      if(month % interval === 0 || month === months) points.push({month,value});
+    }
+    return points;
+  },[initialValue, monthlyContribution, monthlyRate, months]);
+  const chartMax = Math.max(...chartPoints.map(p=>p.value), 1);
+  const chartPolyline = chartPoints.map((point,idx)=>{
+    const x = chartPoints.length===1 ? 0 : (idx/(chartPoints.length-1))*100;
+    const y = 100 - (point.value/chartMax)*82;
+    return `${x.toFixed(2)},${Math.max(8,Math.min(96,y)).toFixed(2)}`;
+  }).join(" ");
+  const chartArea = `0,100 ${chartPolyline} 100,100`;
 
   return (
-    <div className="main fade-in">
-      <LearnHeader
-        title="Calculators"
-        copy="Planning tools for long-term growth, position sizing, and option strategy prep."
-        action={<button className="btn bneutral" onClick={()=>onNavigate("learn")}>Back to Learn</button>}
-      />
-      <div className="calc-card-grid">
-        {calculatorCards.map(([title,copy,color,active])=>(
-          <div key={title} className={`learn-card ${active?"":"disabled"}`} style={{"--accent":color,minHeight:138}}>
-            <div>
-              <div className="learn-icon">{active?"$":"--"}</div>
-              <div className="learn-card-title" style={{fontSize:15}}>{title}</div>
-              <div className="learn-card-copy">{copy}</div>
-            </div>
-            <div className="learn-card-action">{active?"Ready":"Coming soon"}</div>
-          </div>
-        ))}
+    <div className="main calc-page fade-in">
+      <div className="learn-head">
+        <div>
+          <div className="learn-kicker">Calculators</div>
+          <div className="learn-title">Compound Interest Calculator</div>
+          <div className="calc-subtitle">Plan long-term portfolio growth.</div>
+        </div>
+        <button className="btn bneutral" onClick={()=>onNavigate("learn")}>Back to Learn</button>
       </div>
 
       <div className="calc-wrap">
@@ -3059,7 +3051,7 @@ function CalculatorsPage({ onNavigate }) {
         </div>
 
         <div className="calc-panel">
-          <div className="sectitle" style={{marginBottom:14}}>Projection output</div>
+          <div className="sectitle" style={{marginBottom:14}}>Results</div>
           <div className="calc-results">
             <div className="calc-result" style={{borderColor:"#63E6BE44"}}>
               <div className="calc-result-label">Final Portfolio Value</div>
@@ -3070,14 +3062,34 @@ function CalculatorsPage({ onNavigate }) {
               <div className="calc-result-value" style={{color:"#5B8CFF"}}>${fmt(totalContributions)}</div>
             </div>
             <div className="calc-result" style={{borderColor:(totalGrowth>=0?"#FFD84D44":"#FF4D6D44")}}>
-              <div className="calc-result-label">Total Growth</div>
+              <div className="calc-result-label">Investment Growth</div>
               <div className="calc-result-value" style={{color:totalGrowth>=0?"#FFD84D":"#FF4D6D"}}>${fmt(totalGrowth)}</div>
             </div>
           </div>
-          <div style={{marginTop:14,padding:12,background:"#071019",border:"1px solid #1B2A3A",borderRadius:8,fontSize:12,color:"#8aaac8",lineHeight:1.6}}>
-            Monthly rate: <span style={{color:"#D6E2F0"}}>{fmt(monthlyRate*100,3)}%</span> · Periods: <span style={{color:"#D6E2F0"}}>{months}</span> months
+          <div className="calc-chart" aria-label="Projected portfolio growth chart">
+            <svg viewBox="0 0 100 100" preserveAspectRatio="none" style={{width:"100%",height:"100%",display:"block"}}>
+              <defs>
+                <linearGradient id="growthFill" x1="0" x2="0" y1="0" y2="1">
+                  <stop offset="0%" stopColor="#63E6BE" stopOpacity=".22"/>
+                  <stop offset="100%" stopColor="#63E6BE" stopOpacity="0"/>
+                </linearGradient>
+              </defs>
+              {[25,50,75].map(y=><line key={y} x1="0" x2="100" y1={y} y2={y} stroke="#1B2A3A" strokeWidth=".35"/>)}
+              <polygon points={chartArea} fill="url(#growthFill)" />
+              <polyline points={chartPolyline} fill="none" stroke="#63E6BE" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke"/>
+            </svg>
           </div>
         </div>
+      </div>
+
+      <div className="calc-cta">
+        <div>
+          <div className="calc-cta-title">Looking for higher income strategies?</div>
+          <div className="calc-cta-copy">
+            Many investors use options to generate additional income beyond traditional buy-and-hold investing. Explore Covered Calls, Cash Secured Puts, PMCCs, and other premium-generating strategies.
+          </div>
+        </div>
+        <button className="btn" onClick={()=>onNavigate("learn-courses")}>Learn About Options</button>
       </div>
     </div>
   );
@@ -3744,7 +3756,10 @@ function App() {
   const [assets, setAssets] = useState([]);
   const [strategies, setStrategies] = useState([]);
   const [closedAssets, setClosedAssets] = useState([]);
-  const [active, setActive] = useState("home");
+  const [active, setActive] = useState(()=>{
+    const hash = window.location.hash.replace("#","");
+    return hash.startsWith("learn") ? hash : "home";
+  });
   const [showAdd, setShowAdd] = useState(false);
   const [showPositions, setShowPositions] = useState(false);
   const [loading, setLoading] = useState(true);
