@@ -264,6 +264,12 @@ html,body{font-family:'DM Mono','IBM Plex Mono',monospace;background:#050A0F;col
 .tab.active{color:var(--tc);border-bottom-color:var(--tc)}
 .add-tab{background:none;border:none;color:#4A6A8A;padding:10px 12px;cursor:pointer;font-size:18px;transition:color 0.2s;margin-bottom:-1px}
 .add-tab:hover{color:#63E6BE}
+.learn-nav{position:relative;margin-left:auto;display:flex}
+.learn-tab{display:inline-flex;align-items:center;gap:6px}
+.learn-chevron{font-size:9px;color:inherit;line-height:1;transform:translateY(-1px)}
+.learn-menu{position:absolute;top:calc(100% + 6px);right:0;min-width:150px;background:#0B131D;border:1px solid #1B2A3A;border-radius:8px;padding:5px;z-index:160;box-shadow:0 18px 44px rgba(0,0,0,.42)}
+.learn-menu button{display:block;width:100%;background:none;border:none;border-radius:5px;color:#8aaac8;padding:8px 10px;text-align:left;cursor:pointer;font-family:'DM Mono',monospace;font-size:11px;transition:all .15s}
+.learn-menu button:hover,.learn-menu button.active{background:#071019;color:#D6E2F0}
 .subnav{display:flex;gap:4px;padding:12px 24px 0}
 .snbtn{background:none;border:none;color:#7D91AA;padding:7px 12px;cursor:pointer;font-family:'DM Mono',monospace;font-size:11px;letter-spacing:0.5px;border-radius:4px;transition:all 0.2s;text-transform:uppercase}
 .snbtn:hover{color:#D6E2F0;background:#1B2A3A}
@@ -3762,6 +3768,7 @@ function App() {
   });
   const [showAdd, setShowAdd] = useState(false);
   const [showPositions, setShowPositions] = useState(false);
+  const [showLearnMenu, setShowLearnMenu] = useState(false);
   const [loading, setLoading] = useState(true);
   const [expiredPending, setExpiredPending] = useState([]);
   const [toast, setToast] = useState(null);
@@ -4199,6 +4206,11 @@ function App() {
     </div>
   );
 
+  const navigate = (id) => {
+    setActive(id);
+    setShowLearnMenu(false);
+  };
+
   return (
     <div style={{minHeight:"100vh",background:"#071019",color:"#D6E2F0"}}>
       <style>{CSS}</style>
@@ -4212,18 +4224,35 @@ function App() {
       </div>
 
       <div className="tabs">
-        <button className={`tab ${active==="home"?"active":""}`} onClick={()=>setActive("home")} style={{"--tc":"#63E6BE"}}>⌂ Home</button>
+        <button className={`tab ${active==="home"?"active":""}`} onClick={()=>navigate("home")} style={{"--tc":"#63E6BE"}}>⌂ Home</button>
         {assets.filter(a=>a.active).map(a=>(
-          <button key={a.id} className={`tab ${active===a.id?"active":""}`} onClick={()=>setActive(a.id)} style={{"--tc":a.color}}>{a.ticker}</button>
+          <button key={a.id} className={`tab ${active===a.id?"active":""}`} onClick={()=>navigate(a.id)} style={{"--tc":a.color}}>{a.ticker}</button>
         ))}
-        <button className="add-tab" onClick={()=>setShowAdd(true)} title="Add position">+</button>
-        <button className={`tab ${active==="learn"?"active":""}`} onClick={()=>setActive("learn")} style={{"--tc":"#63E6BE",marginLeft:"auto"}}>Learn</button>
-        <button className={`tab ${active==="learn-courses"?"active":""}`} onClick={()=>setActive("learn-courses")} style={{"--tc":"#63E6BE"}}>Courses</button>
-        <button className={`tab ${active==="learn-playbook"?"active":""}`} onClick={()=>setActive("learn-playbook")} style={{"--tc":"#5B8CFF"}}>Playbook</button>
-        <button className={`tab ${active==="learn-glossary"?"active":""}`} onClick={()=>setActive("learn-glossary")} style={{"--tc":"#FFD84D"}}>Glossary</button>
-        <button className={`tab ${active==="learn-calculators"?"active":""}`} onClick={()=>setActive("learn-calculators")} style={{"--tc":"#B37CFF"}}>Calculators</button>
+        <button className="add-tab" onClick={()=>{setShowLearnMenu(false);setShowAdd(true);}} title="Add position">+</button>
+        <div className="learn-nav">
+          <button
+            className={`tab learn-tab ${active.startsWith("learn")?"active":""}`}
+            onClick={()=>{setActive("learn");setShowLearnMenu(p=>!p);}}
+            style={{"--tc":"#63E6BE"}}
+          >
+            Learn <span className="learn-chevron">▼</span>
+          </button>
+          {showLearnMenu&&(
+            <div className="learn-menu">
+              {LEARN_SECTIONS.map(section=>(
+                <button
+                  key={section.id}
+                  className={active===section.id?"active":""}
+                  onClick={()=>navigate(section.id)}
+                >
+                  {section.title}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
         {closedAssets.length>0&&(
-          <button className={`tab ${active==="closed"?"active":""}`} onClick={()=>setActive("closed")} style={{"--tc":"#7D91AA"}}>Closed ({closedAssets.length})</button>
+          <button className={`tab ${active==="closed"?"active":""}`} onClick={()=>navigate("closed")} style={{"--tc":"#7D91AA"}}>Closed ({closedAssets.length})</button>
         )}
       </div>
 
