@@ -267,9 +267,9 @@ html,body{font-family:'DM Mono','IBM Plex Mono',monospace;background:#050A0F;col
 .learn-nav{position:relative;margin-left:auto;display:flex}
 .learn-tab{display:inline-flex;align-items:center;gap:6px}
 .learn-chevron{font-size:9px;color:inherit;line-height:1;transform:translateY(-1px)}
-.learn-menu{display:none;position:absolute;top:100%;right:0;min-width:150px;background:#0B131D;border:1px solid #1B2A3A;border-radius:8px;padding:5px;z-index:500;box-shadow:0 18px 44px rgba(0,0,0,.42)}
+.learn-menu{display:none;position:fixed;top:94px;right:24px;min-width:150px;background:#0B131D;border:1px solid #1B2A3A;border-radius:8px;padding:5px;z-index:500;box-shadow:0 18px 44px rgba(0,0,0,.42)}
 .learn-menu::before{content:'';position:absolute;left:0;right:0;top:-8px;height:8px}
-.learn-nav:hover .learn-menu,.learn-menu:hover{display:block}
+.learn-nav:hover .learn-menu,.learn-nav.open .learn-menu,.learn-menu:hover{display:block}
 .learn-menu button{display:block;width:100%;background:none;border:none;border-radius:5px;color:#8aaac8;padding:8px 10px;text-align:left;cursor:pointer;font-family:'DM Mono',monospace;font-size:11px;transition:all .15s}
 .learn-menu button:hover,.learn-menu button.active{background:#071019;color:#D6E2F0}
 .subnav{display:flex;gap:4px;padding:12px 24px 0}
@@ -379,6 +379,7 @@ tr:hover td{background:#101e2c}
 .legend-value{display:block;color:#D6E2F0;font-family:'Syne',sans-serif;font-size:14px;font-weight:800;margin-top:2px}
 .calc-chart{height:210px;background:#071019;border:1px solid #1B2A3A;border-radius:8px;padding:12px}
 .chart-legend{display:flex;justify-content:flex-end;gap:14px;margin-bottom:8px;font-size:10px;color:#8aaac8}
+.chart-caption{text-align:center;font-size:10px;color:#7D91AA;letter-spacing:1.2px;margin-top:4px;font-family:'DM Mono',monospace}
 .calc-cta{margin-top:18px;background:#0B131D;border:1px solid #1B2A3A;border-radius:8px;padding:20px 22px;display:flex;align-items:center;justify-content:space-between;gap:18px}
 .calc-cta-title{font-family:'Syne',sans-serif;font-size:18px;font-weight:800;color:#fff;margin-bottom:6px}
 .calc-cta-copy{font-size:12px;color:#8aaac8;line-height:1.55;max-width:720px}
@@ -3027,7 +3028,7 @@ function CalculatorsPage({ onNavigate }) {
   const totalContributions = initialValue + monthlyContribution * months;
   const totalGrowth = finalValue - totalContributions;
   const chartPoints = useMemo(()=>{
-    const steps = Math.min(Math.max(months, 1), 240);
+    const steps = Math.min(Math.max(months, 1), 120);
     const interval = Math.max(1, Math.ceil(Math.max(months, 1) / steps));
     let value = initialValue;
     const points = [{month:0,value,contributions:initialValue}];
@@ -3041,14 +3042,24 @@ function CalculatorsPage({ onNavigate }) {
     return points;
   },[initialValue, monthlyContribution, monthlyRate, months]);
   const chartMax = Math.max(...chartPoints.map(p=>Math.max(p.value,p.contributions)), 1);
-  const pointString = (key) => chartPoints.map((point,idx)=>{
-    const x = chartPoints.length===1 ? 0 : (idx/(chartPoints.length-1))*100;
-    const y = 100 - (point[key]/chartMax)*82;
-    return `${x.toFixed(2)},${Math.max(8,Math.min(96,y)).toFixed(2)}`;
-  }).join(" ");
-  const portfolioLine = pointString("value");
-  const contributionLine = pointString("contributions");
-  const chartArea = `0,100 ${portfolioLine} 100,100`;
+  const barArea = {left:3,right:98,top:9,bottom:91};
+  const chartHeight = barArea.bottom - barArea.top;
+  const barStep = (barArea.right - barArea.left) / Math.max(chartPoints.length, 1);
+  const barWidth = Math.max(0.28, Math.min(1.6, barStep * 0.64));
+  const chartBars = chartPoints.map((point,idx)=>{
+    const contributions = Math.min(point.contributions, point.value);
+    const growth = Math.max(point.value - point.contributions, 0);
+    const contributionHeight = (contributions / chartMax) * chartHeight;
+    const growthHeight = (growth / chartMax) * chartHeight;
+    const x = barArea.left + idx * barStep + (barStep - barWidth) / 2;
+    return {
+      x,
+      contributionY: barArea.bottom - contributionHeight,
+      contributionHeight,
+      growthY: barArea.bottom - contributionHeight - growthHeight,
+      growthHeight,
+    };
+  });
   const growthShare = finalValue > 0 ? Math.max(0, Math.min(1, totalGrowth / finalValue)) : 0;
   const contributionShare = finalValue > 0 ? Math.max(0, Math.min(1, totalContributions / finalValue)) : 0;
   const donutRadius = 36;
@@ -3130,21 +3141,31 @@ function CalculatorsPage({ onNavigate }) {
             <div className="calc-chart" aria-label="Projected portfolio growth chart">
               <div className="chart-legend">
                 <span><span className="legend-dot" style={{background:"#5B8CFF"}}/>Total Contributions</span>
-                <span><span className="legend-dot" style={{background:"#63E6BE"}}/>Portfolio Value</span>
                 <span><span className="legend-dot" style={{background:"#FFD84D"}}/>Investment Growth</span>
               </div>
-              <svg viewBox="0 0 100 100" preserveAspectRatio="none" style={{width:"100%",height:"calc(100% - 22px)",display:"block"}}>
+              <svg viewBox="0 0 100 100" preserveAspectRatio="none" style={{width:"100%",height:"calc(100% - 34px)",display:"block"}}>
                 <defs>
-                  <linearGradient id="growthFill" x1="0" x2="0" y1="0" y2="1">
-                    <stop offset="0%" stopColor="#63E6BE" stopOpacity=".2"/>
-                    <stop offset="100%" stopColor="#63E6BE" stopOpacity="0"/>
+                  <linearGradient id="contributionBars" x1="0" x2="0" y1="1" y2="0">
+                    <stop offset="0%" stopColor="#3658B8" stopOpacity=".88"/>
+                    <stop offset="100%" stopColor="#5B8CFF" stopOpacity=".98"/>
+                  </linearGradient>
+                  <linearGradient id="growthBars" x1="0" x2="0" y1="1" y2="0">
+                    <stop offset="0%" stopColor="#FFD84D" stopOpacity=".6"/>
+                    <stop offset="100%" stopColor="#FFE88A" stopOpacity=".96"/>
                   </linearGradient>
                 </defs>
-                {[25,50,75].map(y=><line key={y} x1="0" x2="100" y1={y} y2={y} stroke="#1B2A3A" strokeWidth=".35"/>)}
-                <polygon points={chartArea} fill="url(#growthFill)" />
-                <polyline points={contributionLine} fill="none" stroke="#5B8CFF" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke"/>
-                <polyline points={portfolioLine} fill="none" stroke="#63E6BE" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke"/>
+                {[25,50,75].map(y=><line key={y} x1="3" x2="98" y1={y} y2={y} stroke="#1B2A3A" strokeWidth=".35"/>)}
+                <line x1="3" x2="98" y1="91" y2="91" stroke="#314457" strokeWidth=".5"/>
+                {chartBars.map((bar,idx)=>(
+                  <g key={idx}>
+                    <rect x={bar.x} y={bar.contributionY} width={barWidth} height={bar.contributionHeight} fill="url(#contributionBars)" rx=".16"/>
+                    {bar.growthHeight>0&&(
+                      <rect x={bar.x} y={bar.growthY} width={barWidth} height={bar.growthHeight} fill="url(#growthBars)" rx=".16"/>
+                    )}
+                  </g>
+                ))}
               </svg>
+              <div className="chart-caption">Months</div>
             </div>
           </div>
         </div>
@@ -3833,6 +3854,7 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [expiredPending, setExpiredPending] = useState([]);
   const [toast, setToast] = useState(null);
+  const [learnOpen, setLearnOpen] = useState(false);
   const showToast = (msg, ok=true) => { setToast({msg,ok}); setTimeout(()=>setToast(null),6000); };
   const [editTrade, setEditTrade] = useState(null);
   const [duplicatePrompt, setDuplicatePrompt] = useState(null);
@@ -4289,10 +4311,14 @@ function App() {
           <button key={a.id} className={`tab ${active===a.id?"active":""}`} onClick={()=>navigate(a.id)} style={{"--tc":a.color}}>{a.ticker}</button>
         ))}
         <button className="add-tab" onClick={()=>setShowAdd(true)} title="Add position">+</button>
-        <div className="learn-nav">
+        <div
+          className={`learn-nav ${learnOpen?"open":""}`}
+          onMouseEnter={()=>setLearnOpen(true)}
+          onMouseLeave={()=>setLearnOpen(false)}
+        >
           <button
             className={`tab learn-tab ${active.startsWith("learn")?"active":""}`}
-            onClick={()=>navigate("learn")}
+            onClick={()=>{ setLearnOpen(false); navigate("learn"); }}
             style={{"--tc":"#63E6BE"}}
           >
             Learn <span className="learn-chevron">▼</span>
@@ -4302,7 +4328,7 @@ function App() {
               <button
                 key={section.id}
                 className={active===section.id?"active":""}
-                onClick={()=>navigate(section.id)}
+                onClick={()=>{ setLearnOpen(false); navigate(section.id); }}
               >
                 {section.title}
               </button>
