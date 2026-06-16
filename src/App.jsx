@@ -396,7 +396,7 @@ tr:hover td{background:#101e2c}
 .expanded-chart-card,.milestones-card{background:#050A0F;border:1px solid #1B2A3A;border-radius:8px;padding:16px;min-width:0;position:relative}
 .expanded-chart-card{display:flex;flex-direction:column;gap:10px}
 .expanded-chart-legend{display:flex;gap:16px;flex-wrap:wrap;font-size:11px;color:#8aaac8;justify-content:flex-end}
-.expanded-chart{flex:1;min-height:360px}
+.expanded-chart{height:270px}
 .chart-tooltip{position:absolute;min-width:238px;background:#0B131D;border:1px solid #2C425C;border-radius:8px;padding:12px;box-shadow:0 18px 48px rgba(0,0,0,.5);pointer-events:none;color:#D6E2F0;font-size:11px;line-height:1.55;z-index:2}
 .chart-tooltip-title{font-family:'Syne',sans-serif;font-weight:800;color:#fff;font-size:15px;margin-bottom:6px}
 .chart-tooltip-row{display:flex;justify-content:space-between;gap:12px}
@@ -472,7 +472,7 @@ tr:hover .sim-td,.sim-row-atm:hover .sim-td-price,.sim-row-atm:hover .sim-td-pct
   .calc-cta{align-items:flex-start;flex-direction:column}
   .chart-modal{width:94vw;max-height:88vh;padding:16px}
   .chart-modal-body{grid-template-columns:1fr;overflow-y:auto}
-  .expanded-chart{min-height:300px}
+  .expanded-chart{height:220px}
   .expanded-chart-legend,.chart-top{align-items:flex-start;flex-direction:column}
   .lgrid{grid-template-columns:1fr 1fr}
   .sec table{display:block;overflow-x:auto;width:100%;-webkit-overflow-scrolling:touch}
