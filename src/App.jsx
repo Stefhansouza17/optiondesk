@@ -267,7 +267,9 @@ html,body{font-family:'DM Mono','IBM Plex Mono',monospace;background:#050A0F;col
 .learn-nav{position:relative;margin-left:auto;display:flex}
 .learn-tab{display:inline-flex;align-items:center;gap:6px}
 .learn-chevron{font-size:9px;color:inherit;line-height:1;transform:translateY(-1px)}
-.learn-menu{position:absolute;top:calc(100% + 6px);right:0;min-width:150px;background:#0B131D;border:1px solid #1B2A3A;border-radius:8px;padding:5px;z-index:160;box-shadow:0 18px 44px rgba(0,0,0,.42)}
+.learn-menu{display:none;position:absolute;top:100%;right:0;min-width:150px;background:#0B131D;border:1px solid #1B2A3A;border-radius:8px;padding:5px;z-index:500;box-shadow:0 18px 44px rgba(0,0,0,.42)}
+.learn-menu::before{content:'';position:absolute;left:0;right:0;top:-8px;height:8px}
+.learn-nav:hover .learn-menu,.learn-menu:hover{display:block}
 .learn-menu button{display:block;width:100%;background:none;border:none;border-radius:5px;color:#8aaac8;padding:8px 10px;text-align:left;cursor:pointer;font-family:'DM Mono',monospace;font-size:11px;transition:all .15s}
 .learn-menu button:hover,.learn-menu button.active{background:#071019;color:#D6E2F0}
 .subnav{display:flex;gap:4px;padding:12px 24px 0}
@@ -369,7 +371,14 @@ tr:hover td{background:#101e2c}
 .calc-result{background:#071019;border:1px solid #1B2A3A;border-radius:8px;padding:16px;min-width:0;overflow:hidden}
 .calc-result-label{font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:#7D91AA;margin-bottom:9px}
 .calc-result-value{font-family:'Syne',sans-serif;font-size:clamp(15px,1.35vw,20px);font-weight:800;color:#fff;line-height:1;white-space:nowrap}
-.calc-chart{height:180px;background:#071019;border:1px solid #1B2A3A;border-radius:8px;padding:12px}
+.investment-breakdown{display:grid;grid-template-columns:250px 1fr;gap:12px}
+.breakdown-card{background:#071019;border:1px solid #1B2A3A;border-radius:8px;padding:14px;min-width:0}
+.donut-wrap{display:flex;align-items:center;justify-content:center;gap:14px;min-height:170px}
+.donut-legend{display:grid;gap:8px;font-size:11px;color:#8aaac8}
+.legend-dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:7px}
+.legend-value{display:block;color:#D6E2F0;font-family:'Syne',sans-serif;font-size:14px;font-weight:800;margin-top:2px}
+.calc-chart{height:210px;background:#071019;border:1px solid #1B2A3A;border-radius:8px;padding:12px}
+.chart-legend{display:flex;justify-content:flex-end;gap:14px;margin-bottom:8px;font-size:10px;color:#8aaac8}
 .calc-cta{margin-top:18px;background:#0B131D;border:1px solid #1B2A3A;border-radius:8px;padding:20px 22px;display:flex;align-items:center;justify-content:space-between;gap:18px}
 .calc-cta-title{font-family:'Syne',sans-serif;font-size:18px;font-weight:800;color:#fff;margin-bottom:6px}
 .calc-cta-copy{font-size:12px;color:#8aaac8;line-height:1.55;max-width:720px}
@@ -431,6 +440,7 @@ tr:hover .sim-td,.sim-row-atm:hover .sim-td-price,.sim-row-atm:hover .sim-td-pct
   .learn-grid{grid-template-columns:1fr}
   .calc-wrap{grid-template-columns:1fr}
   .calc-results{grid-template-columns:1fr}
+  .investment-breakdown{grid-template-columns:1fr}
   .calc-cta{align-items:flex-start;flex-direction:column}
   .lgrid{grid-template-columns:1fr 1fr}
   .sec table{display:block;overflow-x:auto;width:100%;-webkit-overflow-scrolling:touch}
@@ -2988,6 +2998,15 @@ function LearnPlaceholderPage({ title, onNavigate }) {
   );
 }
 
+const integerInputValue = (value) => {
+  const raw = String(value || "");
+  const beforeDecimal = raw.includes(".") ? raw.slice(0, raw.indexOf(".")) : raw;
+  return beforeDecimal.replace(/\D/g, "");
+};
+const formatWholeNumber = (value) => Math.round(Number(value || 0)).toLocaleString("en-US", { maximumFractionDigits:0 });
+const formatCurrencyWhole = (value) => `$${formatWholeNumber(value)}`;
+const formatIntegerInput = (value) => value === "" ? "" : formatWholeNumber(value);
+
 function CalculatorsPage({ onNavigate }) {
   const [initial, setInitial] = useState("10000");
   const [monthly, setMonthly] = useState("500");
@@ -3011,21 +3030,32 @@ function CalculatorsPage({ onNavigate }) {
     const steps = Math.min(Math.max(months, 1), 240);
     const interval = Math.max(1, Math.ceil(Math.max(months, 1) / steps));
     let value = initialValue;
-    const points = [{month:0,value}];
+    const points = [{month:0,value,contributions:initialValue}];
     for(let month=1;month<=months;month++){
       value = value * (1 + monthlyRate);
       value += monthlyContribution;
-      if(month % interval === 0 || month === months) points.push({month,value});
+      if(month % interval === 0 || month === months) {
+        points.push({month,value,contributions:initialValue + monthlyContribution * month});
+      }
     }
     return points;
   },[initialValue, monthlyContribution, monthlyRate, months]);
-  const chartMax = Math.max(...chartPoints.map(p=>p.value), 1);
-  const chartPolyline = chartPoints.map((point,idx)=>{
+  const chartMax = Math.max(...chartPoints.map(p=>Math.max(p.value,p.contributions)), 1);
+  const pointString = (key) => chartPoints.map((point,idx)=>{
     const x = chartPoints.length===1 ? 0 : (idx/(chartPoints.length-1))*100;
-    const y = 100 - (point.value/chartMax)*82;
+    const y = 100 - (point[key]/chartMax)*82;
     return `${x.toFixed(2)},${Math.max(8,Math.min(96,y)).toFixed(2)}`;
   }).join(" ");
-  const chartArea = `0,100 ${chartPolyline} 100,100`;
+  const portfolioLine = pointString("value");
+  const contributionLine = pointString("contributions");
+  const chartArea = `0,100 ${portfolioLine} 100,100`;
+  const growthShare = finalValue > 0 ? Math.max(0, Math.min(1, totalGrowth / finalValue)) : 0;
+  const contributionShare = finalValue > 0 ? Math.max(0, Math.min(1, totalContributions / finalValue)) : 0;
+  const donutRadius = 36;
+  const donutCircumference = 2 * Math.PI * donutRadius;
+  const growthDash = `${(growthShare * donutCircumference).toFixed(2)} ${donutCircumference.toFixed(2)}`;
+  const contributionDash = `${(contributionShare * donutCircumference).toFixed(2)} ${donutCircumference.toFixed(2)}`;
+  const updateWhole = (setter) => (e) => setter(integerInputValue(e.target.value));
 
   return (
     <div className="main calc-page fade-in">
@@ -3050,7 +3080,15 @@ function CalculatorsPage({ onNavigate }) {
             ].map(([label,value,setter,placeholder,id])=>(
               <div className="fgrp" key={label}>
                 <label className="flbl" htmlFor={id}>{label}</label>
-                <input id={id} className="finput" type="number" min="0" step={label==="Annual Return %"?"0.1":"1"} value={value} placeholder={placeholder} onChange={e=>setter(e.target.value)} />
+                <input
+                  id={id}
+                  className="finput"
+                  type="text"
+                  inputMode="numeric"
+                  value={formatIntegerInput(value)}
+                  placeholder={formatIntegerInput(placeholder)}
+                  onChange={updateWhole(setter)}
+                />
               </div>
             ))}
           </div>
@@ -3061,29 +3099,53 @@ function CalculatorsPage({ onNavigate }) {
           <div className="calc-results">
             <div className="calc-result" style={{borderColor:"#63E6BE44"}}>
               <div className="calc-result-label">Final Portfolio Value</div>
-              <div className="calc-result-value" style={{color:"#63E6BE"}}>${fmt(finalValue)}</div>
+              <div className="calc-result-value" style={{color:"#63E6BE"}}>{formatCurrencyWhole(finalValue)}</div>
             </div>
             <div className="calc-result" style={{borderColor:"#5B8CFF44"}}>
               <div className="calc-result-label">Total Contributions</div>
-              <div className="calc-result-value" style={{color:"#5B8CFF"}}>${fmt(totalContributions)}</div>
+              <div className="calc-result-value" style={{color:"#5B8CFF"}}>{formatCurrencyWhole(totalContributions)}</div>
             </div>
             <div className="calc-result" style={{borderColor:(totalGrowth>=0?"#FFD84D44":"#FF4D6D44")}}>
               <div className="calc-result-label">Investment Growth</div>
-              <div className="calc-result-value" style={{color:totalGrowth>=0?"#FFD84D":"#FF4D6D"}}>${fmt(totalGrowth)}</div>
+              <div className="calc-result-value" style={{color:totalGrowth>=0?"#FFD84D":"#FF4D6D"}}>{formatCurrencyWhole(totalGrowth)}</div>
             </div>
           </div>
-          <div className="calc-chart" aria-label="Projected portfolio growth chart">
-            <svg viewBox="0 0 100 100" preserveAspectRatio="none" style={{width:"100%",height:"100%",display:"block"}}>
-              <defs>
-                <linearGradient id="growthFill" x1="0" x2="0" y1="0" y2="1">
-                  <stop offset="0%" stopColor="#63E6BE" stopOpacity=".22"/>
-                  <stop offset="100%" stopColor="#63E6BE" stopOpacity="0"/>
-                </linearGradient>
-              </defs>
-              {[25,50,75].map(y=><line key={y} x1="0" x2="100" y1={y} y2={y} stroke="#1B2A3A" strokeWidth=".35"/>)}
-              <polygon points={chartArea} fill="url(#growthFill)" />
-              <polyline points={chartPolyline} fill="none" stroke="#63E6BE" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke"/>
-            </svg>
+          <div className="sectitle" style={{marginBottom:12}}>Investment Breakdown</div>
+          <div className="investment-breakdown">
+            <div className="breakdown-card">
+              <div className="donut-wrap">
+                <svg width="116" height="116" viewBox="0 0 100 100" aria-label="Investment breakdown donut chart">
+                  <circle cx="50" cy="50" r={donutRadius} fill="none" stroke="#1B2A3A" strokeWidth="12"/>
+                  <circle cx="50" cy="50" r={donutRadius} fill="none" stroke="#5B8CFF" strokeWidth="12" strokeDasharray={contributionDash} strokeLinecap="round" transform="rotate(-90 50 50)"/>
+                  <circle cx="50" cy="50" r={donutRadius} fill="none" stroke="#FFD84D" strokeWidth="12" strokeDasharray={growthDash} strokeDashoffset={-(contributionShare * donutCircumference)} strokeLinecap="round" transform="rotate(-90 50 50)"/>
+                  <text x="50" y="47" textAnchor="middle" fill="#D6E2F0" fontSize="10" fontFamily="DM Mono, monospace">Growth</text>
+                  <text x="50" y="60" textAnchor="middle" fill="#FFD84D" fontSize="11" fontWeight="700" fontFamily="DM Mono, monospace">{formatWholeNumber(growthShare*100)}%</text>
+                </svg>
+                <div className="donut-legend">
+                  <div><span className="legend-dot" style={{background:"#5B8CFF"}}/>Total Contributions<span className="legend-value">{formatCurrencyWhole(totalContributions)}</span></div>
+                  <div><span className="legend-dot" style={{background:"#FFD84D"}}/>Investment Growth<span className="legend-value">{formatCurrencyWhole(totalGrowth)}</span></div>
+                </div>
+              </div>
+            </div>
+            <div className="calc-chart" aria-label="Projected portfolio growth chart">
+              <div className="chart-legend">
+                <span><span className="legend-dot" style={{background:"#5B8CFF"}}/>Total Contributions</span>
+                <span><span className="legend-dot" style={{background:"#63E6BE"}}/>Portfolio Value</span>
+                <span><span className="legend-dot" style={{background:"#FFD84D"}}/>Investment Growth</span>
+              </div>
+              <svg viewBox="0 0 100 100" preserveAspectRatio="none" style={{width:"100%",height:"calc(100% - 22px)",display:"block"}}>
+                <defs>
+                  <linearGradient id="growthFill" x1="0" x2="0" y1="0" y2="1">
+                    <stop offset="0%" stopColor="#63E6BE" stopOpacity=".2"/>
+                    <stop offset="100%" stopColor="#63E6BE" stopOpacity="0"/>
+                  </linearGradient>
+                </defs>
+                {[25,50,75].map(y=><line key={y} x1="0" x2="100" y1={y} y2={y} stroke="#1B2A3A" strokeWidth=".35"/>)}
+                <polygon points={chartArea} fill="url(#growthFill)" />
+                <polyline points={contributionLine} fill="none" stroke="#5B8CFF" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke"/>
+                <polyline points={portfolioLine} fill="none" stroke="#63E6BE" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke"/>
+              </svg>
+            </div>
           </div>
         </div>
       </div>
@@ -3768,7 +3830,6 @@ function App() {
   });
   const [showAdd, setShowAdd] = useState(false);
   const [showPositions, setShowPositions] = useState(false);
-  const [showLearnMenu, setShowLearnMenu] = useState(false);
   const [loading, setLoading] = useState(true);
   const [expiredPending, setExpiredPending] = useState([]);
   const [toast, setToast] = useState(null);
@@ -4208,7 +4269,6 @@ function App() {
 
   const navigate = (id) => {
     setActive(id);
-    setShowLearnMenu(false);
   };
 
   return (
@@ -4228,28 +4288,26 @@ function App() {
         {assets.filter(a=>a.active).map(a=>(
           <button key={a.id} className={`tab ${active===a.id?"active":""}`} onClick={()=>navigate(a.id)} style={{"--tc":a.color}}>{a.ticker}</button>
         ))}
-        <button className="add-tab" onClick={()=>{setShowLearnMenu(false);setShowAdd(true);}} title="Add position">+</button>
+        <button className="add-tab" onClick={()=>setShowAdd(true)} title="Add position">+</button>
         <div className="learn-nav">
           <button
             className={`tab learn-tab ${active.startsWith("learn")?"active":""}`}
-            onClick={()=>{setActive("learn");setShowLearnMenu(p=>!p);}}
+            onClick={()=>navigate("learn")}
             style={{"--tc":"#63E6BE"}}
           >
             Learn <span className="learn-chevron">▼</span>
           </button>
-          {showLearnMenu&&(
-            <div className="learn-menu">
-              {LEARN_SECTIONS.map(section=>(
-                <button
-                  key={section.id}
-                  className={active===section.id?"active":""}
-                  onClick={()=>navigate(section.id)}
-                >
-                  {section.title}
-                </button>
-              ))}
-            </div>
-          )}
+          <div className="learn-menu">
+            {LEARN_SECTIONS.map(section=>(
+              <button
+                key={section.id}
+                className={active===section.id?"active":""}
+                onClick={()=>navigate(section.id)}
+              >
+                {section.title}
+              </button>
+            ))}
+          </div>
         </div>
         {closedAssets.length>0&&(
           <button className={`tab ${active==="closed"?"active":""}`} onClick={()=>navigate("closed")} style={{"--tc":"#7D91AA"}}>Closed ({closedAssets.length})</button>
