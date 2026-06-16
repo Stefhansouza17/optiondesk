@@ -264,6 +264,12 @@ html,body{font-family:'DM Mono','IBM Plex Mono',monospace;background:#050A0F;col
 .tab.active{color:var(--tc);border-bottom-color:var(--tc)}
 .add-tab{background:none;border:none;color:#4A6A8A;padding:10px 12px;cursor:pointer;font-size:18px;transition:color 0.2s;margin-bottom:-1px}
 .add-tab:hover{color:#63E6BE}
+.learn-nav{position:relative;margin-left:auto;display:flex}
+.learn-tab{display:inline-flex;align-items:center;gap:6px}
+.learn-chevron{font-size:9px;color:inherit;line-height:1;transform:translateY(-1px)}
+.learn-menu{position:absolute;top:calc(100% + 6px);right:0;min-width:150px;background:#0B131D;border:1px solid #1B2A3A;border-radius:8px;padding:5px;z-index:160;box-shadow:0 18px 44px rgba(0,0,0,.42)}
+.learn-menu button{display:block;width:100%;background:none;border:none;border-radius:5px;color:#8aaac8;padding:8px 10px;text-align:left;cursor:pointer;font-family:'DM Mono',monospace;font-size:11px;transition:all .15s}
+.learn-menu button:hover,.learn-menu button.active{background:#071019;color:#D6E2F0}
 .subnav{display:flex;gap:4px;padding:12px 24px 0}
 .snbtn{background:none;border:none;color:#7D91AA;padding:7px 12px;cursor:pointer;font-family:'DM Mono',monospace;font-size:11px;letter-spacing:0.5px;border-radius:4px;transition:all 0.2s;text-transform:uppercase}
 .snbtn:hover{color:#D6E2F0;background:#1B2A3A}
@@ -339,6 +345,36 @@ tr:hover td{background:#101e2c}
 @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
 .pulse{display:inline-block;width:7px;height:7px;border-radius:50%;background:#63E6BE;margin-right:6px;animation:pulse 1.8s infinite}
 @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(0,212,170,0.5)}70%{box-shadow:0 0 0 7px rgba(0,212,170,0)}100%{box-shadow:0 0 0 0 rgba(0,212,170,0)}}
+.learn-main{padding-top:34px;max-width:1180px}
+.learn-head{display:flex;justify-content:space-between;align-items:flex-end;gap:24px;margin:0 0 34px}
+.learn-kicker{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#63E6BE;margin-bottom:9px}
+.learn-title{font-family:'Syne',sans-serif;font-size:34px;font-weight:800;color:#fff;line-height:1.05}
+.learn-copy{font-size:13px;color:#8aaac8;line-height:1.65;max-width:420px}
+.learn-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:18px}
+.learn-card{background:#0B131D;border:1px solid #1B2A3A;border-radius:8px;padding:28px;position:relative;min-height:270px;display:flex;flex-direction:column;justify-content:space-between;transition:all .18s;cursor:pointer;overflow:hidden}
+.learn-card:hover{border-color:var(--accent,#63E6BE);transform:translateY(-2px);box-shadow:0 22px 56px rgba(0,0,0,.32)}
+.learn-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--accent,#63E6BE);opacity:.8}
+.learn-icon{width:38px;height:38px;border-radius:8px;border:1px solid color-mix(in srgb,var(--accent,#63E6BE) 34%,transparent);background:color-mix(in srgb,var(--accent,#63E6BE) 10%,transparent);color:var(--accent,#63E6BE);display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-size:14px;font-weight:800;margin-bottom:26px}
+.learn-card-title{font-family:'Syne',sans-serif;font-size:24px;font-weight:800;color:#fff;margin-bottom:10px}
+.learn-card-copy{font-size:13px;color:#9EB9E9;line-height:1.55;max-width:220px}
+.learn-card-action{align-self:flex-start;font-size:11px;color:var(--accent,#63E6BE);letter-spacing:.7px;margin-top:28px;padding:7px 12px;border:1px solid color-mix(in srgb,var(--accent,#63E6BE) 32%,transparent);border-radius:4px;background:color-mix(in srgb,var(--accent,#63E6BE) 8%,transparent)}
+.learn-card.disabled{cursor:default;opacity:.72}
+.learn-card.disabled:hover{transform:none;border-color:#1B2A3A;box-shadow:none}
+.calc-page{padding-top:28px;max-width:1180px}
+.calc-subtitle{font-size:13px;color:#8aaac8;margin-top:8px}
+.calc-wrap{display:grid;grid-template-columns:minmax(320px,380px) 1fr;gap:18px;align-items:stretch}
+.calc-panel{background:#0B131D;border:1px solid #1B2A3A;border-radius:8px;padding:22px;min-width:0}
+.calc-form{display:grid;gap:14px}
+.calc-results{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-bottom:18px}
+.calc-result{background:#071019;border:1px solid #1B2A3A;border-radius:8px;padding:16px;min-width:0;overflow:hidden}
+.calc-result-label{font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:#7D91AA;margin-bottom:9px}
+.calc-result-value{font-family:'Syne',sans-serif;font-size:clamp(15px,1.35vw,20px);font-weight:800;color:#fff;line-height:1;white-space:nowrap}
+.calc-chart{height:180px;background:#071019;border:1px solid #1B2A3A;border-radius:8px;padding:12px}
+.calc-cta{margin-top:18px;background:#0B131D;border:1px solid #1B2A3A;border-radius:8px;padding:20px 22px;display:flex;align-items:center;justify-content:space-between;gap:18px}
+.calc-cta-title{font-family:'Syne',sans-serif;font-size:18px;font-weight:800;color:#fff;margin-bottom:6px}
+.calc-cta-copy{font-size:12px;color:#8aaac8;line-height:1.55;max-width:720px}
+.learn-shortcut{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px;background:linear-gradient(90deg,#0B131D,#071019);border:1px solid #1B2A3A;border-radius:8px;padding:13px 16px;cursor:pointer;transition:all .18s}
+.learn-shortcut:hover{border-color:#63E6BE66;background:#0B131D}
 /* ── Simulator ── */
 .sim-wrap{display:flex;border:1px solid #22364A;border-radius:8px;overflow:hidden;margin-top:0;background:#050A0F;min-height:690px;box-shadow:0 26px 80px rgba(0,0,0,.52),inset 0 1px 0 rgba(255,255,255,.035);font-family:'DM Mono','IBM Plex Mono',monospace}
 .sim-left{width:326px;flex-shrink:0;border-right:1px solid #22364A;background:radial-gradient(circle at 18% 0%,rgba(91,140,255,.08),transparent 33%),linear-gradient(180deg,#071019,#050A0F);overflow-y:auto;padding:16px 16px;display:flex;flex-direction:column;gap:14px}
@@ -390,6 +426,12 @@ tr:hover .sim-td,.sim-row-atm:hover .sim-td-price,.sim-row-atm:hover .sim-td-pct
   .main{padding:14px 12px;box-sizing:border-box;max-width:100%;overflow-x:hidden}
   .pbar{margin:10px 8px 0;padding:8px 12px;box-sizing:border-box}
   .cards{grid-template-columns:1fr 1fr}
+  .learn-main,.calc-page{padding-top:18px}
+  .learn-head{align-items:flex-start;flex-direction:column}
+  .learn-grid{grid-template-columns:1fr}
+  .calc-wrap{grid-template-columns:1fr}
+  .calc-results{grid-template-columns:1fr}
+  .calc-cta{align-items:flex-start;flex-direction:column}
   .lgrid{grid-template-columns:1fr 1fr}
   .sec table{display:block;overflow-x:auto;width:100%;-webkit-overflow-scrolling:touch}
   .sim-wrap{flex-direction:column;overflow-x:hidden;max-width:100%}
@@ -2655,7 +2697,7 @@ function SimulatorPanel({ onSaveManualTrade }) {
 }
 
 // ── Home ──────────────────────────────────────────────────────────────────────
-function Home({ assets, strategies=[], onSelectAsset, onShowPositions, onSaveManualTrade, onEditTrade }) {
+function Home({ assets, strategies=[], onSelectAsset, onShowPositions, onSaveManualTrade, onEditTrade, onOpenLearn }) {
   const [stratFilter, setStratFilter] = useState("all");
   const [sortBy, setSortBy] = useState("expiration");
 
@@ -2733,6 +2775,14 @@ function Home({ assets, strategies=[], onSelectAsset, onShowPositions, onSaveMan
           <div className="csub" style={{cursor:"pointer",color:"#FFD84D88",textDecoration:"underline",textDecorationStyle:"dotted"}} onClick={onShowPositions}>see all positions →</div>
         </div>
       </div>
+
+      <button className="learn-shortcut" onClick={onOpenLearn}>
+        <span>
+          <span style={{display:"block",fontSize:10,letterSpacing:1.6,textTransform:"uppercase",color:"#63E6BE",marginBottom:4}}>Education desk</span>
+          <span style={{fontFamily:"Syne,sans-serif",fontSize:16,fontWeight:800,color:"#fff"}}>Learn & Calculators</span>
+        </span>
+        <span style={{fontSize:18,color:"#63E6BE"}}>&rarr;</span>
+      </button>
 
       {/* Theta Engine */}
       {totals.length>0&&(
@@ -2853,6 +2903,200 @@ function Home({ assets, strategies=[], onSelectAsset, onShowPositions, onSaveMan
         <div style={{flex:1,height:1,background:"linear-gradient(90deg,#22364A,transparent)"}}/>
       </div>
       <SimulatorPanel onSaveManualTrade={onSaveManualTrade}/>
+    </div>
+  );
+}
+
+// ── Learn ───────────────────────────────────────────────────────────────────
+const LEARN_SECTIONS = [
+  { id:"learn-courses", title:"Courses", icon:"01", accent:"#63E6BE", copy:"Video lessons and strategy education." },
+  { id:"learn-playbook", title:"Playbook", icon:"02", accent:"#5B8CFF", copy:"Step-by-step strategy guides." },
+  { id:"learn-glossary", title:"Glossary", icon:"03", accent:"#FFD84D", copy:"Options terminology explained." },
+  { id:"learn-calculators", title:"Calculators", icon:"04", accent:"#B37CFF", copy:"Financial planning and strategy tools." },
+];
+
+function LearnHeader({ title, copy, action }) {
+  return (
+    <div className="learn-head">
+      <div>
+        <div className="learn-kicker">Learn</div>
+        <div className="learn-title">{title}</div>
+      </div>
+      <div style={{display:"flex",alignItems:"center",gap:12,flexWrap:"wrap",justifyContent:"flex-end"}}>
+        <div className="learn-copy">{copy}</div>
+        {action}
+      </div>
+    </div>
+  );
+}
+
+function LearnPage({ onNavigate }) {
+  return (
+    <div className="main learn-main fade-in">
+      <LearnHeader
+        title="Learn"
+        copy="Focused tools and references for building an options process."
+      />
+      <div className="learn-grid">
+        {LEARN_SECTIONS.map(section=>(
+          <button
+            key={section.id}
+            className="learn-card"
+            onClick={()=>onNavigate(section.id)}
+            style={{"--accent":section.accent,textAlign:"left"}}
+          >
+            <div>
+              <div className="learn-icon">{section.icon}</div>
+              <div className="learn-card-title">{section.title}</div>
+              <div className="learn-card-copy">{section.copy}</div>
+            </div>
+            <div className="learn-card-action">Open</div>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function LearnPlaceholderPage({ title, onNavigate }) {
+  return (
+    <div className="main fade-in">
+      <LearnHeader
+        title={title}
+        copy={`${title} content will live here. The section is wired into navigation and ready for the next learning modules.`}
+        action={<button className="btn bneutral" onClick={()=>onNavigate("learn")}>Back to Learn</button>}
+      />
+      <div className="sec">
+        <div className="sechdr"><div className="sectitle">{title}</div></div>
+        <div style={{padding:28,color:"#8aaac8",fontSize:13,lineHeight:1.7}}>
+          This page is set up in the Learn section. Add the first {title.toLowerCase()} items here when the curriculum is ready.
+        </div>
+      </div>
+      <div className="learn-grid">
+        {LEARN_SECTIONS.filter(s=>s.title!==title).map(s=>(
+          <button key={s.id} className="learn-card" onClick={()=>onNavigate(s.id)} style={{"--accent":s.accent,textAlign:"left"}}>
+            <div>
+              <div className="learn-icon">{s.icon}</div>
+              <div className="learn-card-title">{s.title}</div>
+              <div className="learn-card-copy">{s.copy}</div>
+            </div>
+            <div className="learn-card-action">Open {s.title} &rarr;</div>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function CalculatorsPage({ onNavigate }) {
+  const [initial, setInitial] = useState("10000");
+  const [monthly, setMonthly] = useState("500");
+  const [annualReturn, setAnnualReturn] = useState("8");
+  const [years, setYears] = useState("20");
+  const months = Math.max(0, Math.round((parseFloat(years)||0) * 12));
+  const monthlyRate = (parseFloat(annualReturn)||0) / 100 / 12;
+  const initialValue = parseFloat(initial)||0;
+  const monthlyContribution = parseFloat(monthly)||0;
+  const finalValue = useMemo(()=>{
+    let value = initialValue;
+    for(let i=0;i<months;i++){
+      value = value * (1 + monthlyRate);
+      value += monthlyContribution;
+    }
+    return value;
+  },[initialValue, monthlyContribution, monthlyRate, months]);
+  const totalContributions = initialValue + monthlyContribution * months;
+  const totalGrowth = finalValue - totalContributions;
+  const chartPoints = useMemo(()=>{
+    const steps = Math.min(Math.max(months, 1), 240);
+    const interval = Math.max(1, Math.ceil(Math.max(months, 1) / steps));
+    let value = initialValue;
+    const points = [{month:0,value}];
+    for(let month=1;month<=months;month++){
+      value = value * (1 + monthlyRate);
+      value += monthlyContribution;
+      if(month % interval === 0 || month === months) points.push({month,value});
+    }
+    return points;
+  },[initialValue, monthlyContribution, monthlyRate, months]);
+  const chartMax = Math.max(...chartPoints.map(p=>p.value), 1);
+  const chartPolyline = chartPoints.map((point,idx)=>{
+    const x = chartPoints.length===1 ? 0 : (idx/(chartPoints.length-1))*100;
+    const y = 100 - (point.value/chartMax)*82;
+    return `${x.toFixed(2)},${Math.max(8,Math.min(96,y)).toFixed(2)}`;
+  }).join(" ");
+  const chartArea = `0,100 ${chartPolyline} 100,100`;
+
+  return (
+    <div className="main calc-page fade-in">
+      <div className="learn-head">
+        <div>
+          <div className="learn-kicker">Calculators</div>
+          <div className="learn-title">Compound Interest Calculator</div>
+          <div className="calc-subtitle">Plan long-term portfolio growth.</div>
+        </div>
+        <button className="btn bneutral" onClick={()=>onNavigate("learn")}>Back to Learn</button>
+      </div>
+
+      <div className="calc-wrap">
+        <div className="calc-panel">
+          <div className="sectitle" style={{marginBottom:14}}>Compound Interest Calculator</div>
+          <div className="calc-form">
+            {[
+              ["Initial Investment",initial,setInitial,"1000","compound-initial"],
+              ["Monthly Contribution",monthly,setMonthly,"250","compound-monthly"],
+              ["Annual Return %",annualReturn,setAnnualReturn,"8","compound-return"],
+              ["Years",years,setYears,"10","compound-years"],
+            ].map(([label,value,setter,placeholder,id])=>(
+              <div className="fgrp" key={label}>
+                <label className="flbl" htmlFor={id}>{label}</label>
+                <input id={id} className="finput" type="number" min="0" step={label==="Annual Return %"?"0.1":"1"} value={value} placeholder={placeholder} onChange={e=>setter(e.target.value)} />
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="calc-panel">
+          <div className="sectitle" style={{marginBottom:14}}>Results</div>
+          <div className="calc-results">
+            <div className="calc-result" style={{borderColor:"#63E6BE44"}}>
+              <div className="calc-result-label">Final Portfolio Value</div>
+              <div className="calc-result-value" style={{color:"#63E6BE"}}>${fmt(finalValue)}</div>
+            </div>
+            <div className="calc-result" style={{borderColor:"#5B8CFF44"}}>
+              <div className="calc-result-label">Total Contributions</div>
+              <div className="calc-result-value" style={{color:"#5B8CFF"}}>${fmt(totalContributions)}</div>
+            </div>
+            <div className="calc-result" style={{borderColor:(totalGrowth>=0?"#FFD84D44":"#FF4D6D44")}}>
+              <div className="calc-result-label">Investment Growth</div>
+              <div className="calc-result-value" style={{color:totalGrowth>=0?"#FFD84D":"#FF4D6D"}}>${fmt(totalGrowth)}</div>
+            </div>
+          </div>
+          <div className="calc-chart" aria-label="Projected portfolio growth chart">
+            <svg viewBox="0 0 100 100" preserveAspectRatio="none" style={{width:"100%",height:"100%",display:"block"}}>
+              <defs>
+                <linearGradient id="growthFill" x1="0" x2="0" y1="0" y2="1">
+                  <stop offset="0%" stopColor="#63E6BE" stopOpacity=".22"/>
+                  <stop offset="100%" stopColor="#63E6BE" stopOpacity="0"/>
+                </linearGradient>
+              </defs>
+              {[25,50,75].map(y=><line key={y} x1="0" x2="100" y1={y} y2={y} stroke="#1B2A3A" strokeWidth=".35"/>)}
+              <polygon points={chartArea} fill="url(#growthFill)" />
+              <polyline points={chartPolyline} fill="none" stroke="#63E6BE" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke"/>
+            </svg>
+          </div>
+        </div>
+      </div>
+
+      <div className="calc-cta">
+        <div>
+          <div className="calc-cta-title">Looking for higher income strategies?</div>
+          <div className="calc-cta-copy">
+            Many investors use options to generate additional income beyond traditional buy-and-hold investing. Explore Covered Calls, Cash Secured Puts, PMCCs, and other premium-generating strategies.
+          </div>
+        </div>
+        <button className="btn" onClick={()=>onNavigate("learn-courses")}>Learn About Options</button>
+      </div>
     </div>
   );
 }
@@ -3518,9 +3762,13 @@ function App() {
   const [assets, setAssets] = useState([]);
   const [strategies, setStrategies] = useState([]);
   const [closedAssets, setClosedAssets] = useState([]);
-  const [active, setActive] = useState("home");
+  const [active, setActive] = useState(()=>{
+    const hash = window.location.hash.replace("#","");
+    return hash.startsWith("learn") ? hash : "home";
+  });
   const [showAdd, setShowAdd] = useState(false);
   const [showPositions, setShowPositions] = useState(false);
+  const [showLearnMenu, setShowLearnMenu] = useState(false);
   const [loading, setLoading] = useState(true);
   const [expiredPending, setExpiredPending] = useState([]);
   const [toast, setToast] = useState(null);
@@ -3573,7 +3821,7 @@ function App() {
   },[loadPortfolio]);
 
   useEffect(()=>{
-    if(active==="home"||active==="closed") return;
+    if(active==="home"||active==="closed"||active.startsWith("learn")) return;
     loadPortfolio().catch(e=>console.error("nav reload:",e));
   },[active,loadPortfolio]);
 
@@ -3958,6 +4206,11 @@ function App() {
     </div>
   );
 
+  const navigate = (id) => {
+    setActive(id);
+    setShowLearnMenu(false);
+  };
+
   return (
     <div style={{minHeight:"100vh",background:"#071019",color:"#D6E2F0"}}>
       <style>{CSS}</style>
@@ -3971,17 +4224,44 @@ function App() {
       </div>
 
       <div className="tabs">
-        <button className={`tab ${active==="home"?"active":""}`} onClick={()=>setActive("home")} style={{"--tc":"#63E6BE"}}>⌂ Home</button>
+        <button className={`tab ${active==="home"?"active":""}`} onClick={()=>navigate("home")} style={{"--tc":"#63E6BE"}}>⌂ Home</button>
         {assets.filter(a=>a.active).map(a=>(
-          <button key={a.id} className={`tab ${active===a.id?"active":""}`} onClick={()=>setActive(a.id)} style={{"--tc":a.color}}>{a.ticker}</button>
+          <button key={a.id} className={`tab ${active===a.id?"active":""}`} onClick={()=>navigate(a.id)} style={{"--tc":a.color}}>{a.ticker}</button>
         ))}
-        <button className="add-tab" onClick={()=>setShowAdd(true)} title="Add position">+</button>
+        <button className="add-tab" onClick={()=>{setShowLearnMenu(false);setShowAdd(true);}} title="Add position">+</button>
+        <div className="learn-nav">
+          <button
+            className={`tab learn-tab ${active.startsWith("learn")?"active":""}`}
+            onClick={()=>{setActive("learn");setShowLearnMenu(p=>!p);}}
+            style={{"--tc":"#63E6BE"}}
+          >
+            Learn <span className="learn-chevron">▼</span>
+          </button>
+          {showLearnMenu&&(
+            <div className="learn-menu">
+              {LEARN_SECTIONS.map(section=>(
+                <button
+                  key={section.id}
+                  className={active===section.id?"active":""}
+                  onClick={()=>navigate(section.id)}
+                >
+                  {section.title}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
         {closedAssets.length>0&&(
-          <button className={`tab ${active==="closed"?"active":""}`} onClick={()=>setActive("closed")} style={{"--tc":"#7D91AA",marginLeft:"auto"}}>Closed ({closedAssets.length})</button>
+          <button className={`tab ${active==="closed"?"active":""}`} onClick={()=>navigate("closed")} style={{"--tc":"#7D91AA"}}>Closed ({closedAssets.length})</button>
         )}
       </div>
 
-      {active==="home"&&<Home assets={assetsWithStrategyLinks} strategies={strategies} onSelectAsset={id=>setActive(id)} onShowPositions={()=>setShowPositions(true)} onSaveManualTrade={handleSaveManualTrade} onEditTrade={r=>{const a=assetsWithStrategyLinks.find(x=>x.id===r.assetId);setEditTrade({r,asset:a});}}/>}
+      {active==="home"&&<Home assets={assetsWithStrategyLinks} strategies={strategies} onSelectAsset={id=>setActive(id)} onShowPositions={()=>setShowPositions(true)} onSaveManualTrade={handleSaveManualTrade} onEditTrade={r=>{const a=assetsWithStrategyLinks.find(x=>x.id===r.assetId);setEditTrade({r,asset:a});}} onOpenLearn={()=>setActive("learn-calculators")}/>}
+      {active==="learn"&&<LearnPage onNavigate={setActive}/>}
+      {active==="learn-courses"&&<LearnPlaceholderPage title="Courses" onNavigate={setActive}/>}
+      {active==="learn-playbook"&&<LearnPlaceholderPage title="Playbook" onNavigate={setActive}/>}
+      {active==="learn-glossary"&&<LearnPlaceholderPage title="Glossary" onNavigate={setActive}/>}
+      {active==="learn-calculators"&&<CalculatorsPage onNavigate={setActive}/>}
       {assetsWithStrategyLinks.filter(a=>a.active).map(a=>active===a.id&&(
         <AssetDashboard key={a.id} asset={a} onClose={closeAsset}
           strategies={strategies}
