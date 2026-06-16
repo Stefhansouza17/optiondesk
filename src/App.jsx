@@ -387,12 +387,12 @@ tr:hover td{background:#101e2c}
 .chart-toggle button.active{background:#132033;color:#D6E2F0}
 .chart-legend{display:flex;justify-content:flex-end;gap:14px;font-size:10px;color:#8aaac8}
 .chart-caption{text-align:center;font-size:10px;color:#7D91AA;letter-spacing:1.2px;margin-top:4px;font-family:'DM Mono',monospace}
-.chart-modal{width:min(90vw,1220px);height:min(88vh,820px);background:#071019;border:1px solid #22364A;border-radius:10px;box-shadow:0 28px 90px rgba(0,0,0,.64);padding:22px;display:flex;flex-direction:column;gap:16px}
+.chart-modal{width:min(90vw,1220px);max-height:88vh;background:#071019;border:1px solid #22364A;border-radius:10px;box-shadow:0 28px 90px rgba(0,0,0,.64);padding:22px;display:flex;flex-direction:column;gap:16px;overflow:hidden}
 .chart-modal-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;border-bottom:1px solid #1B2A3A;padding-bottom:14px}
 .chart-modal-title{font-family:'Syne',sans-serif;font-size:26px;font-weight:800;color:#fff;line-height:1}
 .chart-modal-subtitle{font-size:12px;color:#8aaac8;margin-top:8px}
 .modal-close{background:#0B131D;border:1px solid #1B2A3A;color:#D6E2F0;border-radius:6px;width:34px;height:34px;cursor:pointer;font-size:18px;line-height:1}
-.chart-modal-body{display:grid;grid-template-columns:minmax(0,1fr) 260px;gap:16px;min-height:0;flex:1}
+.chart-modal-body{display:grid;grid-template-columns:minmax(0,1fr) 260px;gap:16px;min-height:0;flex:1;overflow-y:auto}
 .expanded-chart-card,.milestones-card{background:#050A0F;border:1px solid #1B2A3A;border-radius:8px;padding:16px;min-width:0;position:relative}
 .expanded-chart-card{display:flex;flex-direction:column;gap:10px}
 .expanded-chart-legend{display:flex;gap:16px;flex-wrap:wrap;font-size:11px;color:#8aaac8;justify-content:flex-end}
@@ -470,7 +470,7 @@ tr:hover .sim-td,.sim-row-atm:hover .sim-td-price,.sim-row-atm:hover .sim-td-pct
   .calc-results{grid-template-columns:1fr}
   .investment-breakdown{grid-template-columns:1fr}
   .calc-cta{align-items:flex-start;flex-direction:column}
-  .chart-modal{width:94vw;height:90vh;padding:16px}
+  .chart-modal{width:94vw;max-height:88vh;padding:16px}
   .chart-modal-body{grid-template-columns:1fr;overflow-y:auto}
   .expanded-chart{min-height:300px}
   .expanded-chart-legend,.chart-top{align-items:flex-start;flex-direction:column}
@@ -4023,8 +4023,7 @@ function App() {
   const [strategies, setStrategies] = useState([]);
   const [closedAssets, setClosedAssets] = useState([]);
   const [active, setActive] = useState(()=>{
-    const hash = window.location.hash.replace("#","");
-    return hash.startsWith("learn") ? hash : "home";
+    return window.location.hash.replace("#","") || "home";
   });
   const [showAdd, setShowAdd] = useState(false);
   const [showPositions, setShowPositions] = useState(false);
@@ -4084,6 +4083,12 @@ function App() {
     if(active==="home"||active==="closed"||active.startsWith("learn")) return;
     loadPortfolio().catch(e=>console.error("nav reload:",e));
   },[active,loadPortfolio]);
+
+  useEffect(()=>{
+    const onHashChange = () => setActive(window.location.hash.replace("#","") || "home");
+    window.addEventListener("hashchange", onHashChange);
+    return () => window.removeEventListener("hashchange", onHashChange);
+  },[]);
 
   const handleExpiredResolution = async (resolvedTrades) => {
     await Promise.all(resolvedTrades.map(t=>updateTrade(t.id,{status:t.decision})));
@@ -4467,6 +4472,7 @@ function App() {
   );
 
   const navigate = (id) => {
+    window.location.hash = id;
     setActive(id);
   };
 
@@ -4475,9 +4481,9 @@ function App() {
       <style>{CSS}</style>
       <div className="hdr">
         <div style={{display:"flex",alignItems:"center",gap:10}}>
-          <div className="logo" onClick={()=>setActive("home")}>Option<span>Desk</span></div>
+          <div className="logo" onClick={()=>navigate("home")}>Option<span>Desk</span></div>
           <div className="badge">Beta</div>
-          {active!=="home"&&<button className="home-btn" onClick={()=>setActive("home")}>← Home</button>}
+          {active!=="home"&&<button className="home-btn" onClick={()=>navigate("home")}>← Home</button>}
         </div>
         <div style={{fontSize:11,color:"#4A6A8A"}}>{new Date().toLocaleDateString("en-US",{weekday:"long",year:"numeric",month:"long",day:"numeric"})}</div>
       </div>
@@ -4517,12 +4523,12 @@ function App() {
         )}
       </div>
 
-      {active==="home"&&<Home assets={assetsWithStrategyLinks} strategies={strategies} onSelectAsset={id=>setActive(id)} onShowPositions={()=>setShowPositions(true)} onSaveManualTrade={handleSaveManualTrade} onEditTrade={r=>{const a=assetsWithStrategyLinks.find(x=>x.id===r.assetId);setEditTrade({r,asset:a});}} onOpenLearn={()=>setActive("learn-calculators")}/>}
-      {active==="learn"&&<LearnPage onNavigate={setActive}/>}
-      {active==="learn-courses"&&<LearnPlaceholderPage title="Courses" onNavigate={setActive}/>}
-      {active==="learn-playbook"&&<LearnPlaceholderPage title="Playbook" onNavigate={setActive}/>}
-      {active==="learn-glossary"&&<LearnPlaceholderPage title="Glossary" onNavigate={setActive}/>}
-      {active==="learn-calculators"&&<CalculatorsPage onNavigate={setActive}/>}
+      {active==="home"&&<Home assets={assetsWithStrategyLinks} strategies={strategies} onSelectAsset={id=>navigate(id)} onShowPositions={()=>setShowPositions(true)} onSaveManualTrade={handleSaveManualTrade} onEditTrade={r=>{const a=assetsWithStrategyLinks.find(x=>x.id===r.assetId);setEditTrade({r,asset:a});}} onOpenLearn={()=>navigate("learn-calculators")}/>}
+      {active==="learn"&&<LearnPage onNavigate={navigate}/>}
+      {active==="learn-courses"&&<LearnPlaceholderPage title="Courses" onNavigate={navigate}/>}
+      {active==="learn-playbook"&&<LearnPlaceholderPage title="Playbook" onNavigate={navigate}/>}
+      {active==="learn-glossary"&&<LearnPlaceholderPage title="Glossary" onNavigate={navigate}/>}
+      {active==="learn-calculators"&&<CalculatorsPage onNavigate={navigate}/>}
       {assetsWithStrategyLinks.filter(a=>a.active).map(a=>active===a.id&&(
         <AssetDashboard key={a.id} asset={a} onClose={closeAsset}
           strategies={strategies}
