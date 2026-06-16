@@ -339,6 +339,30 @@ tr:hover td{background:#101e2c}
 @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
 .pulse{display:inline-block;width:7px;height:7px;border-radius:50%;background:#63E6BE;margin-right:6px;animation:pulse 1.8s infinite}
 @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(0,212,170,0.5)}70%{box-shadow:0 0 0 7px rgba(0,212,170,0)}100%{box-shadow:0 0 0 0 rgba(0,212,170,0)}}
+.learn-head{display:flex;justify-content:space-between;align-items:flex-end;gap:18px;margin:8px 0 18px}
+.learn-kicker{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#63E6BE;margin-bottom:7px}
+.learn-title{font-family:'Syne',sans-serif;font-size:28px;font-weight:800;color:#fff;line-height:1.05}
+.learn-copy{font-size:12px;color:#8aaac8;line-height:1.6;max-width:620px}
+.learn-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:14px}
+.calc-card-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:14px}
+.learn-card{background:#0B131D;border:1px solid #1B2A3A;border-radius:8px;padding:16px;position:relative;min-height:150px;display:flex;flex-direction:column;justify-content:space-between;transition:all .18s;cursor:pointer;overflow:hidden}
+.learn-card:hover{border-color:var(--accent,#63E6BE);transform:translateY(-1px);box-shadow:0 14px 40px rgba(0,0,0,.28)}
+.learn-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--accent,#63E6BE)}
+.learn-icon{width:34px;height:34px;border-radius:7px;border:1px solid color-mix(in srgb,var(--accent,#63E6BE) 42%,transparent);background:color-mix(in srgb,var(--accent,#63E6BE) 14%,transparent);color:var(--accent,#63E6BE);display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-size:15px;font-weight:800;margin-bottom:14px}
+.learn-card-title{font-family:'Syne',sans-serif;font-size:17px;font-weight:800;color:#fff;margin-bottom:7px}
+.learn-card-copy{font-size:12px;color:#8aaac8;line-height:1.55}
+.learn-card-action{font-size:11px;color:var(--accent,#63E6BE);letter-spacing:.5px;margin-top:14px}
+.learn-card.disabled{cursor:default;opacity:.72}
+.learn-card.disabled:hover{transform:none;border-color:#1B2A3A;box-shadow:none}
+.calc-wrap{display:grid;grid-template-columns:minmax(300px,440px) 1fr;gap:14px;align-items:start}
+.calc-panel{background:#0B131D;border:1px solid #1B2A3A;border-radius:8px;padding:16px}
+.calc-form{display:grid;gap:12px}
+.calc-results{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.calc-result{background:#071019;border:1px solid #1B2A3A;border-radius:8px;padding:14px}
+.calc-result-label{font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:#7D91AA;margin-bottom:7px}
+.calc-result-value{font-family:'Syne',sans-serif;font-size:24px;font-weight:800;color:#fff}
+.learn-shortcut{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px;background:linear-gradient(90deg,#0B131D,#071019);border:1px solid #1B2A3A;border-radius:8px;padding:13px 16px;cursor:pointer;transition:all .18s}
+.learn-shortcut:hover{border-color:#63E6BE66;background:#0B131D}
 /* ── Simulator ── */
 .sim-wrap{display:flex;border:1px solid #22364A;border-radius:8px;overflow:hidden;margin-top:0;background:#050A0F;min-height:690px;box-shadow:0 26px 80px rgba(0,0,0,.52),inset 0 1px 0 rgba(255,255,255,.035);font-family:'DM Mono','IBM Plex Mono',monospace}
 .sim-left{width:326px;flex-shrink:0;border-right:1px solid #22364A;background:radial-gradient(circle at 18% 0%,rgba(91,140,255,.08),transparent 33%),linear-gradient(180deg,#071019,#050A0F);overflow-y:auto;padding:16px 16px;display:flex;flex-direction:column;gap:14px}
@@ -390,6 +414,11 @@ tr:hover .sim-td,.sim-row-atm:hover .sim-td-price,.sim-row-atm:hover .sim-td-pct
   .main{padding:14px 12px;box-sizing:border-box;max-width:100%;overflow-x:hidden}
   .pbar{margin:10px 8px 0;padding:8px 12px;box-sizing:border-box}
   .cards{grid-template-columns:1fr 1fr}
+  .learn-head{align-items:flex-start;flex-direction:column}
+  .learn-grid{grid-template-columns:1fr}
+  .calc-card-grid{grid-template-columns:1fr}
+  .calc-wrap{grid-template-columns:1fr}
+  .calc-results{grid-template-columns:1fr}
   .lgrid{grid-template-columns:1fr 1fr}
   .sec table{display:block;overflow-x:auto;width:100%;-webkit-overflow-scrolling:touch}
   .sim-wrap{flex-direction:column;overflow-x:hidden;max-width:100%}
@@ -2655,7 +2684,7 @@ function SimulatorPanel({ onSaveManualTrade }) {
 }
 
 // ── Home ──────────────────────────────────────────────────────────────────────
-function Home({ assets, strategies=[], onSelectAsset, onShowPositions, onSaveManualTrade, onEditTrade }) {
+function Home({ assets, strategies=[], onSelectAsset, onShowPositions, onSaveManualTrade, onEditTrade, onOpenLearn }) {
   const [stratFilter, setStratFilter] = useState("all");
   const [sortBy, setSortBy] = useState("expiration");
 
@@ -2733,6 +2762,14 @@ function Home({ assets, strategies=[], onSelectAsset, onShowPositions, onSaveMan
           <div className="csub" style={{cursor:"pointer",color:"#FFD84D88",textDecoration:"underline",textDecorationStyle:"dotted"}} onClick={onShowPositions}>see all positions →</div>
         </div>
       </div>
+
+      <button className="learn-shortcut" onClick={onOpenLearn}>
+        <span>
+          <span style={{display:"block",fontSize:10,letterSpacing:1.6,textTransform:"uppercase",color:"#63E6BE",marginBottom:4}}>Education desk</span>
+          <span style={{fontFamily:"Syne,sans-serif",fontSize:16,fontWeight:800,color:"#fff"}}>Learn & Calculators</span>
+        </span>
+        <span style={{fontSize:18,color:"#63E6BE"}}>&rarr;</span>
+      </button>
 
       {/* Theta Engine */}
       {totals.length>0&&(
@@ -2853,6 +2890,195 @@ function Home({ assets, strategies=[], onSelectAsset, onShowPositions, onSaveMan
         <div style={{flex:1,height:1,background:"linear-gradient(90deg,#22364A,transparent)"}}/>
       </div>
       <SimulatorPanel onSaveManualTrade={onSaveManualTrade}/>
+    </div>
+  );
+}
+
+// ── Learn ───────────────────────────────────────────────────────────────────
+const LEARN_SECTIONS = [
+  { id:"learn-courses", title:"Courses", icon:"01", accent:"#63E6BE", copy:"Structured lessons for options foundations, income mechanics, and portfolio routines." },
+  { id:"learn-playbook", title:"Playbook", icon:"02", accent:"#5B8CFF", copy:"Reusable setups, entry criteria, management rules, and review checklists." },
+  { id:"learn-glossary", title:"Glossary", icon:"03", accent:"#FFD84D", copy:"Plain-English references for options terms, Greeks, order actions, and risk language." },
+  { id:"learn-calculators", title:"Calculators", icon:"04", accent:"#B37CFF", copy:"Fast planning tools for compounding, sizing, risk, covered calls, and PMCCs." },
+];
+
+function LearnHeader({ title, copy, action }) {
+  return (
+    <div className="learn-head">
+      <div>
+        <div className="learn-kicker">Learn</div>
+        <div className="learn-title">{title}</div>
+      </div>
+      <div style={{display:"flex",alignItems:"center",gap:12,flexWrap:"wrap",justifyContent:"flex-end"}}>
+        <div className="learn-copy">{copy}</div>
+        {action}
+      </div>
+    </div>
+  );
+}
+
+function LearnPage({ onNavigate }) {
+  return (
+    <div className="main fade-in">
+      <LearnHeader
+        title="Education center"
+        copy="A working desk for learning, reference, and planning tools that sit beside the trading dashboard."
+      />
+      <div className="learn-grid">
+        {LEARN_SECTIONS.map(section=>(
+          <button
+            key={section.id}
+            className="learn-card"
+            onClick={()=>onNavigate(section.id)}
+            style={{"--accent":section.accent,textAlign:"left"}}
+          >
+            <div>
+              <div className="learn-icon">{section.icon}</div>
+              <div className="learn-card-title">{section.title}</div>
+              <div className="learn-card-copy">{section.copy}</div>
+            </div>
+            <div className="learn-card-action">Open {section.title} &rarr;</div>
+          </button>
+        ))}
+      </div>
+      <div className="sec">
+        <div className="sechdr">
+          <div className="sectitle">Study queue</div>
+          <span style={{fontSize:11,color:"#7D91AA"}}>Courses, playbook, glossary, calculators</span>
+        </div>
+        <div style={{padding:16,display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:12}}>
+          {[
+            ["PMCC workflow","Plan entries, short call selection, rolls, and exit conditions.","#5B8CFF"],
+            ["Risk sizing","Keep every idea inside a defined account-risk box.","#FF4D6D"],
+            ["Compounding","Project how steady deposits and time change the portfolio curve.","#63E6BE"],
+          ].map(([title,copy,color])=>(
+            <div key={title} style={{background:"#071019",border:"1px solid #1B2A3A",borderRadius:8,padding:14}}>
+              <div style={{fontFamily:"Syne,sans-serif",fontSize:15,fontWeight:800,color,marginBottom:6}}>{title}</div>
+              <div style={{fontSize:12,color:"#8aaac8",lineHeight:1.55}}>{copy}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function LearnPlaceholderPage({ title, onNavigate }) {
+  return (
+    <div className="main fade-in">
+      <LearnHeader
+        title={title}
+        copy={`${title} content will live here. The section is wired into navigation and ready for the next learning modules.`}
+        action={<button className="btn bneutral" onClick={()=>onNavigate("learn")}>Back to Learn</button>}
+      />
+      <div className="sec">
+        <div className="sechdr"><div className="sectitle">{title}</div></div>
+        <div style={{padding:28,color:"#8aaac8",fontSize:13,lineHeight:1.7}}>
+          This page is set up in the Learn section. Add the first {title.toLowerCase()} items here when the curriculum is ready.
+        </div>
+      </div>
+      <div className="learn-grid">
+        {LEARN_SECTIONS.filter(s=>s.title!==title).map(s=>(
+          <button key={s.id} className="learn-card" onClick={()=>onNavigate(s.id)} style={{"--accent":s.accent,textAlign:"left"}}>
+            <div>
+              <div className="learn-icon">{s.icon}</div>
+              <div className="learn-card-title">{s.title}</div>
+              <div className="learn-card-copy">{s.copy}</div>
+            </div>
+            <div className="learn-card-action">Open {s.title} &rarr;</div>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function CalculatorsPage({ onNavigate }) {
+  const [initial, setInitial] = useState("10000");
+  const [monthly, setMonthly] = useState("500");
+  const [annualReturn, setAnnualReturn] = useState("8");
+  const [years, setYears] = useState("20");
+  const months = Math.max(0, Math.round((parseFloat(years)||0) * 12));
+  const monthlyRate = (parseFloat(annualReturn)||0) / 100 / 12;
+  const initialValue = parseFloat(initial)||0;
+  const monthlyContribution = parseFloat(monthly)||0;
+  const finalValue = useMemo(()=>{
+    let value = initialValue;
+    for(let i=0;i<months;i++){
+      value = value * (1 + monthlyRate);
+      value += monthlyContribution;
+    }
+    return value;
+  },[initialValue, monthlyContribution, monthlyRate, months]);
+  const totalContributions = initialValue + monthlyContribution * months;
+  const totalGrowth = finalValue - totalContributions;
+  const calculatorCards = [
+    ["Compound Interest Calculator","Project portfolio value with monthly compounding and contributions.","#63E6BE",true],
+    ["Position Size Calculator","Placeholder for account-risk sizing.","#5B8CFF",false],
+    ["Risk / Reward Calculator","Placeholder for setup reward-to-risk planning.","#FFD84D",false],
+    ["Covered Call Calculator","Placeholder for share-backed call income math.","#fb923c",false],
+    ["PMCC Calculator","Placeholder for LEAP basis and short-call recovery planning.","#B37CFF",false],
+  ];
+
+  return (
+    <div className="main fade-in">
+      <LearnHeader
+        title="Calculators"
+        copy="Planning tools for long-term growth, position sizing, and option strategy prep."
+        action={<button className="btn bneutral" onClick={()=>onNavigate("learn")}>Back to Learn</button>}
+      />
+      <div className="calc-card-grid">
+        {calculatorCards.map(([title,copy,color,active])=>(
+          <div key={title} className={`learn-card ${active?"":"disabled"}`} style={{"--accent":color,minHeight:138}}>
+            <div>
+              <div className="learn-icon">{active?"$":"--"}</div>
+              <div className="learn-card-title" style={{fontSize:15}}>{title}</div>
+              <div className="learn-card-copy">{copy}</div>
+            </div>
+            <div className="learn-card-action">{active?"Ready":"Coming soon"}</div>
+          </div>
+        ))}
+      </div>
+
+      <div className="calc-wrap">
+        <div className="calc-panel">
+          <div className="sectitle" style={{marginBottom:14}}>Compound Interest Calculator</div>
+          <div className="calc-form">
+            {[
+              ["Initial Investment",initial,setInitial,"1000","compound-initial"],
+              ["Monthly Contribution",monthly,setMonthly,"250","compound-monthly"],
+              ["Annual Return %",annualReturn,setAnnualReturn,"8","compound-return"],
+              ["Years",years,setYears,"10","compound-years"],
+            ].map(([label,value,setter,placeholder,id])=>(
+              <div className="fgrp" key={label}>
+                <label className="flbl" htmlFor={id}>{label}</label>
+                <input id={id} className="finput" type="number" min="0" step={label==="Annual Return %"?"0.1":"1"} value={value} placeholder={placeholder} onChange={e=>setter(e.target.value)} />
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="calc-panel">
+          <div className="sectitle" style={{marginBottom:14}}>Projection output</div>
+          <div className="calc-results">
+            <div className="calc-result" style={{borderColor:"#63E6BE44"}}>
+              <div className="calc-result-label">Final Portfolio Value</div>
+              <div className="calc-result-value" style={{color:"#63E6BE"}}>${fmt(finalValue)}</div>
+            </div>
+            <div className="calc-result" style={{borderColor:"#5B8CFF44"}}>
+              <div className="calc-result-label">Total Contributions</div>
+              <div className="calc-result-value" style={{color:"#5B8CFF"}}>${fmt(totalContributions)}</div>
+            </div>
+            <div className="calc-result" style={{borderColor:(totalGrowth>=0?"#FFD84D44":"#FF4D6D44")}}>
+              <div className="calc-result-label">Total Growth</div>
+              <div className="calc-result-value" style={{color:totalGrowth>=0?"#FFD84D":"#FF4D6D"}}>${fmt(totalGrowth)}</div>
+            </div>
+          </div>
+          <div style={{marginTop:14,padding:12,background:"#071019",border:"1px solid #1B2A3A",borderRadius:8,fontSize:12,color:"#8aaac8",lineHeight:1.6}}>
+            Monthly rate: <span style={{color:"#D6E2F0"}}>{fmt(monthlyRate*100,3)}%</span> · Periods: <span style={{color:"#D6E2F0"}}>{months}</span> months
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
@@ -3573,7 +3799,7 @@ function App() {
   },[loadPortfolio]);
 
   useEffect(()=>{
-    if(active==="home"||active==="closed") return;
+    if(active==="home"||active==="closed"||active.startsWith("learn")) return;
     loadPortfolio().catch(e=>console.error("nav reload:",e));
   },[active,loadPortfolio]);
 
@@ -3976,12 +4202,22 @@ function App() {
           <button key={a.id} className={`tab ${active===a.id?"active":""}`} onClick={()=>setActive(a.id)} style={{"--tc":a.color}}>{a.ticker}</button>
         ))}
         <button className="add-tab" onClick={()=>setShowAdd(true)} title="Add position">+</button>
+        <button className={`tab ${active==="learn"?"active":""}`} onClick={()=>setActive("learn")} style={{"--tc":"#63E6BE",marginLeft:"auto"}}>Learn</button>
+        <button className={`tab ${active==="learn-courses"?"active":""}`} onClick={()=>setActive("learn-courses")} style={{"--tc":"#63E6BE"}}>Courses</button>
+        <button className={`tab ${active==="learn-playbook"?"active":""}`} onClick={()=>setActive("learn-playbook")} style={{"--tc":"#5B8CFF"}}>Playbook</button>
+        <button className={`tab ${active==="learn-glossary"?"active":""}`} onClick={()=>setActive("learn-glossary")} style={{"--tc":"#FFD84D"}}>Glossary</button>
+        <button className={`tab ${active==="learn-calculators"?"active":""}`} onClick={()=>setActive("learn-calculators")} style={{"--tc":"#B37CFF"}}>Calculators</button>
         {closedAssets.length>0&&(
-          <button className={`tab ${active==="closed"?"active":""}`} onClick={()=>setActive("closed")} style={{"--tc":"#7D91AA",marginLeft:"auto"}}>Closed ({closedAssets.length})</button>
+          <button className={`tab ${active==="closed"?"active":""}`} onClick={()=>setActive("closed")} style={{"--tc":"#7D91AA"}}>Closed ({closedAssets.length})</button>
         )}
       </div>
 
-      {active==="home"&&<Home assets={assetsWithStrategyLinks} strategies={strategies} onSelectAsset={id=>setActive(id)} onShowPositions={()=>setShowPositions(true)} onSaveManualTrade={handleSaveManualTrade} onEditTrade={r=>{const a=assetsWithStrategyLinks.find(x=>x.id===r.assetId);setEditTrade({r,asset:a});}}/>}
+      {active==="home"&&<Home assets={assetsWithStrategyLinks} strategies={strategies} onSelectAsset={id=>setActive(id)} onShowPositions={()=>setShowPositions(true)} onSaveManualTrade={handleSaveManualTrade} onEditTrade={r=>{const a=assetsWithStrategyLinks.find(x=>x.id===r.assetId);setEditTrade({r,asset:a});}} onOpenLearn={()=>setActive("learn-calculators")}/>}
+      {active==="learn"&&<LearnPage onNavigate={setActive}/>}
+      {active==="learn-courses"&&<LearnPlaceholderPage title="Courses" onNavigate={setActive}/>}
+      {active==="learn-playbook"&&<LearnPlaceholderPage title="Playbook" onNavigate={setActive}/>}
+      {active==="learn-glossary"&&<LearnPlaceholderPage title="Glossary" onNavigate={setActive}/>}
+      {active==="learn-calculators"&&<CalculatorsPage onNavigate={setActive}/>}
       {assetsWithStrategyLinks.filter(a=>a.active).map(a=>active===a.id&&(
         <AssetDashboard key={a.id} asset={a} onClose={closeAsset}
           strategies={strategies}
