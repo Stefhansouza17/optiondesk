@@ -371,6 +371,9 @@ tr:hover td{background:#101e2c}
 .calc-result{background:#071019;border:1px solid #1B2A3A;border-radius:8px;padding:16px;min-width:0;overflow:hidden}
 .calc-result-label{font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:#7D91AA;margin-bottom:9px}
 .calc-result-value{font-family:'Syne',sans-serif;font-size:clamp(15px,1.35vw,20px);font-weight:800;color:#fff;line-height:1;white-space:nowrap}
+.breakdown-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}
+.full-chart-btn{background:#0B131D;border:1px solid #1B2A3A;color:#9EB9E9;border-radius:5px;padding:7px 10px;font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.4px;cursor:pointer;transition:all .18s}
+.full-chart-btn:hover{border-color:#63E6BE66;color:#D6E2F0;background:#101A27}
 .investment-breakdown{display:grid;grid-template-columns:250px 1fr;gap:12px}
 .breakdown-card{background:#071019;border:1px solid #1B2A3A;border-radius:8px;padding:14px;min-width:0}
 .donut-wrap{display:flex;align-items:center;justify-content:center;gap:14px;min-height:170px}
@@ -384,6 +387,26 @@ tr:hover td{background:#101e2c}
 .chart-toggle button.active{background:#132033;color:#D6E2F0}
 .chart-legend{display:flex;justify-content:flex-end;gap:14px;font-size:10px;color:#8aaac8}
 .chart-caption{text-align:center;font-size:10px;color:#7D91AA;letter-spacing:1.2px;margin-top:4px;font-family:'DM Mono',monospace}
+.chart-modal{width:min(90vw,1220px);height:min(88vh,820px);background:#071019;border:1px solid #22364A;border-radius:10px;box-shadow:0 28px 90px rgba(0,0,0,.64);padding:22px;display:flex;flex-direction:column;gap:16px}
+.chart-modal-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;border-bottom:1px solid #1B2A3A;padding-bottom:14px}
+.chart-modal-title{font-family:'Syne',sans-serif;font-size:26px;font-weight:800;color:#fff;line-height:1}
+.chart-modal-subtitle{font-size:12px;color:#8aaac8;margin-top:8px}
+.modal-close{background:#0B131D;border:1px solid #1B2A3A;color:#D6E2F0;border-radius:6px;width:34px;height:34px;cursor:pointer;font-size:18px;line-height:1}
+.chart-modal-body{display:grid;grid-template-columns:minmax(0,1fr) 260px;gap:16px;min-height:0;flex:1}
+.expanded-chart-card,.milestones-card{background:#050A0F;border:1px solid #1B2A3A;border-radius:8px;padding:16px;min-width:0;position:relative}
+.expanded-chart-card{display:flex;flex-direction:column;gap:10px}
+.expanded-chart-legend{display:flex;gap:16px;flex-wrap:wrap;font-size:11px;color:#8aaac8;justify-content:flex-end}
+.expanded-chart{flex:1;min-height:360px}
+.chart-tooltip{position:absolute;min-width:238px;background:#0B131D;border:1px solid #2C425C;border-radius:8px;padding:12px;box-shadow:0 18px 48px rgba(0,0,0,.5);pointer-events:none;color:#D6E2F0;font-size:11px;line-height:1.55;z-index:2}
+.chart-tooltip-title{font-family:'Syne',sans-serif;font-weight:800;color:#fff;font-size:15px;margin-bottom:6px}
+.chart-tooltip-row{display:flex;justify-content:space-between;gap:12px}
+.chart-tooltip-row span:last-child{font-family:'Syne',sans-serif;font-weight:800;color:#fff}
+.milestones-title{font-family:'Syne',sans-serif;font-size:18px;font-weight:800;color:#fff;margin-bottom:12px}
+.milestone-list{display:grid;gap:10px}
+.milestone{border:1px solid #1B2A3A;background:#071019;border-radius:7px;padding:12px}
+.milestone-target{font-family:'Syne',sans-serif;font-size:20px;font-weight:800;color:#fff;line-height:1}
+.milestone-status{font-size:11px;color:#8aaac8;margin-top:8px}
+.milestone-status.reached{color:#63E6BE}
 .calc-cta{margin-top:18px;background:#0B131D;border:1px solid #1B2A3A;border-radius:8px;padding:20px 22px;display:flex;align-items:center;justify-content:space-between;gap:18px}
 .calc-cta-title{font-family:'Syne',sans-serif;font-size:18px;font-weight:800;color:#fff;margin-bottom:6px}
 .calc-cta-copy{font-size:12px;color:#8aaac8;line-height:1.55;max-width:720px}
@@ -447,6 +470,10 @@ tr:hover .sim-td,.sim-row-atm:hover .sim-td-price,.sim-row-atm:hover .sim-td-pct
   .calc-results{grid-template-columns:1fr}
   .investment-breakdown{grid-template-columns:1fr}
   .calc-cta{align-items:flex-start;flex-direction:column}
+  .chart-modal{width:94vw;height:90vh;padding:16px}
+  .chart-modal-body{grid-template-columns:1fr;overflow-y:auto}
+  .expanded-chart{min-height:300px}
+  .expanded-chart-legend,.chart-top{align-items:flex-start;flex-direction:column}
   .lgrid{grid-template-columns:1fr 1fr}
   .sec table{display:block;overflow-x:auto;width:100%;-webkit-overflow-scrolling:touch}
   .sim-wrap{flex-direction:column;overflow-x:hidden;max-width:100%}
@@ -3011,6 +3038,110 @@ const integerInputValue = (value) => {
 const formatWholeNumber = (value) => Math.round(Number(value || 0)).toLocaleString("en-US", { maximumFractionDigits:0 });
 const formatCurrencyWhole = (value) => `$${formatWholeNumber(value)}`;
 const formatIntegerInput = (value) => value === "" ? "" : formatWholeNumber(value);
+const milestoneTargets = [100000,250000,500000,1000000];
+
+function ExpandedGrowthChartModal({ points, milestones, onClose }) {
+  const [hoverPoint, setHoverPoint] = useState(null);
+  useEffect(()=>{
+    const onKey = (e) => { if(e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  },[onClose]);
+
+  const area = {left:7,right:98,top:10,bottom:90};
+  const width = area.right - area.left;
+  const height = area.bottom - area.top;
+  const maxValue = Math.max(...points.map(p=>Math.max(p.value,p.contributions,p.growth)), 1);
+  const xFor = (idx) => area.left + (points.length <= 1 ? 0 : (idx / (points.length - 1)) * width);
+  const yFor = (value) => area.bottom - (Math.max(0,value) / maxValue) * height;
+  const pathFor = (key) => points.map((point,idx)=>`${idx===0?"M":"L"} ${xFor(idx).toFixed(2)} ${yFor(point[key]).toFixed(2)}`).join(" ");
+  const portfolioPath = pathFor("value");
+  const contributionPath = pathFor("contributions");
+  const growthPath = pathFor("growth");
+  const hoverIdx = hoverPoint ? points.indexOf(hoverPoint.point) : -1;
+  const hoverX = hoverIdx >= 0 ? xFor(hoverIdx) : 0;
+  const hoverPortfolioY = hoverPoint ? yFor(hoverPoint.point.value) : 0;
+
+  const handleMove = (e) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const pctX = ((e.clientX - rect.left) / rect.width) * 100;
+    const clamped = Math.max(area.left, Math.min(area.right, pctX));
+    const idx = Math.round(((clamped - area.left) / width) * Math.max(points.length - 1, 0));
+    const point = points[Math.max(0, Math.min(points.length - 1, idx))];
+    setHoverPoint({
+      point,
+      left: Math.min(Math.max(e.clientX - rect.left + 18, 14), rect.width - 260),
+      top: Math.min(Math.max(e.clientY - rect.top + 18, 12), rect.height - 178),
+    });
+  };
+
+  return (
+    <div className="overlay" onMouseDown={onClose}>
+      <div className="chart-modal" onMouseDown={(e)=>e.stopPropagation()}>
+        <div className="chart-modal-head">
+          <div>
+            <div className="chart-modal-title">Portfolio Growth</div>
+            <div className="chart-modal-subtitle">Expanded projection with contributions and investment growth.</div>
+          </div>
+          <button className="modal-close" type="button" aria-label="Close chart" onClick={onClose}>×</button>
+        </div>
+        <div className="chart-modal-body">
+          <div className="expanded-chart-card">
+            <div className="expanded-chart-legend">
+              <span><span className="legend-dot" style={{background:"#63E6BE"}}/>Portfolio Value</span>
+              <span><span className="legend-dot" style={{background:"#5B8CFF"}}/>Total Contributions</span>
+              <span><span className="legend-dot" style={{background:"#FFD84D"}}/>Investment Growth</span>
+            </div>
+            <div className="expanded-chart">
+              <svg viewBox="0 0 100 100" preserveAspectRatio="none" style={{width:"100%",height:"100%",display:"block"}} onMouseMove={handleMove} onMouseLeave={()=>setHoverPoint(null)}>
+                <defs>
+                  <linearGradient id="portfolioGlow" x1="0" x2="0" y1="0" y2="1">
+                    <stop offset="0%" stopColor="#63E6BE" stopOpacity=".18"/>
+                    <stop offset="100%" stopColor="#63E6BE" stopOpacity="0"/>
+                  </linearGradient>
+                </defs>
+                {[25,45,65,85].map(y=><line key={y} x1={area.left} x2={area.right} y1={y} y2={y} stroke="#1B2A3A" strokeWidth=".35"/>)}
+                <line x1={area.left} x2={area.right} y1={area.bottom} y2={area.bottom} stroke="#314457" strokeWidth=".45"/>
+                <path d={`${portfolioPath} L ${area.right} ${area.bottom} L ${area.left} ${area.bottom} Z`} fill="url(#portfolioGlow)"/>
+                <path d={contributionPath} fill="none" stroke="#5B8CFF" strokeWidth="1.45" strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke"/>
+                <path d={growthPath} fill="none" stroke="#FFD84D" strokeWidth="1.45" strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke"/>
+                <path d={portfolioPath} fill="none" stroke="#63E6BE" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke"/>
+                {hoverPoint&&(
+                  <>
+                    <line x1={hoverX} x2={hoverX} y1={area.top} y2={area.bottom} stroke="#D6E2F0" strokeOpacity=".32" strokeWidth=".5"/>
+                    <circle cx={hoverX} cy={hoverPortfolioY} r="1.2" fill="#63E6BE" stroke="#071019" strokeWidth=".4" vectorEffect="non-scaling-stroke"/>
+                  </>
+                )}
+              </svg>
+              {hoverPoint&&(
+                <div className="chart-tooltip" style={{left:hoverPoint.left,top:hoverPoint.top}}>
+                  <div className="chart-tooltip-title">Year {formatWholeNumber(Math.max(0, hoverPoint.point.month / 12))}</div>
+                  <div className="chart-tooltip-row"><span>Portfolio Value</span><span>{formatCurrencyWhole(hoverPoint.point.value)}</span></div>
+                  <div className="chart-tooltip-row"><span>Total Contributions</span><span>{formatCurrencyWhole(hoverPoint.point.contributions)}</span></div>
+                  <div className="chart-tooltip-row"><span>Investment Growth</span><span>{formatCurrencyWhole(hoverPoint.point.growth)}</span></div>
+                  <div className="chart-tooltip-row"><span>Growth Share</span><span>{formatWholeNumber(hoverPoint.point.growthShare * 100)}%</span></div>
+                </div>
+              )}
+            </div>
+          </div>
+          <div className="milestones-card">
+            <div className="milestones-title">Milestones</div>
+            <div className="milestone-list">
+              {milestones.map(milestone=>(
+                <div className="milestone" key={milestone.target}>
+                  <div className="milestone-target">{formatCurrencyWhole(milestone.target)}</div>
+                  <div className={`milestone-status ${milestone.reached?"reached":""}`}>
+                    {milestone.reached ? "✓ Reached" : milestone.years == null ? "Not reached" : `${milestone.years.toFixed(1)} years`}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function CalculatorsPage({ onNavigate }) {
   const [initial, setInitial] = useState("10000");
@@ -3018,6 +3149,7 @@ function CalculatorsPage({ onNavigate }) {
   const [annualReturn, setAnnualReturn] = useState("8");
   const [years, setYears] = useState("20");
   const [chartPeriod, setChartPeriod] = useState("month");
+  const [fullChartOpen, setFullChartOpen] = useState(()=>new URLSearchParams(window.location.search).get("fullChart")==="1");
   const months = Math.max(0, Math.round((parseFloat(years)||0) * 12));
   const monthlyRate = (parseFloat(annualReturn)||0) / 100 / 12;
   const initialValue = parseFloat(initial)||0;
@@ -3032,6 +3164,30 @@ function CalculatorsPage({ onNavigate }) {
   },[initialValue, monthlyContribution, monthlyRate, months]);
   const totalContributions = initialValue + monthlyContribution * months;
   const totalGrowth = finalValue - totalContributions;
+  const fullChartPoints = useMemo(()=>{
+    let value = initialValue;
+    const points = [{month:0,value,contributions:initialValue,growth:0,growthShare:0}];
+    for(let month=1;month<=months;month++){
+      value = value * (1 + monthlyRate);
+      value += monthlyContribution;
+      const contributions = initialValue + monthlyContribution * month;
+      const growth = Math.max(value - contributions, 0);
+      points.push({month,value,contributions,growth,growthShare:value > 0 ? growth / value : 0});
+    }
+    return points;
+  },[initialValue, monthlyContribution, monthlyRate, months]);
+  const milestones = useMemo(()=>{
+    return milestoneTargets.map(target=>{
+      if(initialValue >= target) return {target,reached:true,years:0};
+      let value = initialValue;
+      for(let month=1;month<=1200;month++){
+        value = value * (1 + monthlyRate);
+        value += monthlyContribution;
+        if(value >= target) return {target,reached:false,years:month/12};
+      }
+      return {target,reached:false,years:null};
+    });
+  },[initialValue, monthlyContribution, monthlyRate, months]);
   const chartPoints = useMemo(()=>{
     const steps = chartPeriod === "year" ? Math.max(1, Math.ceil(months / 12)) : Math.min(Math.max(months, 1), 120);
     const interval = chartPeriod === "year" ? 12 : Math.max(1, Math.ceil(Math.max(months, 1) / steps));
@@ -3126,7 +3282,10 @@ function CalculatorsPage({ onNavigate }) {
               <div className="calc-result-value" style={{color:totalGrowth>=0?"#FFD84D":"#FF4D6D"}}>{formatCurrencyWhole(totalGrowth)}</div>
             </div>
           </div>
-          <div className="sectitle" style={{marginBottom:12}}>Investment Breakdown</div>
+          <div className="breakdown-head">
+            <div className="sectitle">Investment Breakdown</div>
+            <button className="full-chart-btn" type="button" onClick={()=>setFullChartOpen(true)}>View Full Chart ↗</button>
+          </div>
           <div className="investment-breakdown">
             <div className="breakdown-card">
               <div className="donut-wrap">
@@ -3186,11 +3345,18 @@ function CalculatorsPage({ onNavigate }) {
         <div>
           <div className="calc-cta-title">Looking for higher income strategies?</div>
           <div className="calc-cta-copy">
-            Many investors use options to generate additional income beyond traditional buy-and-hold investing. Explore Covered Calls, Cash Secured Puts, PMCCs, and other premium-generating strategies.
+            Learn how option traders generate premium income using Covered Calls, Cash-Secured Puts, PMCCs and other income strategies.
           </div>
         </div>
         <button className="btn" onClick={()=>onNavigate("learn-courses")}>Learn About Options</button>
       </div>
+      {fullChartOpen&&(
+        <ExpandedGrowthChartModal
+          points={fullChartPoints}
+          milestones={milestones}
+          onClose={()=>setFullChartOpen(false)}
+        />
+      )}
     </div>
   );
 }
