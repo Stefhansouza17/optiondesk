@@ -378,7 +378,11 @@ tr:hover td{background:#101e2c}
 .legend-dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:7px}
 .legend-value{display:block;color:#D6E2F0;font-family:'Syne',sans-serif;font-size:14px;font-weight:800;margin-top:2px}
 .calc-chart{height:210px;background:#071019;border:1px solid #1B2A3A;border-radius:8px;padding:12px}
-.chart-legend{display:flex;justify-content:flex-end;gap:14px;margin-bottom:8px;font-size:10px;color:#8aaac8}
+.chart-top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:8px}
+.chart-toggle{display:inline-flex;align-items:center;background:#0B131D;border:1px solid #1B2A3A;border-radius:6px;padding:2px}
+.chart-toggle button{border:0;background:transparent;color:#7D91AA;border-radius:4px;padding:4px 8px;font-family:'DM Mono',monospace;font-size:10px;cursor:pointer}
+.chart-toggle button.active{background:#132033;color:#D6E2F0}
+.chart-legend{display:flex;justify-content:flex-end;gap:14px;font-size:10px;color:#8aaac8}
 .chart-caption{text-align:center;font-size:10px;color:#7D91AA;letter-spacing:1.2px;margin-top:4px;font-family:'DM Mono',monospace}
 .calc-cta{margin-top:18px;background:#0B131D;border:1px solid #1B2A3A;border-radius:8px;padding:20px 22px;display:flex;align-items:center;justify-content:space-between;gap:18px}
 .calc-cta-title{font-family:'Syne',sans-serif;font-size:18px;font-weight:800;color:#fff;margin-bottom:6px}
@@ -3013,6 +3017,7 @@ function CalculatorsPage({ onNavigate }) {
   const [monthly, setMonthly] = useState("500");
   const [annualReturn, setAnnualReturn] = useState("8");
   const [years, setYears] = useState("20");
+  const [chartPeriod, setChartPeriod] = useState("month");
   const months = Math.max(0, Math.round((parseFloat(years)||0) * 12));
   const monthlyRate = (parseFloat(annualReturn)||0) / 100 / 12;
   const initialValue = parseFloat(initial)||0;
@@ -3028,8 +3033,8 @@ function CalculatorsPage({ onNavigate }) {
   const totalContributions = initialValue + monthlyContribution * months;
   const totalGrowth = finalValue - totalContributions;
   const chartPoints = useMemo(()=>{
-    const steps = Math.min(Math.max(months, 1), 120);
-    const interval = Math.max(1, Math.ceil(Math.max(months, 1) / steps));
+    const steps = chartPeriod === "year" ? Math.max(1, Math.ceil(months / 12)) : Math.min(Math.max(months, 1), 120);
+    const interval = chartPeriod === "year" ? 12 : Math.max(1, Math.ceil(Math.max(months, 1) / steps));
     let value = initialValue;
     const points = [{month:0,value,contributions:initialValue}];
     for(let month=1;month<=months;month++){
@@ -3040,7 +3045,7 @@ function CalculatorsPage({ onNavigate }) {
       }
     }
     return points;
-  },[initialValue, monthlyContribution, monthlyRate, months]);
+  },[initialValue, monthlyContribution, monthlyRate, months, chartPeriod]);
   const chartMax = Math.max(...chartPoints.map(p=>Math.max(p.value,p.contributions)), 1);
   const barArea = {left:3,right:98,top:9,bottom:91};
   const chartHeight = barArea.bottom - barArea.top;
@@ -3139,9 +3144,15 @@ function CalculatorsPage({ onNavigate }) {
               </div>
             </div>
             <div className="calc-chart" aria-label="Projected portfolio growth chart">
-              <div className="chart-legend">
-                <span><span className="legend-dot" style={{background:"#5B8CFF"}}/>Total Contributions</span>
-                <span><span className="legend-dot" style={{background:"#FFD84D"}}/>Investment Growth</span>
+              <div className="chart-top">
+                <div className="chart-toggle" aria-label="Chart period">
+                  <button type="button" className={chartPeriod==="month"?"active":""} aria-pressed={chartPeriod==="month"} onClick={()=>setChartPeriod("month")}>Month</button>
+                  <button type="button" className={chartPeriod==="year"?"active":""} aria-pressed={chartPeriod==="year"} onClick={()=>setChartPeriod("year")}>Year</button>
+                </div>
+                <div className="chart-legend">
+                  <span><span className="legend-dot" style={{background:"#5B8CFF"}}/>Total Contributions</span>
+                  <span><span className="legend-dot" style={{background:"#FFD84D"}}/>Investment Growth</span>
+                </div>
               </div>
               <svg viewBox="0 0 100 100" preserveAspectRatio="none" style={{width:"100%",height:"calc(100% - 34px)",display:"block"}}>
                 <defs>
@@ -3165,7 +3176,7 @@ function CalculatorsPage({ onNavigate }) {
                   </g>
                 ))}
               </svg>
-              <div className="chart-caption">Months</div>
+              <div className="chart-caption">{chartPeriod==="year"?"Years":"Months"}</div>
             </div>
           </div>
         </div>
