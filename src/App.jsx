@@ -1953,10 +1953,22 @@ function SimulatorPanel({ onSaveManualTrade, simulatorPreset }) {
     const preset = SIMULATOR_PRESETS[simulatorPreset.title];
     if(!preset) {
       appliedPresetRef.current = simulatorPreset.id;
-      setActivePresetName("");
+      setActivePresetName(simulatorPreset.title);
       return;
     }
-    if(!chain.length || !spot) return;
+    setActivePresetName(simulatorPreset.title);
+    if(!chain.length || !spot) {
+      setLegs(preset.map((leg,idx)=>({
+        id: Date.now()+idx,
+        side: leg.side,
+        optType: leg.optType,
+        strike: null,
+        strikeInput: "",
+        customPremium: null,
+        premInput: "",
+      })));
+      return;
+    }
     const selectStrike = (optType, offset) => {
       const strikes = [...new Set(chain.filter(o=>o.option_type===optType).map(o=>o.strike))].sort((a,b)=>a-b);
       if(!strikes.length) return null;
@@ -1981,7 +1993,6 @@ function SimulatorPanel({ onSaveManualTrade, simulatorPreset }) {
     });
     if(nextLegs.some(leg=>leg.strike)) {
       setLegs(nextLegs);
-      setActivePresetName(simulatorPreset.title);
       appliedPresetRef.current = simulatorPreset.id;
     }
   },[simulatorPreset, chain, spot]);
