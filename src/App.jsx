@@ -479,7 +479,7 @@ tr:hover td{background:#101e2c}
 .sim-timeline{border-bottom:1px solid #22364A;background:#071019;padding:13px 17px;flex-shrink:0;overflow-x:auto}
 .sim-timeline::-webkit-scrollbar,.sim-matrix::-webkit-scrollbar{height:5px;width:5px}
 .sim-timeline::-webkit-scrollbar-thumb,.sim-matrix::-webkit-scrollbar-thumb{background:#22364A;border-radius:4px}
-.sim-exp-btn{background:#050A0F;border:1px solid #1B2A3A;color:#AFC4E9;padding:10px 14px;border-radius:18px;cursor:pointer;font-family:'DM Mono','IBM Plex Mono',monospace;font-size:13px;font-weight:600;white-space:nowrap;flex-shrink:0;transition:all .15s;min-width:48px;text-align:center;line-height:1.1}
+.sim-exp-btn{background:#050A0F;border:1px solid #1B2A3A;color:#AFC4E9;padding:10px 14px;border-radius:18px;cursor:pointer;font-family:'DM Mono','IBM Plex Mono',monospace;font-size:15px;font-weight:700;white-space:nowrap;flex-shrink:0;transition:all .15s;min-width:52px;text-align:center;line-height:1.1}
 .sim-exp-btn:hover{border-color:#2a4a6a;color:#D6E2F0;background:#0B131D}
 .sim-exp-btn.sel{background:#9CFAC8;border-color:#9CFAC8;color:#050A0F;font-weight:800;box-shadow:0 0 0 2px rgba(99,230,190,.14),0 0 24px rgba(99,230,190,.62),0 0 44px rgba(99,230,190,.2)}
 .sim-dir-row{display:flex;gap:6px}
@@ -2498,7 +2498,7 @@ function SimulatorPanel({ onSaveManualTrade, simulatorPreset }) {
             <div style={{display:"flex",gap:0}}>
               {Object.entries(groupedExps).map(([month,dates])=>(
                 <div key={month} style={{flexShrink:0}}>
-                  <div style={{fontSize:9,letterSpacing:1.5,textTransform:"uppercase",color:"#4A6A8A",textAlign:"center",borderRight:"1px solid #1B2A3A",padding:"0 10px 4px",marginBottom:4}}>{month}</div>
+                  <div style={{fontSize:11,letterSpacing:1.7,textTransform:"uppercase",color:"#5f7c9d",textAlign:"center",borderRight:"1px solid #1B2A3A",padding:"0 10px 5px",marginBottom:5,fontWeight:700}}>{month}</div>
                   <div style={{display:"flex",gap:3,padding:"0 6px 8px"}}>
                     {dates.map(exp=>{
                       const d=new Date(exp+"T12:00:00");
@@ -2506,7 +2506,7 @@ function SimulatorPanel({ onSaveManualTrade, simulatorPreset }) {
                       return(
                         <button key={exp} className={`sim-exp-btn${selExp===exp?" sel":""}`} onClick={()=>loadChain(exp)}>
                           {d.getDate()}
-                          <span style={{display:"block",fontSize:8,opacity:.7,marginTop:1,textAlign:"center"}}>{expDte}d</span>
+                          <span style={{display:"block",fontSize:10,opacity:.78,marginTop:2,textAlign:"center",fontWeight:700}}>{expDte}d</span>
                         </button>
                       );
                     })}
@@ -2525,7 +2525,7 @@ function SimulatorPanel({ onSaveManualTrade, simulatorPreset }) {
           const evColor=expectedValue!=null&&expectedValue>=0?"#63E6BE":"#FF4D6D";
           const evPct=expectedValue!=null&&activePremium>0?((expectedValue/Math.abs(activePremium*100))*100):null;
           const lowerCardStyle={background:"linear-gradient(180deg,#0B131D,#071019)",border:"1px solid #22364A",borderRadius:7,padding:"9px 11px",minHeight:58,display:"flex",flexDirection:"column",justifyContent:"center",alignItems:"flex-start",gap:7,boxSizing:"border-box"};
-          const lowerLabelStyle={fontSize:9,color:"#9EB9E9",letterSpacing:.45,fontWeight:700,fontFamily:"DM Mono,monospace",textTransform:"uppercase",lineHeight:1.2};
+          const lowerLabelStyle={fontSize:11,color:"#B7C9EA",letterSpacing:.5,fontWeight:800,fontFamily:"DM Mono,monospace",textTransform:"uppercase",lineHeight:1.2};
           const lowerValueStyle={fontSize:14,fontWeight:800,fontFamily:"DM Mono,monospace",lineHeight:1.05};
           const lowerSubStyle={fontSize:10,fontFamily:"DM Mono,monospace",lineHeight:1.05,marginTop:2};
           return(
@@ -2534,24 +2534,32 @@ function SimulatorPanel({ onSaveManualTrade, simulatorPreset }) {
             <div style={{padding:"15px 20px 18px",borderRight:"1px solid #22364A",borderBottom:"1px solid #22364A",display:"flex",flexDirection:"column",gap:10,alignSelf:"start",background:"linear-gradient(180deg,#071019,#050A0F)"}}>
               <div style={{display:"flex",alignItems:"center",gap:6}}>
                 <div className="sim-slbl" style={{margin:0,letterSpacing:2}}>Probabilities</div>
-                <button style={{width:15,height:15,borderRadius:"50%",background:"#1B2A3A",border:"1px solid #2a3a4a",
-                  color:"#6a8aaa",fontSize:9,cursor:"default",display:"flex",alignItems:"center",justifyContent:"center",
-                  fontFamily:"DM Mono,monospace",padding:0,flexShrink:0}}>?</button>
+                <div style={{position:"relative",display:"inline-block"}}>
+                  <button style={{width:15,height:15,borderRadius:"50%",background:"#1B2A3A",border:"1px solid #2a3a4a",
+                    color:"#6a8aaa",fontSize:9,cursor:"help",display:"flex",alignItems:"center",justifyContent:"center",
+                    fontFamily:"DM Mono,monospace",padding:0,flexShrink:0}}>?</button>
+                  <div className="ts-tooltip">
+                    Chance of Profit estimates the current probability of a profitable outcome.{"\n"}
+                    Prob ITM estimates the chance the option finishes in the money.{"\n"}
+                    Prob Touch estimates the chance price touches the strike before expiration.{"\n"}
+                    Assignment Risk appears for short options only.
+                  </div>
+                </div>
               </div>
 
               {/* Top row — primary metrics */}
               <div style={{display:"grid",gridTemplateColumns:"1.15fr 1fr 1fr",gap:10,alignItems:"start"}}>
                 <div>
-                  <div style={{fontSize:10,color:"#B7C9EA",marginBottom:7,letterSpacing:.35,fontFamily:"DM Mono,monospace"}}>Chance of Profit</div>
+                  <div style={{fontSize:12,color:"#D6E2F0",marginBottom:7,letterSpacing:.4,fontWeight:800,fontFamily:"DM Mono,monospace"}}>Chance of Profit</div>
                   <div style={{fontFamily:"Syne,sans-serif",fontSize:29,fontWeight:800,color:"#5B8CFF",lineHeight:1,letterSpacing:.1,textShadow:"0 0 18px rgba(91,140,255,.18)"}}>{(chanceOfProfit*100).toFixed(1)}%</div>
                 </div>
                 <div>
-                  <div style={{fontSize:10,color:"#B7C9EA",marginBottom:7,letterSpacing:.35,fontFamily:"DM Mono,monospace"}}>Delta</div>
+                  <div style={{fontSize:12,color:"#D6E2F0",marginBottom:7,letterSpacing:.4,fontWeight:800,fontFamily:"DM Mono,monospace"}}>Delta</div>
                   <div style={{fontFamily:"Syne,sans-serif",fontSize:23,fontWeight:800,color:deltaDirColor,lineHeight:1,textShadow:"0 0 16px rgba(91,140,255,.14)"}}>{Math.abs(delta).toFixed(2)}</div>
                   <div style={{fontSize:10,color:deltaDirColor,marginTop:5,fontWeight:700,fontFamily:"DM Mono,monospace"}}>{deltaDir}</div>
                 </div>
                 <div>
-                  <div style={{fontSize:10,color:"#B7C9EA",marginBottom:7,letterSpacing:.35,fontFamily:"DM Mono,monospace"}}>IV (option)</div>
+                  <div style={{fontSize:12,color:"#D6E2F0",marginBottom:7,letterSpacing:.4,fontWeight:800,fontFamily:"DM Mono,monospace"}}>IV (option)</div>
                   <div style={{fontFamily:"Syne,sans-serif",fontSize:23,fontWeight:800,color:"#FFD84D",lineHeight:1,textShadow:"0 0 16px rgba(255,216,77,.14)"}}>{(iv*100).toFixed(1)}%</div>
                   <div style={{fontSize:10,color:ivColor,marginTop:5,fontWeight:700,fontFamily:"DM Mono,monospace"}}>{ivLbl}</div>
                 </div>
