@@ -257,10 +257,11 @@ const CSS = `
 html,body{font-family:'DM Mono','IBM Plex Mono',monospace;background:#050A0F;color:#D6E2F0;-webkit-font-smoothing:antialiased}
 ::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:#071019}::-webkit-scrollbar-thumb{background:#1e3a5f;border-radius:2px}
 .hdr{border-bottom:1px solid #1B2A3A;padding:13px 24px;display:flex;align-items:center;justify-content:space-between;background:rgba(10,20,35,0.97);position:sticky;top:0;z-index:100;backdrop-filter:blur(10px)}
-.logo{display:inline-flex;align-items:center;gap:9px;font-family:'Syne',sans-serif;font-size:20px;font-weight:800;color:#fff;cursor:pointer;user-select:none}
-.logo-mark{width:28px;height:28px;border-radius:7px;object-fit:cover;box-shadow:0 0 18px rgba(99,230,190,.18)}
-.logo-name{color:#fff}
-.logo-name span{color:#63E6BE}
+.logo{display:inline-flex;align-items:center;gap:16px;font-family:'Syne',sans-serif;font-size:20px;font-weight:800;color:#fff;cursor:pointer;user-select:none;line-height:1}
+.logo-mark{width:52px;height:52px;border-radius:13px;object-fit:cover;box-shadow:0 0 18px rgba(99,230,190,.18);flex-shrink:0}
+.logo-lockup{display:inline-flex;align-items:center;gap:8px}
+.logo-name{background:linear-gradient(105deg,#FFFFFF 0%,#F4FFFB 58%,#8EF0D0 100%);-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent;letter-spacing:0}
+.beta-badge{font-family:'DM Mono','IBM Plex Mono',monospace;font-size:9px;font-weight:600;letter-spacing:.8px;line-height:1;text-transform:uppercase;color:rgba(142,240,208,.68);background:rgba(99,230,190,.07);border:1px solid rgba(142,240,208,.16);border-radius:3px;padding:3px 6px}
 .badge{font-size:10px;background:#0a2a1a;color:#63E6BE;border:1px solid #63E6BE33;padding:3px 8px;border-radius:3px;letter-spacing:1px;text-transform:uppercase}
 .home-btn{background:#1B2A3A;border:1px solid #2a3a4a;color:#8aaac8;padding:6px 12px;border-radius:4px;cursor:pointer;font-family:'DM Mono',monospace;font-size:11px;transition:all 0.2s}
 .home-btn:hover{background:#2a3a4a;color:#D6E2F0}
@@ -508,6 +509,10 @@ tr:hover .sim-td,.sim-row-atm:hover .sim-td-price,.sim-row-atm:hover .sim-td-pct
   html,body{overflow-x:hidden;max-width:100%}
   .hdr{padding:10px 12px;flex-wrap:wrap;gap:6px}
   .hdr>div:last-child{display:none}
+  .logo-mark{width:36px;height:36px;border-radius:9px}
+  .logo{font-size:18px}
+  .logo-lockup{gap:6px}
+  .beta-badge{font-size:8px;padding:3px 5px;letter-spacing:.6px}
   .tabs{padding:0 8px}
   .main{padding:14px 12px;box-sizing:border-box;max-width:100%;overflow-x:hidden}
   .pbar{margin:10px 8px 0;padding:8px 12px;box-sizing:border-box}
@@ -541,6 +546,9 @@ tr:hover .sim-td,.sim-row-atm:hover .sim-td-price,.sim-row-atm:hover .sim-td-pct
   .sim-dir-row .toggle-group{flex:1 1 calc(50% - 3px);min-width:0}
   .tgl{padding:7px 10px;font-size:10px}
   .toggle-group{min-width:0}
+}
+@media(min-width:769px) and (max-width:1024px){
+  .logo-mark{width:44px;height:44px;border-radius:11px}
 }
 .ts-tooltip{display:none;position:absolute;bottom:22px;left:-90px;z-index:99;background:#0B131D;border:1px solid #3a6a9a;border-radius:8px;padding:13px 15px;width:250px;font-size:11.5px;color:#c0d8f0;line-height:2;white-space:pre-line;pointer-events:none;box-shadow:0 4px 20px rgba(0,0,0,.6)}
 .ts-tooltip b{color:#D6E2F0;display:block;margin-bottom:4px;font-size:10px}
@@ -5113,7 +5121,10 @@ function App() {
         <div style={{display:"flex",alignItems:"center",gap:10}}>
           <div className="logo" onClick={()=>navigate("home")}>
             <img className="logo-mark" src="/optiondesk-logo.png" alt="" aria-hidden="true" />
-            <span className="logo-name">Option<span>Desk</span></span>
+            <span className="logo-lockup">
+              <span className="logo-name">OptionDesk</span>
+              <span className="beta-badge">Beta</span>
+            </span>
           </div>
           {active!=="home"&&<button className="home-btn" onClick={()=>navigate("home")}>← Home</button>}
         </div>
