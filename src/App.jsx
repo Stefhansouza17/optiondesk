@@ -115,6 +115,10 @@ const isThetaClosingBuyTrade = (trade) =>
   && optionType(trade)==="call"
   && trade?.status!=="open"
   && !isLeapCloseTrade(trade);
+const sameOptionContract = (a,b) =>
+  optionType(a)===optionType(b)
+  && Math.abs(parseFloat(a?.strike)-parseFloat(b?.strike))<0.01
+  && a?.expiration===b?.expiration;
 
 const strategyLabelForTrade = (trade) => {
   const action = (trade?.action||"").toUpperCase();
@@ -1023,15 +1027,36 @@ function AssetDashboard({ asset, strategies=[], onCreateStrategy, onChangeTradeS
   const pmccClosingBuys = trades
     .filter(isThetaClosingBuyTrade)
     .sort((a,b)=>new Date(a.date||0)-new Date(b.date||0));
+  const remainingClosingBuys = pmccClosingBuys.map(trade=>({
+    trade,
+    remaining: tradeContracts(trade),
+  }));
   const pmccCycles = pmccShortCalls.map((sell,idx)=>{
     const contracts = tradeContracts(sell);
-    const close = pmccClosingBuys.find(b=>
-      Math.abs(parseFloat(b.strike)-parseFloat(sell.strike))<0.01 &&
-      b.expiration===sell.expiration &&
-      new Date(b.date||sell.date)>=new Date(sell.date||0)
-    );
+    const sellDate = new Date(sell.date||0);
+    const consumeCloseMatches = (exactOnly) => {
+      let remaining = contracts;
+      const matches = [];
+      remainingClosingBuys.forEach(entry=>{
+        if(remaining<=0 || entry.remaining<=0) return;
+        const closeDate = new Date(entry.trade.date||sell.date||0);
+        if(closeDate<sellDate) return;
+        if(exactOnly && !sameOptionContract(entry.trade, sell)) return;
+        if(!exactOnly && sameOptionContract(entry.trade, sell)) return;
+        const consumed = Math.min(remaining, entry.remaining);
+        entry.remaining -= consumed;
+        remaining -= consumed;
+        matches.push({trade:entry.trade, consumed});
+      });
+      return matches;
+    };
+    let closeMatches = consumeCloseMatches(true);
+    if(closeMatches.length===0 && sell.status==="closed") {
+      closeMatches = consumeCloseMatches(false);
+    }
+    const close = closeMatches[0]?.trade || null;
     const credit = tradePremium(sell)*contracts*100;
-    const debit = close?tradePremium(close)*Math.min(contracts,tradeContracts(close))*100:0;
+    const debit = closeMatches.reduce((sum,match)=>sum+tradePremium(match.trade)*match.consumed*100,0);
     const net = credit-debit;
     const dte = sell.expiration?Math.max(Math.ceil((new Date(sell.expiration)-new Date())/(1000*60*60*24)),0):0;
     return {
