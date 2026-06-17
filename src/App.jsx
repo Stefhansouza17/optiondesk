@@ -1887,10 +1887,12 @@ function PayoffChart({ spot, pnlAt, breakeven, singleLeg, height=185 }) {
 }
 
 // ── Simulator Panel ───────────────────────────────────────────────────────────
-function SimulatorPanel({ onSaveManualTrade }) {
+function SimulatorPanel({ onSaveManualTrade, simulatorPreset }) {
   const [searchInput, setSearchInput] = useState("IBIT");
   const [sym, setSym]         = useState("");
   const [legs, setLegs] = useState([{id:1,side:"buy",optType:"call",strike:null,strikeInput:"",customPremium:null,premInput:""}]);
+  const [activePresetName, setActivePresetName] = useState("");
+  const appliedPresetRef = useRef(null);
   const updateLeg = (id,patch) => setLegs(p=>p.map(l=>l.id===id?{...l,...patch}:l));
   const primaryLeg = legs[0];
   // Aliases + wrapper setters — all downstream code stays unchanged
@@ -1945,6 +1947,44 @@ function SimulatorPanel({ onSaveManualTrade }) {
   const getLegIV = useCallback((leg)=>{
     const o=getLegOption(leg); return Math.max(o?.greeks?.smv_vol||0.3,0.05);
   },[getLegOption]);
+
+  useEffect(()=>{
+    if(!simulatorPreset?.title || appliedPresetRef.current===simulatorPreset.id) return;
+    const preset = SIMULATOR_PRESETS[simulatorPreset.title];
+    if(!preset) {
+      appliedPresetRef.current = simulatorPreset.id;
+      setActivePresetName("");
+      return;
+    }
+    if(!chain.length || !spot) return;
+    const selectStrike = (optType, offset) => {
+      const strikes = [...new Set(chain.filter(o=>o.option_type===optType).map(o=>o.strike))].sort((a,b)=>a-b);
+      if(!strikes.length) return null;
+      let atmIdx = 0;
+      strikes.forEach((strike,idx)=>{
+        if(Math.abs(strike-spot)<Math.abs(strikes[atmIdx]-spot)) atmIdx = idx;
+      });
+      const idx = Math.max(0, Math.min(strikes.length-1, atmIdx + offset));
+      return strikes[idx];
+    };
+    const nextLegs = preset.map((leg,idx)=>{
+      const strike = selectStrike(leg.optType, leg.offset);
+      return {
+        id: Date.now()+idx,
+        side: leg.side,
+        optType: leg.optType,
+        strike,
+        strikeInput: strike ? strike.toFixed(2) : "",
+        customPremium: null,
+        premInput: "",
+      };
+    });
+    if(nextLegs.some(leg=>leg.strike)) {
+      setLegs(nextLegs);
+      setActivePresetName(simulatorPreset.title);
+      appliedPresetRef.current = simulatorPreset.id;
+    }
+  },[simulatorPreset, chain, spot]);
 
   const addLeg = ()=>{
     const last=legs[legs.length-1];
@@ -2204,6 +2244,11 @@ function SimulatorPanel({ onSaveManualTrade }) {
     <div className="sim-wrap">
       {/* ── LEFT PANEL ── */}
       <div className="sim-left">
+        {activePresetName&&(
+          <div style={{background:"#5B8CFF12",border:"1px solid #5B8CFF55",borderRadius:7,padding:"10px 12px",fontSize:11,color:"#9EB9E9",fontFamily:"DM Mono,monospace",letterSpacing:.3}}>
+            Loaded playbook: <span style={{color:"#D6E2F0",fontWeight:800}}>{activePresetName}</span>
+          </div>
+        )}
 
         {/* Symbol search / header */}
         {sym?(
@@ -2813,7 +2858,7 @@ function SimulatorPanel({ onSaveManualTrade }) {
 }
 
 // ── Home ──────────────────────────────────────────────────────────────────────
-function Home({ assets, strategies=[], onSelectAsset, onShowPositions, onSaveManualTrade, onEditTrade, onOpenLearn }) {
+function Home({ assets, strategies=[], onSelectAsset, onShowPositions, onSaveManualTrade, onEditTrade, onOpenLearn, simulatorPreset }) {
   const [stratFilter, setStratFilter] = useState("all");
   const [sortBy, setSortBy] = useState("expiration");
 
@@ -3018,7 +3063,7 @@ function Home({ assets, strategies=[], onSelectAsset, onShowPositions, onSaveMan
         <div style={{fontSize:13,letterSpacing:2.6,textTransform:"uppercase",color:"#B7C9EA",fontWeight:700}}>Simulator</div>
         <div style={{flex:1,height:1,background:"linear-gradient(90deg,#22364A,transparent)"}}/>
       </div>
-      <SimulatorPanel onSaveManualTrade={onSaveManualTrade}/>
+      <SimulatorPanel onSaveManualTrade={onSaveManualTrade} simulatorPreset={simulatorPreset}/>
     </div>
   );
 }
@@ -3216,6 +3261,24 @@ const PLAYBOOKS = [
     related:["Covered Call","Cash Secured Put","Position Sizing"],
   }),
 ];
+const SIMULATOR_PRESETS = {
+  "Covered Call": [{side:"sell",optType:"call",offset:2}],
+  "Cash Secured Put": [{side:"sell",optType:"put",offset:-2}],
+  PMCC: [{side:"buy",optType:"call",offset:-4},{side:"sell",optType:"call",offset:2}],
+  Wheel: [{side:"sell",optType:"put",offset:-2}],
+  "Long Call": [{side:"buy",optType:"call",offset:1}],
+  "Long Put": [{side:"buy",optType:"put",offset:-1}],
+  "Bull Call Spread": [{side:"buy",optType:"call",offset:0},{side:"sell",optType:"call",offset:3}],
+  "Bear Put Spread": [{side:"buy",optType:"put",offset:0},{side:"sell",optType:"put",offset:-3}],
+  "Iron Condor": [
+    {side:"buy",optType:"put",offset:-4},
+    {side:"sell",optType:"put",offset:-2},
+    {side:"sell",optType:"call",offset:2},
+    {side:"buy",optType:"call",offset:4},
+  ],
+  Straddle: [{side:"buy",optType:"call",offset:0},{side:"buy",optType:"put",offset:0}],
+  Strangle: [{side:"buy",optType:"call",offset:3},{side:"buy",optType:"put",offset:-3}],
+};
 const GLOSSARY_CATEGORIES = ["Basics","Greeks","Volatility","Strategies","Risk","Portfolio","OptionDesk"];
 const glossaryEntry = (category, term, short, definition, example, why, related) => ({
   category, term, short, definition, example, why, related,
@@ -3346,16 +3409,13 @@ function LearnPlaceholderPage({ title, onNavigate }) {
   );
 }
 
-function PlaybooksPage({ onNavigate }) {
+function PlaybooksPage({ onNavigate, onOpenSimulator }) {
   const [category, setCategory] = useState("All");
   const [selectedPlaybook, setSelectedPlaybook] = useState(null);
   const filteredPlaybooks = PLAYBOOKS.filter(playbook => category==="All" || playbook.category===category);
   const openSimulator = () => {
     setSelectedPlaybook(null);
-    onNavigate("home");
-    window.setTimeout(()=>{
-      document.getElementById("strategy-builder")?.scrollIntoView({behavior:"smooth",block:"start"});
-    },80);
+    onOpenSimulator(selectedPlaybook?.title);
   };
   const openRelatedPlaybook = (title) => {
     const related = PLAYBOOKS.find(playbook => playbook.title===title);
@@ -4572,6 +4632,7 @@ function App() {
   const [expiredPending, setExpiredPending] = useState([]);
   const [toast, setToast] = useState(null);
   const [learnOpen, setLearnOpen] = useState(false);
+  const [simulatorPreset, setSimulatorPreset] = useState(null);
   const showToast = (msg, ok=true) => { setToast({msg,ok}); setTimeout(()=>setToast(null),6000); };
   const [editTrade, setEditTrade] = useState(null);
   const [duplicatePrompt, setDuplicatePrompt] = useState(null);
@@ -5016,6 +5077,13 @@ function App() {
     window.location.hash = id;
     setActive(id);
   };
+  const openSimulatorFromPlaybook = (playbookTitle) => {
+    setSimulatorPreset(playbookTitle ? {title:playbookTitle,id:Date.now()} : null);
+    navigate("home");
+    window.setTimeout(()=>{
+      document.getElementById("strategy-builder")?.scrollIntoView({behavior:"smooth",block:"start"});
+    },120);
+  };
 
   return (
     <div style={{minHeight:"100vh",background:"#071019",color:"#D6E2F0"}}>
@@ -5064,10 +5132,10 @@ function App() {
         )}
       </div>
 
-      {active==="home"&&<Home assets={assetsWithStrategyLinks} strategies={strategies} onSelectAsset={id=>navigate(id)} onShowPositions={()=>setShowPositions(true)} onSaveManualTrade={handleSaveManualTrade} onEditTrade={r=>{const a=assetsWithStrategyLinks.find(x=>x.id===r.assetId);setEditTrade({r,asset:a});}} onOpenLearn={()=>navigate("learn-calculators")}/>}
+      {active==="home"&&<Home assets={assetsWithStrategyLinks} strategies={strategies} onSelectAsset={id=>navigate(id)} onShowPositions={()=>setShowPositions(true)} onSaveManualTrade={handleSaveManualTrade} onEditTrade={r=>{const a=assetsWithStrategyLinks.find(x=>x.id===r.assetId);setEditTrade({r,asset:a});}} onOpenLearn={()=>navigate("learn-calculators")} simulatorPreset={simulatorPreset}/>}
       {active==="learn"&&<LearnPage onNavigate={navigate}/>}
       {active==="learn-courses"&&<LearnPlaceholderPage title="Courses" onNavigate={navigate}/>}
-      {(active==="learn-playbooks"||active==="learn-playbook")&&<PlaybooksPage onNavigate={navigate}/>}
+      {(active==="learn-playbooks"||active==="learn-playbook")&&<PlaybooksPage onNavigate={navigate} onOpenSimulator={openSimulatorFromPlaybook}/>}
       {active==="learn-glossary"&&<GlossaryPage onNavigate={navigate}/>}
       {active==="learn-calculators"&&<CalculatorsPage onNavigate={navigate}/>}
       {assetsWithStrategyLinks.filter(a=>a.active).map(a=>active===a.id&&(
