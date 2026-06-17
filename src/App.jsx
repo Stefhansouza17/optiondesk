@@ -347,7 +347,7 @@ tr:hover td{background:#101e2c}
 .start-card-title{font-family:'Syne',sans-serif;font-size:16px;font-weight:800;color:#fff;margin-bottom:6px}
 .start-card-copy{font-size:11px;color:#8aaac8;line-height:1.45;margin-bottom:12px}
 .start-action{align-self:flex-start;background:color-mix(in srgb,var(--accent,#63E6BE) 11%,transparent);border:1px solid color-mix(in srgb,var(--accent,#63E6BE) 35%,transparent);color:var(--accent,#63E6BE);border-radius:4px;padding:6px 9px;font-family:'DM Mono',monospace;font-size:10px;cursor:pointer}
-.priority-desk{background:#0B131D;border:1px solid #1B2A3A;border-radius:8px;margin-bottom:12px;overflow:hidden}
+.priority-desk{background:#0B131D;border:1px solid #1B2A3A;border-radius:8px;margin-bottom:12px;overflow:visible}
 .priority-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;padding:15px 16px;border-bottom:1px solid #1B2A3A}
 .priority-title{font-family:'Syne',sans-serif;font-size:18px;font-weight:800;color:#fff;line-height:1}
 .priority-copy{font-size:11px;color:#7D91AA;margin-top:7px;line-height:1.45}
@@ -611,8 +611,10 @@ function Tooltip({ text }) {
           color:"#D6E2F0",
           zIndex:999,
           boxShadow:"0 4px 20px rgba(0,0,0,0.4)",
-          width:200,
+          width:320,
+          maxWidth:"calc(100vw - 40px)",
           lineHeight:1.5,
+          whiteSpace:"pre-line",
           pointerEvents:"none",
         }}>{text}</div>
       )}
