@@ -372,7 +372,7 @@ tr:hover td{background:#101e2c}
 .strat-chip.active{border-color:#63E6BE;background:#63E6BE15;color:#63E6BE}
 .tooltip-wrap{position:relative;display:inline-flex;align-items:center}
 .tooltip-icon{cursor:help;font-size:10px;color:#4A6A8A;background:#1B2A3A;border:1px solid #2a3a4a;border-radius:50%;width:14px;height:14px;display:inline-flex;align-items:center;justify-content:center;font-weight:600;margin-left:4px;flex-shrink:0}
-.tooltip-box{position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);background:#1B2A3A;border:1px solid #2a3a4a;border-radius:6px;padding:8px 12px;font-size:11px;color:#D6E2F0;z-index:999;box-shadow:0 4px 20px rgba(0,0,0,0.4);width:200px;line-height:1.5;pointer-events:none}
+.tooltip-box{position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);background:#1B2A3A;border:1px solid #2a3a4a;border-radius:6px;padding:8px 12px;font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:12px;color:#D6E2F0;z-index:999;box-shadow:0 4px 20px rgba(0,0,0,0.4);width:200px;line-height:1.55;pointer-events:none}
 .tooltip-box.below{bottom:auto;top:calc(100% + 6px)}
 .fade-in{animation:fadeIn 0.3s ease-in}
 @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
@@ -471,7 +471,7 @@ tr:hover td{background:#101e2c}
 .expanded-chart-card{display:flex;flex-direction:column;gap:10px}
 .expanded-chart-legend{display:flex;gap:16px;flex-wrap:wrap;font-size:11px;color:#8aaac8;justify-content:flex-end}
 .expanded-chart{height:270px}
-.chart-tooltip{position:absolute;min-width:238px;background:#0B131D;border:1px solid #2C425C;border-radius:8px;padding:12px;box-shadow:0 18px 48px rgba(0,0,0,.5);pointer-events:none;color:#D6E2F0;font-size:11px;line-height:1.55;z-index:2}
+.chart-tooltip{position:absolute;min-width:238px;background:#0B131D;border:1px solid #2C425C;border-radius:8px;padding:12px;box-shadow:0 18px 48px rgba(0,0,0,.5);pointer-events:none;color:#D6E2F0;font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:12px;line-height:1.55;z-index:2}
 .chart-tooltip-title{font-family:'Syne',sans-serif;font-weight:800;color:#fff;font-size:15px;margin-bottom:6px}
 .chart-tooltip-row{display:flex;justify-content:space-between;gap:12px}
 .chart-tooltip-row span:last-child{font-family:'Syne',sans-serif;font-weight:800;color:#fff}
@@ -585,7 +585,7 @@ tr:hover .sim-td,.sim-row-atm:hover .sim-td-price,.sim-row-atm:hover .sim-td-pct
   .priority-item:nth-child(2){border-right:none}
   .priority-item:nth-child(-n+2){border-bottom:1px solid #1B2A3A}
 }
-.ts-tooltip{display:none;position:absolute;bottom:22px;left:-90px;z-index:99;background:#0B131D;border:1px solid #3a6a9a;border-radius:8px;padding:13px 15px;width:250px;font-size:11.5px;color:#c0d8f0;line-height:2;white-space:pre-line;pointer-events:none;box-shadow:0 4px 20px rgba(0,0,0,.6)}
+.ts-tooltip{display:none;position:absolute;bottom:22px;left:-90px;z-index:99;background:#0B131D;border:1px solid #3a6a9a;border-radius:8px;padding:13px 15px;width:250px;font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:12px;color:#c0d8f0;line-height:1.65;white-space:pre-line;pointer-events:none;box-shadow:0 4px 20px rgba(0,0,0,.6)}
 .ts-tooltip b{color:#D6E2F0;display:block;margin-bottom:4px;font-size:10px}
 div:hover>.ts-tooltip{display:block}
 `;
@@ -607,13 +607,14 @@ function Tooltip({ text }) {
           border:"1px solid #2a3a4a",
           borderRadius:6,
           padding:"8px 12px",
-          fontSize:11,
+          fontFamily:"Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+          fontSize:12,
           color:"#D6E2F0",
           zIndex:999,
           boxShadow:"0 4px 20px rgba(0,0,0,0.4)",
           width:320,
           maxWidth:"calc(100vw - 40px)",
-          lineHeight:1.5,
+          lineHeight:1.55,
           whiteSpace:"pre-line",
           pointerEvents:"none",
         }}>{text}</div>
