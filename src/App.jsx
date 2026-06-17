@@ -387,6 +387,28 @@ tr:hover td{background:#101e2c}
 .related-terms{display:flex;gap:6px;flex-wrap:wrap}
 .related-term{border:1px solid #2a3a4a;background:#1B2A3A;color:#8aaac8;border-radius:4px;padding:5px 8px;font-family:'DM Mono',monospace;font-size:10px;cursor:pointer;transition:all .16s}
 .related-term:hover{border-color:#FFD84D66;color:#FFD84D;background:#FFD84D12}
+.playbook-tools{display:flex;justify-content:flex-end;margin-bottom:16px}
+.playbook-filters{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.playbook-filter{background:#071019;border:1px solid #1B2A3A;color:#8aaac8;border-radius:5px;padding:8px 10px;font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.5px;cursor:pointer;transition:all .16s}
+.playbook-filter:hover{border-color:#5B8CFF66;color:#D6E2F0}
+.playbook-filter.active{background:#5B8CFF15;border-color:#5B8CFF66;color:#9EB9E9}
+.playbook-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.playbook-card{background:#0B131D;border:1px solid #1B2A3A;border-radius:8px;padding:16px;text-align:left;cursor:pointer;transition:all .16s;min-height:168px;display:flex;flex-direction:column;justify-content:space-between;gap:14px}
+.playbook-card:hover{border-color:#5B8CFF66;background:#101A27;transform:translateY(-1px)}
+.playbook-card-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+.playbook-title{font-family:'Syne',sans-serif;font-size:19px;font-weight:800;color:#fff;line-height:1.12}
+.playbook-category{font-size:9px;letter-spacing:1px;text-transform:uppercase;color:#9EB9E9;border:1px solid #5B8CFF44;background:#5B8CFF12;border-radius:4px;padding:3px 6px;white-space:nowrap}
+.playbook-summary{font-size:12px;color:#9EB9E9;line-height:1.5}
+.playbook-action{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.5px;color:#5B8CFF}
+.playbook-modal-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-bottom:12px}
+.playbook-section{background:#071019;border:1px solid #1B2A3A;border-radius:8px;padding:12px;min-width:0}
+.playbook-label{font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:#4A6A8A;margin-bottom:6px}
+.playbook-copy{font-size:12px;color:#D6E2F0;line-height:1.55}
+.playbook-list{margin:0;padding-left:16px;color:#D6E2F0;font-size:12px;line-height:1.55}
+.playbook-list li{margin:0 0 5px}
+.playbook-related{display:flex;gap:6px;flex-wrap:wrap}
+.playbook-related-btn{border:1px solid #2a3a4a;background:#1B2A3A;color:#8aaac8;border-radius:4px;padding:5px 8px;font-family:'DM Mono',monospace;font-size:10px;cursor:pointer;transition:all .16s}
+.playbook-related-btn:hover{border-color:#5B8CFF66;color:#9EB9E9;background:#5B8CFF12}
 .calc-page{padding-top:28px;max-width:1180px}
 .calc-subtitle{font-size:13px;color:#8aaac8;margin-top:8px}
 .calc-wrap{display:grid;grid-template-columns:minmax(320px,380px) 1fr;gap:18px;align-items:stretch}
@@ -494,6 +516,9 @@ tr:hover .sim-td,.sim-row-atm:hover .sim-td-price,.sim-row-atm:hover .sim-td-pct
   .glossary-tools{grid-template-columns:1fr}
   .glossary-filters{justify-content:flex-start}
   .glossary-grid{grid-template-columns:1fr}
+  .playbook-tools,.playbook-filters{justify-content:flex-start}
+  .playbook-grid{grid-template-columns:1fr}
+  .playbook-modal-grid{grid-template-columns:1fr}
   .calc-wrap{grid-template-columns:1fr}
   .calc-results{grid-template-columns:1fr}
   .investment-breakdown{grid-template-columns:1fr}
@@ -2989,7 +3014,7 @@ function Home({ assets, strategies=[], onSelectAsset, onShowPositions, onSaveMan
       </div>
 
       {/* Simulator */}
-      <div style={{marginBottom:8,marginTop:4,display:"flex",alignItems:"center",gap:10}}>
+      <div id="strategy-builder" style={{marginBottom:8,marginTop:4,display:"flex",alignItems:"center",gap:10}}>
         <div style={{fontSize:13,letterSpacing:2.6,textTransform:"uppercase",color:"#B7C9EA",fontWeight:700}}>Simulator</div>
         <div style={{flex:1,height:1,background:"linear-gradient(90deg,#22364A,transparent)"}}/>
       </div>
@@ -3001,9 +3026,195 @@ function Home({ assets, strategies=[], onSelectAsset, onShowPositions, onSaveMan
 // ── Learn ───────────────────────────────────────────────────────────────────
 const LEARN_SECTIONS = [
   { id:"learn-courses", title:"Courses", icon:"01", accent:"#63E6BE", copy:"Video lessons and strategy education." },
-  { id:"learn-playbook", title:"Playbook", icon:"02", accent:"#5B8CFF", copy:"Step-by-step strategy guides." },
+  { id:"learn-playbooks", title:"Playbooks", icon:"02", accent:"#5B8CFF", copy:"Step-by-step strategy guides." },
   { id:"learn-glossary", title:"Glossary", icon:"03", accent:"#FFD84D", copy:"Options terminology explained." },
   { id:"learn-calculators", title:"Calculators", icon:"04", accent:"#B37CFF", copy:"Financial planning and strategy tools." },
+];
+const PLAYBOOK_CATEGORIES = ["Income","Directional","Neutral","Risk Management"];
+const playbookEntry = (category, title, summary, details) => ({category,title,summary,...details});
+const PLAYBOOKS = [
+  playbookEntry("Income","Covered Call","Sell calls against shares to collect income.",{
+    overview:"Own shares and sell a call against them.",
+    goal:"Collect premium while accepting capped upside.",
+    when:"Use when you own 100 shares and are neutral to mildly bullish.",
+    outlook:"Sideways to slightly bullish.",
+    capital:"100 shares per short call.",
+    maxProfit:"Premium plus share gains up to the strike.",
+    maxLoss:"Share downside minus premium collected.",
+    setup:["Own 100 shares","Sell one OTM call","Choose a strike you would sell at"],
+    management:["Close or roll before expiration if risk changes","Let expire worthless when price stays below strike","Accept assignment if the plan allows it"],
+    mistakes:["Selling below your desired exit price","Ignoring earnings or dividend dates","Sizing as if premium removes stock risk"],
+    related:["Cash Secured Put","Wheel","Assignment Risk"],
+  }),
+  playbookEntry("Income","Cash Secured Put","Sell puts backed by cash to generate income or enter shares.",{
+    overview:"Sell a put while reserving cash for assignment.",
+    goal:"Collect premium or buy shares at an effective discount.",
+    when:"Use when you are willing to own the stock.",
+    outlook:"Neutral to bullish.",
+    capital:"Cash equal to strike x 100, less premium.",
+    maxProfit:"Premium received.",
+    maxLoss:"Strike x 100 minus premium if the stock falls to zero.",
+    setup:["Pick a stock you want to own","Sell an OTM put","Reserve assignment cash"],
+    management:["Buy back when most premium is captured","Roll if still bullish and challenged","Accept shares if assigned"],
+    mistakes:["Selling puts on stocks you do not want","Overusing buying power","Ignoring assignment risk"],
+    related:["Covered Call","Wheel","Position Sizing"],
+  }),
+  playbookEntry("Income","PMCC","Use a long dated call and sell shorter calls against it.",{
+    overview:"A Poor Man's Covered Call pairs a LEAP-style call with short calls.",
+    goal:"Generate premium against a long call with less capital than shares.",
+    when:"Use when bullish long term but willing to sell short-term upside.",
+    outlook:"Bullish with controlled short-term expectations.",
+    capital:"Cost of the long call plus margin for the short call.",
+    maxProfit:"Limited by short call behavior and long call value.",
+    maxLoss:"Long call cost minus net credits.",
+    setup:["Buy a deep ITM long dated call","Sell shorter dated OTM calls","Track net credits against cost basis"],
+    management:["Avoid short strikes below long-call breakeven","Roll challenged shorts with discipline","Track days to free LEAP"],
+    mistakes:["Selling calls too close to the money","Ignoring liquidity","Letting the short call overpower the long call"],
+    related:["Covered Call","Rolling Options","Position Sizing"],
+  }),
+  playbookEntry("Income","Wheel","Cycle between cash secured puts and covered calls.",{
+    overview:"Sell puts, take shares if assigned, then sell calls.",
+    goal:"Create a repeatable income process around stocks you accept owning.",
+    when:"Use when you want income and can hold shares.",
+    outlook:"Neutral to bullish over time.",
+    capital:"Cash for puts or 100 shares for calls.",
+    maxProfit:"Premium plus possible stock gains.",
+    maxLoss:"Stock downside after assignment, reduced by premium.",
+    setup:["Sell a cash secured put","If assigned, hold shares","Sell covered calls against shares"],
+    management:["Keep position size small","Roll only when the thesis remains valid","Use assignment as part of the plan"],
+    mistakes:["Wheeling weak tickers","Chasing high premiums","Forgetting that assignment creates stock risk"],
+    related:["Cash Secured Put","Covered Call","Assignment Risk"],
+  }),
+  playbookEntry("Directional","Long Call","Buy calls to express bullish upside.",{
+    overview:"A long call benefits from upside movement.",
+    goal:"Capture upside with defined premium risk.",
+    when:"Use when you expect a strong move higher.",
+    outlook:"Bullish.",
+    capital:"Premium paid.",
+    maxProfit:"Theoretical unlimited upside.",
+    maxLoss:"Premium paid.",
+    setup:["Choose enough time for the move","Pick liquid strikes","Define target and invalidation"],
+    management:["Take gains before theta accelerates","Cut if thesis breaks","Avoid overpaying in high IV"],
+    mistakes:["Buying too short dated","Ignoring implied volatility","Holding through decay without a plan"],
+    related:["Bull Call Spread","Long Put","Position Sizing"],
+  }),
+  playbookEntry("Directional","Long Put","Buy puts to express bearish downside.",{
+    overview:"A long put benefits from downside movement.",
+    goal:"Profit from a drop or hedge existing exposure.",
+    when:"Use when you expect a strong move lower.",
+    outlook:"Bearish.",
+    capital:"Premium paid.",
+    maxProfit:"Large but limited by the stock reaching zero.",
+    maxLoss:"Premium paid.",
+    setup:["Choose expiration beyond the expected move","Pick liquid strikes","Set a downside target"],
+    management:["Take profits into sharp drops","Watch IV crush after events","Exit if price invalidates the thesis"],
+    mistakes:["Using puts as permanent insurance","Buying after fear is already expensive","Ignoring theta"],
+    related:["Bear Put Spread","Long Call","Position Sizing"],
+  }),
+  playbookEntry("Directional","Bull Call Spread","Buy a call and sell a higher strike call.",{
+    overview:"A defined-risk bullish debit spread.",
+    goal:"Target upside with lower cost than a naked long call.",
+    when:"Use when you expect moderate upside.",
+    outlook:"Bullish.",
+    capital:"Net debit paid.",
+    maxProfit:"Spread width minus debit.",
+    maxLoss:"Net debit paid.",
+    setup:["Buy lower strike call","Sell higher strike call","Use same expiration"],
+    management:["Close near target profit","Avoid holding to expiration if assignment risk appears","Keep width realistic"],
+    mistakes:["Choosing too narrow a spread","Overpaying for low probability moves","Ignoring liquidity"],
+    related:["Long Call","Bear Put Spread","Position Sizing"],
+  }),
+  playbookEntry("Directional","Bear Put Spread","Buy a put and sell a lower strike put.",{
+    overview:"A defined-risk bearish debit spread.",
+    goal:"Target downside with reduced cost.",
+    when:"Use when you expect moderate downside.",
+    outlook:"Bearish.",
+    capital:"Net debit paid.",
+    maxProfit:"Spread width minus debit.",
+    maxLoss:"Net debit paid.",
+    setup:["Buy higher strike put","Sell lower strike put","Use same expiration"],
+    management:["Take profit before expiration risk rises","Close if bearish thesis fails","Watch bid-ask spreads"],
+    mistakes:["Buying too far OTM","Holding after the move is complete","Letting cheap cost justify poor odds"],
+    related:["Long Put","Bull Call Spread","Position Sizing"],
+  }),
+  playbookEntry("Neutral","Iron Condor","Sell a call spread and put spread around a range.",{
+    overview:"A neutral credit strategy with defined risk.",
+    goal:"Collect premium when price stays inside a range.",
+    when:"Use when IV is elevated and price is range-bound.",
+    outlook:"Neutral.",
+    capital:"Max loss collateral.",
+    maxProfit:"Net credit received.",
+    maxLoss:"Spread width minus credit.",
+    setup:["Sell OTM call spread","Sell OTM put spread","Keep defined wings"],
+    management:["Take profits early","Adjust or close threatened side","Avoid oversized positions"],
+    mistakes:["Selling too narrow","Ignoring event risk","Letting max loss happen by default"],
+    related:["Strangle","Rolling Options","Position Sizing"],
+  }),
+  playbookEntry("Neutral","Straddle","Use a call and put at the same strike.",{
+    overview:"A volatility strategy centered at one strike.",
+    goal:"Trade a large move or sell rich volatility.",
+    when:"Use around events or high uncertainty.",
+    outlook:"Big move for long straddles; quiet market for short straddles.",
+    capital:"Premium paid for long; high margin for short.",
+    maxProfit:"Long can gain from large moves; short is capped at premium.",
+    maxLoss:"Long loses premium; short can have very large losses.",
+    setup:["Use same strike and expiration","Define long or short direction","Check IV and event timing"],
+    management:["Long: take gains on volatility expansion","Short: manage risk early","Avoid undefined risk if not experienced"],
+    mistakes:["Ignoring IV crush","Shorting without risk controls","Holding too long after the catalyst"],
+    related:["Strangle","Iron Condor","Position Sizing"],
+  }),
+  playbookEntry("Neutral","Strangle","Use an OTM call and OTM put.",{
+    overview:"A wider volatility strategy using different strikes.",
+    goal:"Trade large movement or sell range-bound premium.",
+    when:"Use when expecting movement beyond a wider range, or selling rich IV.",
+    outlook:"Large move for long strangles; range-bound for short strangles.",
+    capital:"Premium paid for long; high margin for short.",
+    maxProfit:"Long has large upside; short is capped at premium.",
+    maxLoss:"Long loses premium; short can have very large losses.",
+    setup:["Pick OTM call and put","Use same expiration","Define expected move"],
+    management:["Take long profits on sharp moves","Control short-side losses quickly","Watch liquidity on both legs"],
+    mistakes:["Buying too cheap and too far OTM","Shorting without exits","Ignoring skew"],
+    related:["Straddle","Iron Condor","Rolling Options"],
+  }),
+  playbookEntry("Risk Management","Position Sizing","Keep each trade small enough to survive losses.",{
+    overview:"Position sizing limits damage before the trade begins.",
+    goal:"Avoid one trade controlling the portfolio.",
+    when:"Use before every trade.",
+    outlook:"Applies to all markets.",
+    capital:"Based on defined risk or worst-case exposure.",
+    maxProfit:"Not strategy-specific.",
+    maxLoss:"Predefined by size limits.",
+    setup:["Set max risk per trade","Size by max loss, not premium","Leave buying power unused"],
+    management:["Reduce size after losses","Avoid adding risk to fix a bad trade","Track total correlated exposure"],
+    mistakes:["Sizing by confidence","Ignoring undefined risk","Letting multiple trades become one big bet"],
+    related:["Assignment Risk","Rolling Options","Cash Secured Put"],
+  }),
+  playbookEntry("Risk Management","Rolling Options","Close one option and open another to change risk.",{
+    overview:"Rolling moves a position to a new strike, expiration, or both.",
+    goal:"Extend time, adjust risk, or collect/limit debit.",
+    when:"Use when the original plan is challenged but still valid.",
+    outlook:"Depends on the strategy being rolled.",
+    capital:"May require extra debit or collateral.",
+    maxProfit:"Changes after the new position is opened.",
+    maxLoss:"Can increase if rolls add risk.",
+    setup:["Close the current option","Open the new option","Compare net credit or debit"],
+    management:["Roll for a reason, not hope","Track total credits and debits","Avoid rolling into oversized risk"],
+    mistakes:["Rolling forever","Ignoring total P&L","Moving strikes without a plan"],
+    related:["PMCC","Iron Condor","Assignment Risk"],
+  }),
+  playbookEntry("Risk Management","Assignment Risk","Plan for short options being exercised.",{
+    overview:"Assignment can turn an option position into stock exposure.",
+    goal:"Know what happens if assigned before it occurs.",
+    when:"Use with any short option.",
+    outlook:"Most important near expiration and when ITM.",
+    capital:"Shares or cash may be required.",
+    maxProfit:"Depends on the original strategy.",
+    maxLoss:"Can become stock downside or short stock risk.",
+    setup:["Identify short options","Check ITM status and expiration","Know broker requirements"],
+    management:["Close or roll if assignment is unwanted","Keep cash or shares ready","Watch ex-dividend risk on calls"],
+    mistakes:["Assuming assignment cannot happen early","Selling contracts without capital","Ignoring ITM shorts near expiration"],
+    related:["Covered Call","Cash Secured Put","Position Sizing"],
+  }),
 ];
 const GLOSSARY_CATEGORIES = ["Basics","Greeks","Volatility","Strategies","Risk","Portfolio","OptionDesk"];
 const glossaryEntry = (category, term, short, definition, example, why, related) => ({
@@ -3131,6 +3342,125 @@ function LearnPlaceholderPage({ title, onNavigate }) {
           </button>
         ))}
       </div>
+    </div>
+  );
+}
+
+function PlaybooksPage({ onNavigate }) {
+  const [category, setCategory] = useState("All");
+  const [selectedPlaybook, setSelectedPlaybook] = useState(null);
+  const filteredPlaybooks = PLAYBOOKS.filter(playbook => category==="All" || playbook.category===category);
+  const openSimulator = () => {
+    setSelectedPlaybook(null);
+    onNavigate("home");
+    window.setTimeout(()=>{
+      document.getElementById("strategy-builder")?.scrollIntoView({behavior:"smooth",block:"start"});
+    },80);
+  };
+  const openRelatedPlaybook = (title) => {
+    const related = PLAYBOOKS.find(playbook => playbook.title===title);
+    if(!related) return;
+    setCategory(related.category);
+    setSelectedPlaybook(related);
+  };
+
+  return (
+    <div className="main learn-main fade-in">
+      <LearnHeader
+        title="Strategy Playbooks"
+        copy="Practical guides for building and managing options strategies."
+        action={<button className="btn bneutral" onClick={()=>onNavigate("learn")}>Back to Learn</button>}
+      />
+      <div className="playbook-tools">
+        <div className="playbook-filters" aria-label="Playbook categories">
+          {["All",...PLAYBOOK_CATEGORIES].map(cat=>(
+            <button
+              key={cat}
+              type="button"
+              className={`playbook-filter ${category===cat?"active":""}`}
+              onClick={()=>setCategory(cat)}
+            >
+              {cat}
+            </button>
+          ))}
+        </div>
+      </div>
+      <div className="playbook-grid">
+        {filteredPlaybooks.map(playbook=>(
+          <button key={playbook.title} className="playbook-card" type="button" onClick={()=>setSelectedPlaybook(playbook)}>
+            <div>
+              <div className="playbook-card-top">
+                <div className="playbook-title">{playbook.title}</div>
+                <div className="playbook-category">{playbook.category}</div>
+              </div>
+              <div className="playbook-summary" style={{marginTop:10}}>{playbook.summary}</div>
+            </div>
+            <div className="playbook-action">Open guide</div>
+          </button>
+        ))}
+      </div>
+      {selectedPlaybook&&(
+        <div className="overlay" onMouseDown={()=>setSelectedPlaybook(null)}>
+          <div className="fbox" style={{width:760,maxWidth:"96vw"}} onMouseDown={e=>e.stopPropagation()}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:16,marginBottom:16}}>
+              <div>
+                <div className="playbook-category" style={{display:"inline-block",marginBottom:9}}>{selectedPlaybook.category}</div>
+                <div className="ftitle" style={{fontSize:24,marginBottom:4}}>{selectedPlaybook.title}</div>
+                <div style={{fontSize:12,color:"#8aaac8",lineHeight:1.5}}>{selectedPlaybook.summary}</div>
+              </div>
+              <button className="btn bneutral" type="button" onClick={()=>setSelectedPlaybook(null)}>Close</button>
+            </div>
+            <div className="playbook-modal-grid">
+              {[
+                ["Overview",selectedPlaybook.overview],
+                ["Goal",selectedPlaybook.goal],
+                ["When to Use",selectedPlaybook.when],
+                ["Market Outlook",selectedPlaybook.outlook],
+                ["Capital Required",selectedPlaybook.capital],
+                ["Max Profit",selectedPlaybook.maxProfit],
+                ["Max Loss",selectedPlaybook.maxLoss],
+              ].map(([label,copy])=>(
+                <div className="playbook-section" key={label}>
+                  <div className="playbook-label">{label}</div>
+                  <div className="playbook-copy">{copy}</div>
+                </div>
+              ))}
+            </div>
+            <div className="playbook-modal-grid">
+              {[
+                ["Setup",selectedPlaybook.setup],
+                ["Management Rules",selectedPlaybook.management],
+                ["Common Mistakes",selectedPlaybook.mistakes],
+              ].map(([label,items])=>(
+                <div className="playbook-section" key={label}>
+                  <div className="playbook-label">{label}</div>
+                  <ul className="playbook-list">
+                    {items.map(item=><li key={item}>{item}</li>)}
+                  </ul>
+                </div>
+              ))}
+              <div className="playbook-section">
+                <div className="playbook-label">Related Strategies</div>
+                <div className="playbook-related">
+                  {selectedPlaybook.related.map(title=>{
+                    const related = PLAYBOOKS.find(playbook => playbook.title===title);
+                    return related ? (
+                      <button key={title} className="playbook-related-btn" type="button" onClick={()=>openRelatedPlaybook(title)}>
+                        {title}
+                      </button>
+                    ) : (
+                      <span key={title} className="playbook-related-btn" style={{cursor:"default",opacity:.65}}>{title}</span>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+            <div style={{display:"flex",justifyContent:"flex-end",marginTop:14}}>
+              <button className="btn" type="button" onClick={openSimulator}>Open Simulator</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -4737,7 +5067,7 @@ function App() {
       {active==="home"&&<Home assets={assetsWithStrategyLinks} strategies={strategies} onSelectAsset={id=>navigate(id)} onShowPositions={()=>setShowPositions(true)} onSaveManualTrade={handleSaveManualTrade} onEditTrade={r=>{const a=assetsWithStrategyLinks.find(x=>x.id===r.assetId);setEditTrade({r,asset:a});}} onOpenLearn={()=>navigate("learn-calculators")}/>}
       {active==="learn"&&<LearnPage onNavigate={navigate}/>}
       {active==="learn-courses"&&<LearnPlaceholderPage title="Courses" onNavigate={navigate}/>}
-      {active==="learn-playbook"&&<LearnPlaceholderPage title="Playbook" onNavigate={navigate}/>}
+      {(active==="learn-playbooks"||active==="learn-playbook")&&<PlaybooksPage onNavigate={navigate}/>}
       {active==="learn-glossary"&&<GlossaryPage onNavigate={navigate}/>}
       {active==="learn-calculators"&&<CalculatorsPage onNavigate={navigate}/>}
       {assetsWithStrategyLinks.filter(a=>a.active).map(a=>active===a.id&&(
