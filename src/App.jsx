@@ -257,8 +257,10 @@ const CSS = `
 html,body{font-family:'DM Mono','IBM Plex Mono',monospace;background:#050A0F;color:#D6E2F0;-webkit-font-smoothing:antialiased}
 ::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:#071019}::-webkit-scrollbar-thumb{background:#1e3a5f;border-radius:2px}
 .hdr{border-bottom:1px solid #1B2A3A;padding:13px 24px;display:flex;align-items:center;justify-content:space-between;background:rgba(10,20,35,0.97);position:sticky;top:0;z-index:100;backdrop-filter:blur(10px)}
-.logo{font-family:'Syne',sans-serif;font-size:20px;font-weight:800;color:#fff;cursor:pointer;user-select:none}
-.logo span{color:#63E6BE}
+.logo{display:inline-flex;align-items:center;gap:9px;font-family:'Syne',sans-serif;font-size:20px;font-weight:800;color:#fff;cursor:pointer;user-select:none}
+.logo-mark{width:28px;height:28px;border-radius:7px;object-fit:cover;box-shadow:0 0 18px rgba(99,230,190,.18)}
+.logo-name{color:#fff}
+.logo-name span{color:#63E6BE}
 .badge{font-size:10px;background:#0a2a1a;color:#63E6BE;border:1px solid #63E6BE33;padding:3px 8px;border-radius:3px;letter-spacing:1px;text-transform:uppercase}
 .home-btn{background:#1B2A3A;border:1px solid #2a3a4a;color:#8aaac8;padding:6px 12px;border-radius:4px;cursor:pointer;font-family:'DM Mono',monospace;font-size:11px;transition:all 0.2s}
 .home-btn:hover{background:#2a3a4a;color:#D6E2F0}
@@ -5109,7 +5111,10 @@ function App() {
       <style>{CSS}</style>
       <div className="hdr">
         <div style={{display:"flex",alignItems:"center",gap:10}}>
-          <div className="logo" onClick={()=>navigate("home")}>Option<span>Desk</span></div>
+          <div className="logo" onClick={()=>navigate("home")}>
+            <img className="logo-mark" src="/optiondesk-logo.png" alt="" aria-hidden="true" />
+            <span className="logo-name">Option<span>Desk</span></span>
+          </div>
           {active!=="home"&&<button className="home-btn" onClick={()=>navigate("home")}>← Home</button>}
         </div>
         <div style={{fontSize:11,color:"#4A6A8A"}}>{new Date().toLocaleDateString("en-US",{weekday:"long",year:"numeric",month:"long",day:"numeric"})}</div>
