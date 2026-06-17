@@ -366,6 +366,26 @@ tr:hover td{background:#101e2c}
 .learn-card-action{align-self:flex-start;font-size:11px;color:var(--accent,#63E6BE);letter-spacing:.7px;margin-top:28px;padding:7px 12px;border:1px solid color-mix(in srgb,var(--accent,#63E6BE) 32%,transparent);border-radius:4px;background:color-mix(in srgb,var(--accent,#63E6BE) 8%,transparent)}
 .learn-card.disabled{cursor:default;opacity:.72}
 .learn-card.disabled:hover{transform:none;border-color:#1B2A3A;box-shadow:none}
+.glossary-tools{display:grid;grid-template-columns:minmax(240px,1fr) auto;gap:12px;align-items:center;margin-bottom:16px}
+.glossary-search{background:#071019;border:1px solid #1B2A3A;color:#D6E2F0;font-family:'DM Mono',monospace;font-size:13px;padding:11px 13px;border-radius:6px;width:100%;min-width:0}
+.glossary-search:focus{outline:none;border-color:#FFD84D88;box-shadow:0 0 0 2px #FFD84D12}
+.glossary-filters{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.glossary-filter{background:#071019;border:1px solid #1B2A3A;color:#8aaac8;border-radius:5px;padding:8px 10px;font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.5px;cursor:pointer;transition:all .16s}
+.glossary-filter:hover{border-color:#FFD84D55;color:#D6E2F0}
+.glossary-filter.active{background:#FFD84D15;border-color:#FFD84D66;color:#FFD84D}
+.glossary-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.term-card{background:#0B131D;border:1px solid #1B2A3A;border-radius:8px;padding:16px;text-align:left;cursor:pointer;transition:all .16s;min-height:148px;display:flex;flex-direction:column;gap:10px}
+.term-card:hover{border-color:#FFD84D66;background:#101A27;transform:translateY(-1px)}
+.term-card-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+.term-name{font-family:'Syne',sans-serif;font-size:18px;font-weight:800;color:#fff;line-height:1.12}
+.term-category{font-size:9px;letter-spacing:1px;text-transform:uppercase;color:#FFD84D;border:1px solid #FFD84D44;background:#FFD84D12;border-radius:4px;padding:3px 6px;white-space:nowrap}
+.term-definition{font-size:12px;color:#9EB9E9;line-height:1.55}
+.glossary-empty{background:#0B131D;border:1px solid #1B2A3A;border-radius:8px;padding:26px;text-align:center;color:#7D91AA;font-size:12px}
+.term-modal-section{background:#071019;border:1px solid #1B2A3A;border-radius:8px;padding:12px;margin-bottom:10px}
+.term-modal-label{font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:#4A6A8A;margin-bottom:6px}
+.term-modal-copy{font-size:12px;color:#D6E2F0;line-height:1.6}
+.related-terms{display:flex;gap:6px;flex-wrap:wrap}
+.related-term{border:1px solid #2a3a4a;background:#1B2A3A;color:#8aaac8;border-radius:4px;padding:5px 8px;font-family:'DM Mono',monospace;font-size:10px}
 .calc-page{padding-top:28px;max-width:1180px}
 .calc-subtitle{font-size:13px;color:#8aaac8;margin-top:8px}
 .calc-wrap{display:grid;grid-template-columns:minmax(320px,380px) 1fr;gap:18px;align-items:stretch}
@@ -470,6 +490,9 @@ tr:hover .sim-td,.sim-row-atm:hover .sim-td-price,.sim-row-atm:hover .sim-td-pct
   .learn-main,.calc-page{padding-top:18px}
   .learn-head{align-items:flex-start;flex-direction:column}
   .learn-grid{grid-template-columns:1fr}
+  .glossary-tools{grid-template-columns:1fr}
+  .glossary-filters{justify-content:flex-start}
+  .glossary-grid{grid-template-columns:1fr}
   .calc-wrap{grid-template-columns:1fr}
   .calc-results{grid-template-columns:1fr}
   .investment-breakdown{grid-template-columns:1fr}
@@ -2981,6 +3004,62 @@ const LEARN_SECTIONS = [
   { id:"learn-glossary", title:"Glossary", icon:"03", accent:"#FFD84D", copy:"Options terminology explained." },
   { id:"learn-calculators", title:"Calculators", icon:"04", accent:"#B37CFF", copy:"Financial planning and strategy tools." },
 ];
+const GLOSSARY_CATEGORIES = ["Basics","Greeks","Volatility","Strategies","Risk","Portfolio","OptionDesk"];
+const glossaryEntry = (category, term, short, definition, example, why, related) => ({
+  category, term, short, definition, example, why, related,
+});
+const GLOSSARY_ENTRIES = [
+  glossaryEntry("Basics","Call Option","A contract that gives the buyer the right to buy shares at a set strike.","A call option gives its buyer the right, not the obligation, to buy the underlying asset at the strike price before expiration.","Buying a $50 call lets you control upside above $50 before expiration.","Calls are the basic building block for bullish option trades.",["Put Option","Strike Price","Expiration Date"]),
+  glossaryEntry("Basics","Put Option","A contract that gives the buyer the right to sell shares at a set strike.","A put option gives its buyer the right, not the obligation, to sell the underlying asset at the strike price before expiration.","Buying a $40 put can gain value if the stock falls below $40.","Puts are used for bearish trades, hedging, and cash secured puts.",["Call Option","Strike Price","Cash Secured Put"]),
+  glossaryEntry("Basics","Strike Price","The price where an option can be exercised.","The strike price is the agreed price used if the option is exercised.","A $45 call can buy shares at $45 if exercised.","Strike selection controls moneyness, risk, and reward.",["ITM","ATM","OTM"]),
+  glossaryEntry("Basics","Expiration Date","The date when an option contract stops trading and expires.","Expiration is the final date an option has value or can be exercised.","A call expiring June 19 must be closed, rolled, or left to expire by then.","Time left affects premium, theta, and assignment risk.",["Theta","Premium","Assignment Risk"]),
+  glossaryEntry("Basics","Premium","The price paid or received for an option contract.","Premium is the option price per share, usually multiplied by 100 shares per contract.","Selling one call for $0.50 collects about $50 before fees.","Premium is the income or cost that drives most option P&L.",["Contract","Theta","Realized P&L"]),
+  glossaryEntry("Basics","Contract","One option unit, usually representing 100 shares.","A standard option contract controls 100 shares of the underlying asset.","Two contracts at $1.20 premium equal about $240 of option value.","Contracts scale position size and risk quickly.",["Premium","Underlying Asset","Capital At Risk"]),
+  glossaryEntry("Basics","Underlying Asset","The stock or ETF tied to an option.","The underlying asset is the security that determines the option's value.","IBIT is the underlying for an IBIT call option.","Every option trade depends on the movement of its underlying.",["Call Option","Put Option","Delta"]),
+  glossaryEntry("Basics","ITM","In the money; the option has intrinsic value.","A call is ITM when the underlying is above the strike. A put is ITM when it is below the strike.","A $40 call is ITM if the stock trades at $43.","ITM options have exercise value and higher assignment risk.",["ATM","OTM","Assignment Risk"]),
+  glossaryEntry("Basics","ATM","At the money; the strike is near the current asset price.","An ATM option has a strike close to where the underlying trades now.","If a stock is $50, the $50 strike is ATM.","ATM options often carry high time value and active trading.",["ITM","OTM","Premium"]),
+  glossaryEntry("Basics","OTM","Out of the money; the option has no intrinsic value.","A call is OTM when the underlying is below the strike. A put is OTM when it is above the strike.","A $60 call is OTM if the stock trades at $52.","OTM options are cheaper but need movement to finish profitable.",["ITM","ATM","Probability of Profit"]),
+  glossaryEntry("Greeks","Delta","How much an option may move for a $1 move in the underlying.","Delta estimates the option price change when the underlying moves by $1.","A 0.30 delta call may gain about $0.30 if the stock rises $1.","Delta helps size direction, hedge exposure, and compare strikes.",["Gamma","Underlying Asset","Probability of Profit"]),
+  glossaryEntry("Greeks","Gamma","How fast delta changes as the underlying moves.","Gamma measures the rate of change in delta.","High gamma near expiration can make delta jump quickly.","Gamma shows how unstable or responsive an option can become.",["Delta","Expiration Date","Risk"]),
+  glossaryEntry("Greeks","Theta","Estimated daily option value lost from time decay.","Theta shows how much premium may decay each day, all else equal.","A theta of -0.04 means about $4 per contract may decay daily.","Theta is central to premium selling and the Theta Engine.",["Premium","Theta Engine","Expiration Date"]),
+  glossaryEntry("Greeks","Vega","How much an option may move when implied volatility changes.","Vega estimates option price sensitivity to a 1 point change in implied volatility.","A vega of 0.08 may add $8 per contract if IV rises 1 point.","Vega helps explain gains or losses that come from volatility, not price.",["Implied Volatility","IV Rank","Premium"]),
+  glossaryEntry("Greeks","Rho","How much an option may move when interest rates change.","Rho estimates sensitivity to interest rate changes.","Long dated calls can gain some value when rates rise.","Rho is usually smaller than other Greeks for short dated trades.",["Call Option","Put Option","Expiration Date"]),
+  glossaryEntry("Volatility","Implied Volatility","The market's expected future movement priced into options.","Implied volatility is the volatility level embedded in option prices.","High IV can make a covered call pay more premium.","IV affects option prices even when the stock does not move.",["Vega","IV Rank","Premium"]),
+  glossaryEntry("Volatility","Historical Volatility","How much the underlying has moved in the past.","Historical volatility measures realized price movement over a prior period.","A stock with large past swings may show high historical volatility.","It gives context for whether current option pricing looks rich or cheap.",["Implied Volatility","IV Percentile","Underlying Asset"]),
+  glossaryEntry("Volatility","IV Rank","Where current IV sits versus its one year range.","IV Rank compares current implied volatility to its high and low range.","An IV Rank of 80 means IV is near the high end of its range.","Premium sellers often prefer higher IV Rank for richer credits.",["Implied Volatility","IV Percentile","Vega"]),
+  glossaryEntry("Volatility","IV Percentile","How often past IV readings were below today's IV.","IV Percentile shows the percent of past days with lower implied volatility.","An IV Percentile of 70 means IV was lower on 70% of measured days.","It helps judge whether current premium is unusually high.",["Implied Volatility","IV Rank","Premium"]),
+  glossaryEntry("Strategies","Covered Call","Selling a call against shares you own.","A covered call combines long shares with a short call on the same underlying.","Own 100 shares and sell one OTM call for income.","It generates income but caps upside above the strike.",["Call Option","Assignment Risk","Max Profit"]),
+  glossaryEntry("Strategies","Cash Secured Put","Selling a put while holding enough cash to buy shares.","A cash secured put obligates you to buy shares if assigned, backed by cash.","Sell a $40 put while reserving $4,000 buying power.","It can generate income or enter a stock at a lower effective price.",["Put Option","Assignment Risk","Buying Power"]),
+  glossaryEntry("Strategies","PMCC","A Poor Man's Covered Call using a long call and short calls.","A PMCC pairs a long dated call with shorter dated calls sold against it.","Buy a LEAP call and sell weekly or monthly calls for premium.","It seeks income with less capital than owning 100 shares.",["Theta Engine","Days to Free LEAP","Covered Call"]),
+  glossaryEntry("Strategies","Wheel Strategy","Selling puts, taking shares if assigned, then selling covered calls.","The wheel cycles between cash secured puts and covered calls.","Sell a put, accept shares, then sell calls until shares are called away.","It creates a repeatable income process with assignment built in.",["Cash Secured Put","Covered Call","Assignment Risk"]),
+  glossaryEntry("Strategies","Bull Call Spread","A bullish debit spread using two calls.","A bull call spread buys a lower strike call and sells a higher strike call.","Buy the $40 call and sell the $45 call for a net debit.","It limits both risk and upside for a bullish view.",["Max Profit","Max Loss","Breakeven"]),
+  glossaryEntry("Strategies","Bear Call Spread","A bearish credit spread using two calls.","A bear call spread sells a lower strike call and buys a higher strike call.","Sell the $50 call and buy the $55 call for a credit.","It profits if the underlying stays below the short call area.",["Max Loss","Probability of Profit","Call Option"]),
+  glossaryEntry("Strategies","Bull Put Spread","A bullish credit spread using two puts.","A bull put spread sells a higher strike put and buys a lower strike put.","Sell the $45 put and buy the $40 put for a credit.","It profits if the underlying stays above the short put area.",["Cash Secured Put","Max Loss","Probability of Profit"]),
+  glossaryEntry("Strategies","Bear Put Spread","A bearish debit spread using two puts.","A bear put spread buys a higher strike put and sells a lower strike put.","Buy the $55 put and sell the $50 put for a net debit.","It defines risk while targeting downside movement.",["Put Option","Max Profit","Breakeven"]),
+  glossaryEntry("Strategies","Iron Condor","A neutral credit strategy using a call spread and put spread.","An iron condor sells an OTM call spread and an OTM put spread.","Sell a call spread above price and a put spread below price.","It profits when price stays inside a range.",["Strangle","Max Loss","Probability of Profit"]),
+  glossaryEntry("Strategies","Straddle","Buying or selling a call and put at the same strike.","A straddle uses a call and put with the same strike and expiration.","Buy the $50 call and $50 put before a big event.","It targets large movement or sells volatility, depending on direction.",["Strangle","Implied Volatility","Breakeven"]),
+  glossaryEntry("Strategies","Strangle","Buying or selling a call and put at different strikes.","A strangle uses an OTM call and OTM put with the same expiration.","Buy the $55 call and $45 put when price is $50.","It is often cheaper than a straddle but needs a bigger move.",["Straddle","Implied Volatility","OTM"]),
+  glossaryEntry("Risk","Breakeven","The price where a trade stops losing and starts winning.","Breakeven is the underlying price needed at expiration to cover the trade cost or credit.","A $50 call bought for $2 breaks even near $52.","Breakeven gives a clean target for judging the trade plan.",["Premium","Max Profit","Max Loss"]),
+  glossaryEntry("Risk","Max Profit","The best possible profit for a defined trade.","Max profit is the highest amount a position can make if the ideal outcome happens.","A $5 wide credit spread sold for $1 has about $100 max profit.","It sets realistic upside before entering a trade.",["Max Loss","Breakeven","Return on Capital"]),
+  glossaryEntry("Risk","Max Loss","The worst possible loss for a defined trade.","Max loss is the most a position can lose under its defined risk structure.","A $5 wide credit spread sold for $1 has about $400 max loss.","Knowing max loss prevents oversized trades.",["Max Profit","Capital At Risk","Margin Requirement"]),
+  glossaryEntry("Risk","Probability of Profit","An estimate of how likely a trade is to finish profitable.","Probability of profit estimates the chance that the trade ends above breakeven or keeps some profit.","An OTM credit spread may show a 65% probability of profit.","It helps compare win rate against reward and risk.",["Delta","Breakeven","Max Loss"]),
+  glossaryEntry("Risk","Assignment Risk","The risk that a short option is exercised against you.","Assignment risk means you may be required to buy or sell shares because of a short option.","A short ITM call can assign and sell your shares at the strike.","It matters most near expiration, ex-dividend dates, and ITM shorts.",["Early Assignment","ITM","Covered Call"]),
+  glossaryEntry("Risk","Early Assignment","Assignment before expiration.","Early assignment happens when a short option is exercised before its expiration date.","A short call may be assigned early before a dividend.","It can change a planned options trade into a stock position.",["Assignment Risk","Expiration Date","Margin Requirement"]),
+  glossaryEntry("Risk","Margin Requirement","Capital your broker requires to hold a position.","Margin requirement is the buying power or collateral needed for a trade.","A spread may require its max loss as collateral.","It controls position size and whether a trade can be opened.",["Buying Power","Capital At Risk","Max Loss"]),
+  glossaryEntry("Portfolio","Realized P&L","Profit or loss from closed trades.","Realized P&L is the gain or loss locked in after closing a position.","Sell a call for $80 and buy it back for $30: realized P&L is $50.","It shows actual booked performance.",["Unrealized P&L","Premium","Cost Basis"]),
+  glossaryEntry("Portfolio","Unrealized P&L","Profit or loss on positions still open.","Unrealized P&L is the current gain or loss before a position is closed.","An open call bought for $200 now worth $260 has $60 unrealized P&L.","It can change quickly and is not final.",["Realized P&L","Underlying Asset","Vega"]),
+  glossaryEntry("Portfolio","Cost Basis","Your effective net cost after credits and debits.","Cost basis is what you effectively paid after adjusting for premiums and trade costs.","A LEAP bought for $1,000 with $200 collected has an $800 adjusted basis.","It shows how much capital still needs recovery.",["Recovery Rate","Engine Progress","Premium"]),
+  glossaryEntry("Portfolio","Return on Capital","Profit compared with the capital required.","Return on capital measures gains as a percent of capital used or at risk.","A $50 profit on $1,000 at risk is a 5% return on capital.","It helps compare trades of different sizes.",["Capital At Risk","Max Profit","Buying Power"]),
+  glossaryEntry("Portfolio","Buying Power","Capital available to open or support positions.","Buying power is what your account can use for new trades or collateral.","A broker may reduce buying power when you sell a put.","It limits what positions you can enter or hold.",["Margin Requirement","Capital At Risk","Cash Secured Put"]),
+  glossaryEntry("Portfolio","Capital At Risk","Money that could be lost or tied to a position.","Capital at risk is the amount exposed to loss or reserved for a trade.","A cash secured put at $40 uses about $4,000 of capital at risk.","It keeps portfolio sizing honest.",["Max Loss","Buying Power","Return on Capital"]),
+  glossaryEntry("OptionDesk","Theta Engine","OptionDesk's short premium tracking area for income cycles.","Theta Engine tracks short call cycles, credits, debits, and net premium.","A PMCC short call appears as a cycle with credit, debit, and net.","It keeps income strategy progress visible.",["Theta","PMCC","Engine Progress"]),
+  glossaryEntry("OptionDesk","Engine Progress","How much premium has recovered against the target cost.","Engine Progress shows the percent of LEAP cost recovered by net premium.","If $300 is captured against a $1,000 LEAP, progress is 30%.","It shows whether the income engine is paying down the position.",["Recovery Rate","Days to Free LEAP","Cost Basis"]),
+  glossaryEntry("OptionDesk","Theta Velocity","The pace of premium capture over time.","Theta Velocity is the rate at which the strategy collects net theta income.","Collecting $40 per week gives a faster velocity than $10 per week.","It helps estimate how quickly the strategy may recover cost.",["Theta","Days to Free LEAP","Recovery Rate"]),
+  glossaryEntry("OptionDesk","Days to Free LEAP","Estimated time until premiums recover the LEAP cost.","Days to Free LEAP estimates how long current premium pace needs to cover remaining LEAP cost.","At $20 per week with $200 remaining, the estimate is about 70 days.","It turns premium collection into a time target.",["Engine Progress","Theta Velocity","PMCC"]),
+  glossaryEntry("OptionDesk","Engine Health","A quick condition read on the current short option cycle.","Engine Health summarizes risk signals such as distance, DTE, and open short status.","A near ITM short call close to expiration may show weak health.","It highlights cycles that may need attention.",["Assignment Risk","Delta","Theta Engine"]),
+  glossaryEntry("OptionDesk","Recovery Rate","The percent of original cost recovered by net premium.","Recovery Rate measures net collected premium against the initial cost target.","Recovering $250 on a $1,000 LEAP equals a 25% recovery rate.","It shows how much basis has been paid down.",["Cost Basis","Engine Progress","Realized P&L"]),
+  glossaryEntry("OptionDesk","Strategy Score","A simple quality score for comparing strategy setups.","Strategy Score ranks a setup using factors like premium, risk, DTE, and positioning.","A higher score may flag a cleaner covered call candidate.","It helps compare candidates without reading every metric manually.",["Probability of Profit","Return on Capital","Engine Health"]),
+];
 
 function LearnHeader({ title, copy, action }) {
   return (
@@ -3051,6 +3130,98 @@ function LearnPlaceholderPage({ title, onNavigate }) {
           </button>
         ))}
       </div>
+    </div>
+  );
+}
+
+function GlossaryPage({ onNavigate }) {
+  const [query, setQuery] = useState("");
+  const [category, setCategory] = useState("All");
+  const [selectedTerm, setSelectedTerm] = useState(null);
+  const normalizedQuery = query.trim().toLowerCase();
+  const filteredTerms = GLOSSARY_ENTRIES.filter(entry => {
+    const categoryMatch = category==="All" || entry.category===category;
+    const queryMatch = !normalizedQuery
+      || entry.term.toLowerCase().includes(normalizedQuery)
+      || entry.category.toLowerCase().includes(normalizedQuery)
+      || entry.short.toLowerCase().includes(normalizedQuery)
+      || entry.definition.toLowerCase().includes(normalizedQuery);
+    return categoryMatch && queryMatch;
+  });
+
+  return (
+    <div className="main learn-main fade-in">
+      <LearnHeader
+        title="Glossary"
+        copy="Concise options terms for reading trades, risk, and OptionDesk signals faster."
+        action={<button className="btn bneutral" onClick={()=>onNavigate("learn")}>Back to Learn</button>}
+      />
+      <div className="glossary-tools">
+        <input
+          className="glossary-search"
+          value={query}
+          onChange={e=>setQuery(e.target.value)}
+          placeholder="Search options terms..."
+        />
+        <div className="glossary-filters" aria-label="Glossary categories">
+          {["All",...GLOSSARY_CATEGORIES].map(cat=>(
+            <button
+              key={cat}
+              type="button"
+              className={`glossary-filter ${category===cat?"active":""}`}
+              onClick={()=>setCategory(cat)}
+            >
+              {cat}
+            </button>
+          ))}
+        </div>
+      </div>
+      {filteredTerms.length===0 ? (
+        <div className="glossary-empty">No terms match your search.</div>
+      ) : (
+        <div className="glossary-grid">
+          {filteredTerms.map(entry=>(
+            <button key={`${entry.category}-${entry.term}`} className="term-card" type="button" onClick={()=>setSelectedTerm(entry)}>
+              <div className="term-card-top">
+                <div className="term-name">{entry.term}</div>
+                <div className="term-category">{entry.category}</div>
+              </div>
+              <div className="term-definition">{entry.short}</div>
+            </button>
+          ))}
+        </div>
+      )}
+      {selectedTerm&&(
+        <div className="overlay" onMouseDown={()=>setSelectedTerm(null)}>
+          <div className="fbox" style={{width:620,maxWidth:"96vw"}} onMouseDown={e=>e.stopPropagation()}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:16,marginBottom:16}}>
+              <div>
+                <div className="term-category" style={{display:"inline-block",marginBottom:9}}>{selectedTerm.category}</div>
+                <div className="ftitle" style={{fontSize:24,marginBottom:0}}>{selectedTerm.term}</div>
+              </div>
+              <button className="btn bneutral" type="button" onClick={()=>setSelectedTerm(null)}>Close</button>
+            </div>
+            {[
+              ["Definition", selectedTerm.definition],
+              ["Example", selectedTerm.example],
+              ["Why it matters", selectedTerm.why],
+            ].map(([label,copy])=>(
+              <div className="term-modal-section" key={label}>
+                <div className="term-modal-label">{label}</div>
+                <div className="term-modal-copy">{copy}</div>
+              </div>
+            ))}
+            <div className="term-modal-section" style={{marginBottom:0}}>
+              <div className="term-modal-label">Related terms</div>
+              <div className="related-terms">
+                {selectedTerm.related.map(term=>(
+                  <span className="related-term" key={term}>{term}</span>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -4552,7 +4723,7 @@ function App() {
       {active==="learn"&&<LearnPage onNavigate={navigate}/>}
       {active==="learn-courses"&&<LearnPlaceholderPage title="Courses" onNavigate={navigate}/>}
       {active==="learn-playbook"&&<LearnPlaceholderPage title="Playbook" onNavigate={navigate}/>}
-      {active==="learn-glossary"&&<LearnPlaceholderPage title="Glossary" onNavigate={navigate}/>}
+      {active==="learn-glossary"&&<GlossaryPage onNavigate={navigate}/>}
       {active==="learn-calculators"&&<CalculatorsPage onNavigate={navigate}/>}
       {assetsWithStrategyLinks.filter(a=>a.active).map(a=>active===a.id&&(
         <AssetDashboard key={a.id} asset={a} onClose={closeAsset}
