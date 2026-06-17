@@ -337,6 +337,30 @@ tr:hover td{background:#101e2c}
 .llbl{font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:#4A6A8A;margin-bottom:3px}
 .lval{font-size:14px;color:#D6E2F0;font-weight:500}
 .empty{padding:22px;text-align:center;color:#4A6A8A;font-size:12px}
+.start-desk{background:linear-gradient(135deg,#0B131D,#071019);border:1px solid #1B2A3A;border-radius:8px;margin-bottom:12px;padding:18px;display:grid;grid-template-columns:minmax(260px,.95fr) 1.5fr;gap:18px;align-items:stretch}
+.start-kicker,.priority-kicker{font-size:10px;letter-spacing:1.8px;text-transform:uppercase;color:#63E6BE;margin-bottom:7px}
+.start-title{font-family:'Syne',sans-serif;font-size:26px;font-weight:800;color:#fff;line-height:1.05;margin-bottom:8px}
+.start-copy{font-size:12px;color:#8aaac8;line-height:1.55;max-width:420px}
+.start-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.start-card{background:#071019;border:1px solid #1B2A3A;border-radius:8px;padding:14px;display:flex;flex-direction:column;justify-content:space-between;min-height:142px}
+.start-step{font-size:10px;color:var(--accent,#63E6BE);letter-spacing:1.2px;text-transform:uppercase;margin-bottom:10px}
+.start-card-title{font-family:'Syne',sans-serif;font-size:16px;font-weight:800;color:#fff;margin-bottom:6px}
+.start-card-copy{font-size:11px;color:#8aaac8;line-height:1.45;margin-bottom:12px}
+.start-action{align-self:flex-start;background:color-mix(in srgb,var(--accent,#63E6BE) 11%,transparent);border:1px solid color-mix(in srgb,var(--accent,#63E6BE) 35%,transparent);color:var(--accent,#63E6BE);border-radius:4px;padding:6px 9px;font-family:'DM Mono',monospace;font-size:10px;cursor:pointer}
+.priority-desk{background:#0B131D;border:1px solid #1B2A3A;border-radius:8px;margin-bottom:12px;overflow:hidden}
+.priority-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;padding:15px 16px;border-bottom:1px solid #1B2A3A}
+.priority-title{font-family:'Syne',sans-serif;font-size:18px;font-weight:800;color:#fff;line-height:1}
+.priority-copy{font-size:11px;color:#7D91AA;margin-top:7px;line-height:1.45}
+.priority-list{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0}
+.priority-item{padding:14px 15px;border-right:1px solid #1B2A3A;min-height:126px;background:linear-gradient(180deg,rgba(255,255,255,.015),transparent);cursor:pointer}
+.priority-item:last-child{border-right:none}
+.priority-label{font-size:9px;letter-spacing:1.3px;text-transform:uppercase;color:var(--pc,#63E6BE);margin-bottom:8px}
+.priority-main{font-family:'Syne',sans-serif;font-size:15px;font-weight:800;color:#fff;line-height:1.15;margin-bottom:8px}
+.priority-meta{font-size:11px;color:#8aaac8;line-height:1.45}
+.priority-empty{padding:18px 16px;display:flex;align-items:center;justify-content:space-between;gap:14px;color:#8aaac8;font-size:12px}
+.empty-title{font-family:'Syne',sans-serif;font-size:16px;font-weight:800;color:#fff;margin-bottom:6px}
+.empty-copy{color:#8aaac8;line-height:1.5;max-width:540px}
+.empty-actions{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:14px}
 .toggle-group{display:flex;background:#0B131D;border:1px solid #1B2A3A;border-radius:12px;padding:3px;gap:2px}
 .tgl{background:none;border:none;padding:7px 18px;border-radius:9px;cursor:pointer;font-family:'DM Mono',monospace;font-size:11px;font-weight:600;transition:all 0.2s;color:#7D91AA}
 .green{color:#63E6BE!important}
@@ -515,6 +539,13 @@ tr:hover .sim-td,.sim-row-atm:hover .sim-td-price,.sim-row-atm:hover .sim-td-pct
   .beta-badge{font-size:8px;padding:3px 5px;letter-spacing:.6px}
   .tabs{padding:0 8px}
   .main{padding:14px 12px;box-sizing:border-box;max-width:100%;overflow-x:hidden}
+  .start-desk{grid-template-columns:1fr;padding:15px}
+  .start-grid{grid-template-columns:1fr}
+  .start-title{font-size:22px}
+  .priority-head,.priority-empty{flex-direction:column}
+  .priority-list{grid-template-columns:1fr}
+  .priority-item{border-right:none;border-bottom:1px solid #1B2A3A}
+  .priority-item:last-child{border-bottom:none}
   .pbar{margin:10px 8px 0;padding:8px 12px;box-sizing:border-box}
   .cards{grid-template-columns:1fr 1fr}
   .learn-main,.calc-page{padding-top:18px}
@@ -549,6 +580,10 @@ tr:hover .sim-td,.sim-row-atm:hover .sim-td-price,.sim-row-atm:hover .sim-td-pct
 }
 @media(min-width:769px) and (max-width:1024px){
   .logo-mark{width:44px;height:44px}
+  .start-desk{grid-template-columns:1fr}
+  .priority-list{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .priority-item:nth-child(2){border-right:none}
+  .priority-item:nth-child(-n+2){border-bottom:1px solid #1B2A3A}
 }
 .ts-tooltip{display:none;position:absolute;bottom:22px;left:-90px;z-index:99;background:#0B131D;border:1px solid #3a6a9a;border-radius:8px;padding:13px 15px;width:250px;font-size:11.5px;color:#c0d8f0;line-height:2;white-space:pre-line;pointer-events:none;box-shadow:0 4px 20px rgba(0,0,0,.6)}
 .ts-tooltip b{color:#D6E2F0;display:block;margin-bottom:4px;font-size:10px}
@@ -2887,9 +2922,10 @@ function SimulatorPanel({ onSaveManualTrade, simulatorPreset }) {
 }
 
 // ── Home ──────────────────────────────────────────────────────────────────────
-function Home({ assets, strategies=[], onSelectAsset, onShowPositions, onSaveManualTrade, onEditTrade, onOpenLearn, simulatorPreset }) {
+function Home({ assets, strategies=[], onSelectAsset, onShowPositions, onSaveManualTrade, onEditTrade, onOpenLearn, onStartAdd, simulatorPreset }) {
   const [stratFilter, setStratFilter] = useState("all");
   const [sortBy, setSortBy] = useState("expiration");
+  const activeAssets = useMemo(()=>assets.filter(a=>a.active),[assets]);
 
   const totals = useMemo(()=>assets.filter(a=>a.active).map(a=>{
     const leaps = a.leaps||[];
@@ -2939,9 +2975,87 @@ function Home({ assets, strategies=[], onSelectAsset, onShowPositions, onSaveMan
       contracts:tr.contracts||1,
     })),
   ]).sort((a,b)=>new Date(a.expiration)-new Date(b.expiration)),[totals]);
+  const priorityItems = useMemo(()=>{
+    const items = [];
+    totals.forEach(t=>{
+      t.openSells.forEach(short=>{
+        const days = Math.ceil((new Date(short.expiration)-new Date())/(1000*60*60*24));
+        if(days<=3) {
+          items.push({
+            rank:1, color:"#FF4D6D", label:"Expiration risk",
+            title:`${t.ticker} short call`,
+            copy:days<=0 ? "Expires today. Decide close, roll, or assignment plan." : `${days} day${days===1?"":"s"} left. Review close or roll.`,
+            assetId:t.id,
+          });
+        } else if(days<=7) {
+          items.push({
+            rank:2, color:"#FFD84D", label:"Manage this week",
+            title:`${t.ticker} ${short.strike}C`,
+            copy:`${days} days to expiration. Check premium capture and roll window.`,
+            assetId:t.id,
+          });
+        }
+      });
+      if(t.leapContracts>0 && t.openSells.length===0) {
+        items.push({
+          rank:3, color:"#5B8CFF", label:"Engine idle",
+          title:`${t.ticker} needs a cycle`,
+          copy:"LEAP exposure is open with no active short call income cycle.",
+          assetId:t.id,
+        });
+      }
+      const recovery = t.leapCost>0 ? t.colDollar/t.leapCost*100 : 0;
+      if(t.leapCost>0 && recovery>=75 && recovery<100) {
+        items.push({
+          rank:4, color:"#63E6BE", label:"Near milestone",
+          title:`${t.ticker} ${fmt(recovery,0)}% recovered`,
+          copy:"Close to a fully recovered LEAP. Keep the next cycle clean.",
+          assetId:t.id,
+        });
+      }
+    });
+    return items.sort((a,b)=>a.rank-b.rank).slice(0,4);
+  },[totals]);
+  const scrollToSimulator = () => document.getElementById("strategy-builder")?.scrollIntoView({behavior:"smooth",block:"start"});
 
   return (
     <div className="main fade-in">
+      {activeAssets.length===0&&(
+        <div className="start-desk">
+          <div>
+            <div className="start-kicker">Start desk</div>
+            <div className="start-title">Build your first options workspace.</div>
+            <div className="start-copy">Start with a ticker, test a setup, then track the trade lifecycle from opening premium to exit.</div>
+          </div>
+          <div className="start-grid">
+            <div className="start-card" style={{"--accent":"#63E6BE"}}>
+              <div>
+                <div className="start-step">Step 01</div>
+                <div className="start-card-title">Add a ticker</div>
+                <div className="start-card-copy">Create the first position shell for the symbol you want to follow.</div>
+              </div>
+              <button className="start-action" onClick={onStartAdd}>Add position</button>
+            </div>
+            <div className="start-card" style={{"--accent":"#5B8CFF"}}>
+              <div>
+                <div className="start-step">Step 02</div>
+                <div className="start-card-title">Model the trade</div>
+                <div className="start-card-copy">Use the simulator to compare premium, risk, and expiration before entry.</div>
+              </div>
+              <button className="start-action" onClick={scrollToSimulator}>Open simulator</button>
+            </div>
+            <div className="start-card" style={{"--accent":"#FFD84D"}}>
+              <div>
+                <div className="start-step">Step 03</div>
+                <div className="start-card-title">Sharpen context</div>
+                <div className="start-card-copy">Review calculators and playbooks when a setup needs a second pass.</div>
+              </div>
+              <button className="start-action" onClick={onOpenLearn}>Learn desk</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* KPI Cards */}
       <div className="cards" style={{gridTemplateColumns:"repeat(4,1fr)"}}>
         <div className="card" style={{"--top":"#63E6BE",borderColor:"#63E6BE22"}}>
@@ -2973,6 +3087,38 @@ function Home({ assets, strategies=[], onSelectAsset, onShowPositions, onSaveMan
         </span>
         <span style={{fontSize:18,color:"#63E6BE"}}>&rarr;</span>
       </button>
+
+      {totals.length>0&&(
+        <div className="priority-desk">
+          <div className="priority-head">
+            <div>
+              <div className="priority-kicker">Priority desk</div>
+              <div className="priority-title">What needs attention now</div>
+              <div className="priority-copy">Sorted from expiration risk to idle income cycles.</div>
+            </div>
+            <button className="btn bneutral" onClick={onShowPositions}>View positions</button>
+          </div>
+          {priorityItems.length>0?(
+            <div className="priority-list">
+              {priorityItems.map((item,i)=>(
+                <div key={i} className="priority-item" style={{"--pc":item.color}} onClick={()=>onSelectAsset&&onSelectAsset(item.assetId)}>
+                  <div className="priority-label">{item.label}</div>
+                  <div className="priority-main">{item.title}</div>
+                  <div className="priority-meta">{item.copy}</div>
+                </div>
+              ))}
+            </div>
+          ):(
+            <div className="priority-empty">
+              <div>
+                <div className="empty-title">No urgent actions</div>
+                <div className="empty-copy">Open cycles look calm. Check the simulator when you are ready to plan the next entry.</div>
+              </div>
+              <button className="btn bneutral" onClick={scrollToSimulator}>Open simulator</button>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Theta Engine */}
       {totals.length>0&&(
@@ -3056,7 +3202,14 @@ function Home({ assets, strategies=[], onSelectAsset, onShowPositions, onSaveMan
           <span style={{fontSize:11,color:"#7D91AA"}}>{allOpenRows.length} position{allOpenRows.length!==1?"s":""}</span>
         </div>
         {allOpenRows.length===0?(
-          <div className="empty">Nenhuma posição aberta — adicione um trade abaixo</div>
+          <div className="empty">
+            <div className="empty-title">No open positions yet</div>
+            <div className="empty-copy" style={{margin:"0 auto"}}>Add a ticker or model a trade setup to start tracking expirations, premium, and recovery.</div>
+            <div className="empty-actions">
+              <button className="btn" onClick={onStartAdd}>Add position</button>
+              <button className="btn bneutral" onClick={scrollToSimulator}>Open simulator</button>
+            </div>
+          </div>
         ):(
           <table>
             <thead><tr><th>Ticker</th><th>Type</th><th>Strategy</th><th>Action</th><th>Strike</th><th>Premium</th><th>Contracts</th><th>Expiration</th><th>Days</th><th></th></tr></thead>
@@ -5166,7 +5319,7 @@ function App() {
         )}
       </div>
 
-      {active==="home"&&<Home assets={assetsWithStrategyLinks} strategies={strategies} onSelectAsset={id=>navigate(id)} onShowPositions={()=>setShowPositions(true)} onSaveManualTrade={handleSaveManualTrade} onEditTrade={r=>{const a=assetsWithStrategyLinks.find(x=>x.id===r.assetId);setEditTrade({r,asset:a});}} onOpenLearn={()=>navigate("learn-calculators")} simulatorPreset={simulatorPreset}/>}
+      {active==="home"&&<Home assets={assetsWithStrategyLinks} strategies={strategies} onSelectAsset={id=>navigate(id)} onShowPositions={()=>setShowPositions(true)} onSaveManualTrade={handleSaveManualTrade} onEditTrade={r=>{const a=assetsWithStrategyLinks.find(x=>x.id===r.assetId);setEditTrade({r,asset:a});}} onOpenLearn={()=>navigate("learn-calculators")} onStartAdd={()=>setShowAdd(true)} simulatorPreset={simulatorPreset}/>}
       {active==="learn"&&<LearnPage onNavigate={navigate}/>}
       {active==="learn-courses"&&<LearnPlaceholderPage title="Courses" onNavigate={navigate}/>}
       {(active==="learn-playbooks"||active==="learn-playbook")&&<PlaybooksPage onNavigate={navigate} onOpenSimulator={openSimulatorFromPlaybook}/>}
