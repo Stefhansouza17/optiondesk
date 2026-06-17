@@ -385,7 +385,8 @@ tr:hover td{background:#101e2c}
 .term-modal-label{font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:#4A6A8A;margin-bottom:6px}
 .term-modal-copy{font-size:12px;color:#D6E2F0;line-height:1.6}
 .related-terms{display:flex;gap:6px;flex-wrap:wrap}
-.related-term{border:1px solid #2a3a4a;background:#1B2A3A;color:#8aaac8;border-radius:4px;padding:5px 8px;font-family:'DM Mono',monospace;font-size:10px}
+.related-term{border:1px solid #2a3a4a;background:#1B2A3A;color:#8aaac8;border-radius:4px;padding:5px 8px;font-family:'DM Mono',monospace;font-size:10px;cursor:pointer;transition:all .16s}
+.related-term:hover{border-color:#FFD84D66;color:#FFD84D;background:#FFD84D12}
 .calc-page{padding-top:28px;max-width:1180px}
 .calc-subtitle{font-size:13px;color:#8aaac8;margin-top:8px}
 .calc-wrap{display:grid;grid-template-columns:minmax(320px,380px) 1fr;gap:18px;align-items:stretch}
@@ -3148,6 +3149,10 @@ function GlossaryPage({ onNavigate }) {
       || entry.definition.toLowerCase().includes(normalizedQuery);
     return categoryMatch && queryMatch;
   });
+  const openRelatedTerm = (term) => {
+    const relatedEntry = GLOSSARY_ENTRIES.find(entry => entry.term===term);
+    if(relatedEntry) setSelectedTerm(relatedEntry);
+  };
 
   return (
     <div className="main learn-main fade-in">
@@ -3215,7 +3220,9 @@ function GlossaryPage({ onNavigate }) {
               <div className="term-modal-label">Related terms</div>
               <div className="related-terms">
                 {selectedTerm.related.map(term=>(
-                  <span className="related-term" key={term}>{term}</span>
+                  <button className="related-term" type="button" key={term} onClick={()=>openRelatedTerm(term)}>
+                    {term}
+                  </button>
                 ))}
               </div>
             </div>
