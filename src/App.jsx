@@ -1076,11 +1076,11 @@ function DeleteOrderConfirmModal({ order, onCancel, onConfirm }) {
           {order.label}
         </div>
         <p style={{fontSize:13,color:"#8aaac8",lineHeight:1.6,marginBottom:18}}>
-          Todas as informacoes dessa ordem serao permanentemente perdidas. Ela nao sera fechada, vencida ou rolada, e nao vai aparecer no historico.
+          All information for this order will be permanently lost. It will not be closed, expired, or rolled, and it will not appear in history.
         </p>
         <div className="factions">
-          <button className="btn bneutral bfull" onClick={onCancel}>Cancelar</button>
-          <button className="btn bfull bdanger" onClick={onConfirm}>Sim, deletar</button>
+          <button className="btn bneutral bfull" onClick={onCancel}>Cancel</button>
+          <button className="btn bfull bdanger" onClick={onConfirm}>Yes, delete</button>
         </div>
       </div>
     </div>
@@ -4977,7 +4977,7 @@ function App() {
       // If duplicate key, asset already exists — still ok
       if(e.code==="23505"||e.message?.includes("duplicate")) return true;
       console.error("addAssetSilent error:", e);
-      showToast(`Erro ao criar ativo: ${e?.message||e?.code||"unknown"}`,false);
+      showToast(`Error creating asset: ${e?.message||e?.code||"unknown"}`,false);
       return false;
     }
   };
@@ -5288,7 +5288,7 @@ function App() {
           initialPrice:0, active:true, trades:[],
         };
         const ok = await addAssetSilent(newAsset);
-        if(ok===false) { showToast(`Falha ao criar ativo ${ticker} no banco.`,false); return; }
+        if(ok===false) { showToast(`Failed to create ${ticker} in the database.`,false); return; }
         assetId = ticker;
         await loadPortfolio();
       } else {
@@ -5297,12 +5297,12 @@ function App() {
       const assignmentAsset = existing || {id:ticker,ticker,color:"#63E6BE",leaps:[],trades:[],strategy:detectedStrategy};
       const saved = await handleSaveTrade(assetId, {...trade, strategy: detectedStrategy}, {assignmentAsset});
       if(saved) {
-        showToast(`Trade salvo: ${ticker} ${trade.action} $${trade.strike}`);
+        showToast(`Trade saved: ${ticker} ${trade.action} $${trade.strike}`);
         await reloadAssets();
       }
     } catch(e) {
       console.error("handleSaveManualTrade error:", e);
-      showToast(`Erro ao salvar: ${e?.message||e?.code||String(e)}`,false);
+      showToast(`Error saving: ${e?.message||e?.code||String(e)}`,false);
     }
   };
 
