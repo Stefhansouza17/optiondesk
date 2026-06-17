@@ -1061,6 +1061,32 @@ function UnifiedTradeModal({ title="Add Trade", initial={}, asset=null, isEdit=f
 }
 
 // ── Asset Dashboard ───────────────────────────────────────────────────────────
+function DeleteOrderConfirmModal({ order, onCancel, onConfirm }) {
+  if(!order) return null;
+  return (
+    <div className="overlay" onClick={e=>e.target===e.currentTarget&&onCancel()}>
+      <div className="fbox" style={{width:430,maxWidth:"94vw"}}>
+        <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:14}}>
+          <div style={{width:36,height:36,borderRadius:"50%",background:"#FF4D6D15",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+            <span style={{color:"#FF4D6D",fontSize:18}}>!</span>
+          </div>
+          <div className="ftitle" style={{margin:0}}>Delete order?</div>
+        </div>
+        <div style={{background:"#071019",border:"1px solid #1B2A3A",borderRadius:6,padding:"10px 13px",marginBottom:14,fontSize:12,color:"#D6E2F0"}}>
+          {order.label}
+        </div>
+        <p style={{fontSize:13,color:"#8aaac8",lineHeight:1.6,marginBottom:18}}>
+          Todas as informacoes dessa ordem serao permanentemente perdidas. Ela nao sera fechada, vencida ou rolada, e nao vai aparecer no historico.
+        </p>
+        <div className="factions">
+          <button className="btn bneutral bfull" onClick={onCancel}>Cancelar</button>
+          <button className="btn bfull bdanger" onClick={onConfirm}>Sim, deletar</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function AssetDashboard({ asset, strategies=[], onCreateStrategy, onChangeTradeStrategy, onDetachTradeStrategy, onClose, onSaveTrade, onUpdateTrade, onDeleteTrade, onDeleteLeap, onUpdateLeap, onDeleteAsset, onSaveLeap }) {
   const trades = asset.trades;
   const [etfPrice, setEtfPrice] = useState(asset.initialPrice||0);
@@ -1079,6 +1105,7 @@ function AssetDashboard({ asset, strategies=[], onCreateStrategy, onChangeTradeS
   const [closeLeap, setCloseLeap] = useState(null);
   const [closeLeapPrem, setCloseLeapPrem] = useState("");
   const [editLeapData, setEditLeapData] = useState(null);
+  const [deleteOrder, setDeleteOrder] = useState(null);
   const [crForm, setCrForm] = useState({mode:"close",closePrem:"",newStrike:"",newExp:"",newPrem:"",contracts:1});
   const [crGroup, setCrGroup] = useState([]);
   const [closeForm, setCloseForm] = useState({mode:"close",closePrem:"",newStrike:"",newExp:"",newPrem:""});
@@ -1220,8 +1247,17 @@ function AssetDashboard({ asset, strategies=[], onCreateStrategy, onChangeTradeS
     }
     setShowForm(false);
   }
-  async function removeTrade(id){
-    await onDeleteTrade(id);
+  function removeTrade(id, label="this order"){
+    setDeleteOrder({kind:"trade",id,label});
+  }
+  function removeLeap(id, label="this LEAP"){
+    setDeleteOrder({kind:"leap",id,label});
+  }
+  async function confirmDeleteOrder(){
+    if(!deleteOrder) return;
+    if(deleteOrder.kind==="leap") await onDeleteLeap(deleteOrder.id);
+    else await onDeleteTrade(deleteOrder.id);
+    setDeleteOrder(null);
   }
   async function createStrategyFromDashboard(payload){
     await onCreateStrategy({...payload,asset_id:asset.id,ticker:asset.ticker});
@@ -1477,6 +1513,7 @@ function AssetDashboard({ asset, strategies=[], onCreateStrategy, onChangeTradeS
                           <td><div style={{display:"flex",gap:5}}>
                             <button className="btn bsm bneutral" onClick={()=>setEditLeapData(l)}>Edit</button>
                             <button className="btn bsm bdanger" onClick={()=>{setCloseLeap(l);setCloseLeapPrem("");}}>Close</button>
+                            <button className="btn bsm bdanger" title="Delete order without history" onClick={()=>removeLeap(l.id, `${asset.ticker} LEAP $${l.strike}`)}>✕</button>
                           </div></td>
                         </tr>
                       ))}
@@ -1512,7 +1549,7 @@ function AssetDashboard({ asset, strategies=[], onCreateStrategy, onChangeTradeS
                         <td style={{color}}>${fmt(l.cost*l.contracts*100)}</td>
                         <td><div style={{display:"flex",gap:5}}>
                           <button className="btn bsm bneutral" onClick={()=>setEditLeapData(l)}>Edit</button>
-                          <button className="btn bsm bdanger" onClick={()=>onDeleteLeap(l.id)}>✕</button>
+                          <button className="btn bsm bdanger" title="Delete order without history" onClick={()=>removeLeap(l.id, `${asset.ticker} long $${l.strike}`)}>✕</button>
                         </div></td>
                       </tr>
                     ))}
@@ -1554,7 +1591,7 @@ function AssetDashboard({ asset, strategies=[], onCreateStrategy, onChangeTradeS
                           <button className="btn bsm bneutral" onClick={()=>openEdit(t)}>Edit</button>
                           <button className="btn bsm bneutral" onClick={()=>setStrategyEditorTrade(t)}>Strategy</button>
                           {isPremium&&<button className="btn bsm bwarn" onClick={()=>openCR(t)}>Close/Roll</button>}
-                          <button className="btn bsm bdanger" onClick={()=>removeTrade(t.id)}>✕</button>
+                          <button className="btn bsm bdanger" title="Delete order without history" onClick={()=>removeTrade(t.id, `${asset.ticker} ${t.action} $${t.strike}`)}>✕</button>
                         </div></td>
                       </tr>);
                     })}
@@ -1598,7 +1635,7 @@ function AssetDashboard({ asset, strategies=[], onCreateStrategy, onChangeTradeS
                       <td><div style={{display:"flex",gap:5}}>
                         <button className="btn bsm bneutral" onClick={()=>openEdit(t)}>Edit</button>
                         <button className="btn bsm bneutral" onClick={()=>setStrategyEditorTrade(t)}>Strategy</button>
-                        <button className="btn bsm bdanger" onClick={()=>removeTrade(t.id)}>✕</button>
+                        <button className="btn bsm bdanger" title="Delete order without history" onClick={()=>removeTrade(t.id, `${asset.ticker} ${t.action} $${t.strike}`)}>✕</button>
                       </div></td>
                     </tr>
                   ))}
@@ -1827,6 +1864,11 @@ function AssetDashboard({ asset, strategies=[], onCreateStrategy, onChangeTradeS
           onClose={()=>setStrategyEditorTrade(null)}
         />
       )}
+      <DeleteOrderConfirmModal
+        order={deleteOrder}
+        onCancel={()=>setDeleteOrder(null)}
+        onConfirm={confirmDeleteOrder}
+      />
     </div>
   );
 }
@@ -2922,9 +2964,10 @@ function SimulatorPanel({ onSaveManualTrade, simulatorPreset }) {
 }
 
 // ── Home ──────────────────────────────────────────────────────────────────────
-function Home({ assets, strategies=[], onSelectAsset, onShowPositions, onSaveManualTrade, onEditTrade, onOpenLearn, onStartAdd, simulatorPreset }) {
+function Home({ assets, strategies=[], onSelectAsset, onShowPositions, onSaveManualTrade, onEditTrade, onDeleteTrade, onDeleteLeap, onOpenLearn, onStartAdd, simulatorPreset }) {
   const [stratFilter, setStratFilter] = useState("all");
   const [sortBy, setSortBy] = useState("expiration");
+  const [deleteOrder, setDeleteOrder] = useState(null);
   const activeAssets = useMemo(()=>assets.filter(a=>a.active),[assets]);
 
   const totals = useMemo(()=>assets.filter(a=>a.active).map(a=>{
@@ -3017,6 +3060,16 @@ function Home({ assets, strategies=[], onSelectAsset, onShowPositions, onSaveMan
     return items.sort((a,b)=>a.rank-b.rank).slice(0,4);
   },[totals]);
   const scrollToSimulator = () => document.getElementById("strategy-builder")?.scrollIntoView({behavior:"smooth",block:"start"});
+  const deleteOpenOrder = (row) => {
+    const label = row.isLeap ? `${row.ticker} LEAP $${row.strike}` : `${row.ticker} ${row.action} $${row.strike}`;
+    setDeleteOrder({kind:row.isLeap?"leap":"trade",assetId:row.assetId,id:row.id,label});
+  };
+  const confirmDeleteOrder = async () => {
+    if(!deleteOrder) return;
+    if(deleteOrder.kind==="leap") await onDeleteLeap?.(deleteOrder.assetId,deleteOrder.id);
+    else await onDeleteTrade?.(deleteOrder.assetId,deleteOrder.id);
+    setDeleteOrder(null);
+  };
 
   return (
     <div className="main fade-in">
@@ -3230,7 +3283,10 @@ function Home({ assets, strategies=[], onSelectAsset, onShowPositions, onSaveMan
                     <td style={{color:"#D6E2F0"}}>{r.expiration}</td>
                     <td><span style={{fontSize:11,color:bc,fontWeight:600}}>{dl<=0?"Exp!":dl+"d"}</span></td>
                     <td onClick={e=>e.stopPropagation()}>
-                      <button className="btn bsm bneutral" onClick={()=>onEditTrade&&onEditTrade(r)}>Edit</button>
+                      <div style={{display:"flex",gap:5}}>
+                        <button className="btn bsm bneutral" onClick={()=>onEditTrade&&onEditTrade(r)}>Edit</button>
+                        <button className="btn bsm bdanger" title="Delete order without history" onClick={()=>deleteOpenOrder(r)}>✕</button>
+                      </div>
                     </td>
                   </tr>
                 );
@@ -3246,6 +3302,11 @@ function Home({ assets, strategies=[], onSelectAsset, onShowPositions, onSaveMan
         <div style={{flex:1,height:1,background:"linear-gradient(90deg,#22364A,transparent)"}}/>
       </div>
       <SimulatorPanel onSaveManualTrade={onSaveManualTrade} simulatorPreset={simulatorPreset}/>
+      <DeleteOrderConfirmModal
+        order={deleteOrder}
+        onCancel={()=>setDeleteOrder(null)}
+        onConfirm={confirmDeleteOrder}
+      />
     </div>
   );
 }
@@ -5319,7 +5380,7 @@ function App() {
         )}
       </div>
 
-      {active==="home"&&<Home assets={assetsWithStrategyLinks} strategies={strategies} onSelectAsset={id=>navigate(id)} onShowPositions={()=>setShowPositions(true)} onSaveManualTrade={handleSaveManualTrade} onEditTrade={r=>{const a=assetsWithStrategyLinks.find(x=>x.id===r.assetId);setEditTrade({r,asset:a});}} onOpenLearn={()=>navigate("learn-calculators")} onStartAdd={()=>setShowAdd(true)} simulatorPreset={simulatorPreset}/>}
+      {active==="home"&&<Home assets={assetsWithStrategyLinks} strategies={strategies} onSelectAsset={id=>navigate(id)} onShowPositions={()=>setShowPositions(true)} onSaveManualTrade={handleSaveManualTrade} onEditTrade={r=>{const a=assetsWithStrategyLinks.find(x=>x.id===r.assetId);setEditTrade({r,asset:a});}} onDeleteTrade={handleDeleteTrade} onDeleteLeap={handleDeleteLeap} onOpenLearn={()=>navigate("learn-calculators")} onStartAdd={()=>setShowAdd(true)} simulatorPreset={simulatorPreset}/>}
       {active==="learn"&&<LearnPage onNavigate={navigate}/>}
       {active==="learn-courses"&&<LearnPlaceholderPage title="Courses" onNavigate={navigate}/>}
       {(active==="learn-playbooks"||active==="learn-playbook")&&<PlaybooksPage onNavigate={navigate} onOpenSimulator={openSimulatorFromPlaybook}/>}
