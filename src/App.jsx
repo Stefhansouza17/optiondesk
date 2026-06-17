@@ -258,7 +258,7 @@ html,body{font-family:'DM Mono','IBM Plex Mono',monospace;background:#050A0F;col
 ::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:#071019}::-webkit-scrollbar-thumb{background:#1e3a5f;border-radius:2px}
 .hdr{border-bottom:1px solid #1B2A3A;padding:13px 24px;display:flex;align-items:center;justify-content:space-between;background:rgba(10,20,35,0.97);position:sticky;top:0;z-index:100;backdrop-filter:blur(10px)}
 .logo{display:inline-flex;align-items:center;gap:16px;font-family:'Syne',sans-serif;font-size:20px;font-weight:800;color:#fff;cursor:pointer;user-select:none;line-height:1}
-.logo-mark{width:52px;height:52px;border-radius:13px;object-fit:cover;box-shadow:0 0 18px rgba(99,230,190,.18);flex-shrink:0}
+.logo-mark{width:52px;height:52px;border-radius:0;object-fit:contain;filter:drop-shadow(0 6px 14px rgba(99,230,190,.16));flex-shrink:0}
 .logo-lockup{display:inline-flex;align-items:center;gap:8px}
 .logo-name{background:linear-gradient(105deg,#FFFFFF 0%,#F4FFFB 58%,#8EF0D0 100%);-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent;letter-spacing:0}
 .beta-badge{font-family:'DM Mono','IBM Plex Mono',monospace;font-size:9px;font-weight:600;letter-spacing:.8px;line-height:1;text-transform:uppercase;color:rgba(142,240,208,.68);background:rgba(99,230,190,.07);border:1px solid rgba(142,240,208,.16);border-radius:3px;padding:3px 6px}
@@ -509,7 +509,7 @@ tr:hover .sim-td,.sim-row-atm:hover .sim-td-price,.sim-row-atm:hover .sim-td-pct
   html,body{overflow-x:hidden;max-width:100%}
   .hdr{padding:10px 12px;flex-wrap:wrap;gap:6px}
   .hdr>div:last-child{display:none}
-  .logo-mark{width:36px;height:36px;border-radius:9px}
+  .logo-mark{width:36px;height:36px}
   .logo{font-size:18px}
   .logo-lockup{gap:6px}
   .beta-badge{font-size:8px;padding:3px 5px;letter-spacing:.6px}
@@ -548,7 +548,7 @@ tr:hover .sim-td,.sim-row-atm:hover .sim-td-price,.sim-row-atm:hover .sim-td-pct
   .toggle-group{min-width:0}
 }
 @media(min-width:769px) and (max-width:1024px){
-  .logo-mark{width:44px;height:44px;border-radius:11px}
+  .logo-mark{width:44px;height:44px}
 }
 .ts-tooltip{display:none;position:absolute;bottom:22px;left:-90px;z-index:99;background:#0B131D;border:1px solid #3a6a9a;border-radius:8px;padding:13px 15px;width:250px;font-size:11.5px;color:#c0d8f0;line-height:2;white-space:pre-line;pointer-events:none;box-shadow:0 4px 20px rgba(0,0,0,.6)}
 .ts-tooltip b{color:#D6E2F0;display:block;margin-bottom:4px;font-size:10px}
