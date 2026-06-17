@@ -5110,7 +5110,6 @@ function App() {
       <div className="hdr">
         <div style={{display:"flex",alignItems:"center",gap:10}}>
           <div className="logo" onClick={()=>navigate("home")}>Option<span>Desk</span></div>
-          <div className="badge">Beta</div>
           {active!=="home"&&<button className="home-btn" onClick={()=>navigate("home")}>← Home</button>}
         </div>
         <div style={{fontSize:11,color:"#4A6A8A"}}>{new Date().toLocaleDateString("en-US",{weekday:"long",year:"numeric",month:"long",day:"numeric"})}</div>
