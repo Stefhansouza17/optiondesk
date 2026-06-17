@@ -2621,17 +2621,6 @@ function SimulatorPanel({ onSaveManualTrade, simulatorPreset }) {
             <div style={{padding:"15px 20px 18px",borderRight:"1px solid #22364A",borderBottom:"1px solid #22364A",display:"flex",flexDirection:"column",gap:10,alignSelf:"start",background:"linear-gradient(180deg,#071019,#050A0F)"}}>
               <div style={{display:"flex",alignItems:"center",gap:6}}>
                 <div className="sim-slbl" style={{margin:0,letterSpacing:2}}>Probabilities</div>
-                <div style={{position:"relative",display:"inline-block"}}>
-                  <button style={{width:15,height:15,borderRadius:"50%",background:"#1B2A3A",border:"1px solid #2a3a4a",
-                    color:"#6a8aaa",fontSize:9,cursor:"help",display:"flex",alignItems:"center",justifyContent:"center",
-                    fontFamily:"DM Mono,monospace",padding:0,flexShrink:0}}>?</button>
-                  <div className="ts-tooltip">
-                    Chance of Profit estimates the current probability of a profitable outcome.{"\n"}
-                    Prob ITM estimates the chance the option finishes in the money.{"\n"}
-                    Prob Touch estimates the chance price touches the strike before expiration.{"\n"}
-                    Assignment Risk appears for short options only.
-                  </div>
-                </div>
               </div>
 
               {/* Top row — primary metrics */}
@@ -3146,7 +3135,10 @@ function Home({ assets, strategies=[], onSelectAsset, onShowPositions, onSaveMan
           <div className="priority-head">
             <div>
               <div className="priority-kicker">Priority desk</div>
-              <div className="priority-title">What needs attention now</div>
+              <div className="priority-title" style={{display:"flex",alignItems:"center",gap:4}}>
+                What needs attention now
+                <Tooltip text={"Expiration risk: short calls expiring within 3 days.\nManage this week: short calls expiring within 7 days.\nEngine idle: an open LEAP has no active short call generating premium.\nNear milestone: LEAP recovery is between 75% and 99%.\nThis is a priority panel for what needs attention, not just upcoming expirations."}/>
+              </div>
               <div className="priority-copy">Sorted from expiration risk to idle income cycles.</div>
             </div>
             <button className="btn bneutral" onClick={onShowPositions}>View positions</button>
