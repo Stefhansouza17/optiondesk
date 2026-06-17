@@ -3151,7 +3151,10 @@ function GlossaryPage({ onNavigate }) {
   });
   const openRelatedTerm = (term) => {
     const relatedEntry = GLOSSARY_ENTRIES.find(entry => entry.term===term);
-    if(relatedEntry) setSelectedTerm(relatedEntry);
+    if(!relatedEntry) return;
+    setQuery("");
+    setCategory(relatedEntry.category);
+    setSelectedTerm(relatedEntry);
   };
 
   return (
@@ -3219,11 +3222,16 @@ function GlossaryPage({ onNavigate }) {
             <div className="term-modal-section" style={{marginBottom:0}}>
               <div className="term-modal-label">Related terms</div>
               <div className="related-terms">
-                {selectedTerm.related.map(term=>(
-                  <button className="related-term" type="button" key={term} onClick={()=>openRelatedTerm(term)}>
-                    {term}
-                  </button>
-                ))}
+                {selectedTerm.related.map(term=>{
+                  const relatedEntry = GLOSSARY_ENTRIES.find(entry => entry.term===term);
+                  return relatedEntry ? (
+                    <button className="related-term" type="button" key={term} onClick={()=>openRelatedTerm(term)}>
+                      {term}
+                    </button>
+                  ) : (
+                    <span className="related-term" key={term} style={{cursor:"default",opacity:.65}}>{term}</span>
+                  );
+                })}
               </div>
             </div>
           </div>
