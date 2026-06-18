@@ -438,11 +438,11 @@ tr:hover td{background:#101e2c}
 .priority-label{font-size:9px;letter-spacing:1.3px;text-transform:uppercase;color:var(--pc,#63E6BE);margin-bottom:8px}
 .priority-main{font-family:'Syne',sans-serif;font-size:15px;font-weight:800;color:#fff;line-height:1.15;margin-bottom:8px}
 .priority-meta{font-size:11px;color:#8aaac8;line-height:1.45}
-.priority-strip{display:flex;align-items:center;justify-content:space-between;gap:14px;width:100%;flex-wrap:wrap}
+.priority-strip{display:grid;grid-template-columns:minmax(280px,1fr) minmax(420px,1.45fr);align-items:center;gap:18px;width:100%}
 .priority-strip-main{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
 .priority-strip-title{font-family:'Syne',sans-serif;font-size:15px;font-weight:800;color:#fff;line-height:1}
 .priority-strip-copy{font-size:10px;color:#7D91AA;margin-top:3px;letter-spacing:0;text-transform:none}
-.risk-legend{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.risk-legend{display:flex;align-items:center;justify-content:center;gap:14px;flex-wrap:wrap}
 .risk-legend-item{display:inline-flex;align-items:center;gap:6px;font-size:9px;letter-spacing:1px;text-transform:uppercase;color:#8aaac8;white-space:nowrap}
 .risk-dot{--risk:#63E6BE;display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--risk);box-shadow:0 0 0 0 color-mix(in srgb,var(--risk) 42%,transparent);animation:riskPulse 1.55s infinite;flex-shrink:0}
 .risk-dot.muted{opacity:.28;animation:none}
@@ -629,9 +629,9 @@ tr:hover .sim-td,.sim-row-atm:hover .sim-td-price,.sim-row-atm:hover .sim-td-pct
   .start-desk{grid-template-columns:1fr;padding:15px}
   .start-grid{grid-template-columns:1fr}
   .start-title{font-size:22px}
-  .priority-strip{align-items:flex-start}
+  .priority-strip{grid-template-columns:1fr;align-items:flex-start}
   .priority-strip-main{width:100%;justify-content:space-between}
-  .risk-legend{gap:8px}
+  .risk-legend{justify-content:flex-start;gap:8px}
   .pbar{margin:10px 8px 0;padding:8px 12px;box-sizing:border-box}
   .cards{grid-template-columns:1fr 1fr}
   .learn-main,.calc-page{padding-top:18px}
@@ -667,7 +667,7 @@ tr:hover .sim-td,.sim-row-atm:hover .sim-td-price,.sim-row-atm:hover .sim-td-pct
 @media(min-width:769px) and (max-width:1024px){
   .logo-mark{width:44px;height:44px}
   .start-desk{grid-template-columns:1fr}
-  .risk-legend{max-width:560px;justify-content:flex-end}
+  .risk-legend{justify-content:center}
 }
 .ts-tooltip{display:none;position:absolute;bottom:22px;left:-90px;z-index:99;background:#0B131D;border:1px solid #3a6a9a;border-radius:8px;padding:13px 15px;width:250px;font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:12px;color:#c0d8f0;line-height:1.65;white-space:pre-line;pointer-events:none;box-shadow:0 4px 20px rgba(0,0,0,.6)}
 .ts-tooltip b{color:#D6E2F0;display:block;margin-bottom:4px;font-size:10px}
@@ -3135,8 +3135,8 @@ function Home({ assets, strategies=[], onSelectAsset, onShowPositions, onSaveMan
 
   const riskLegend = [
     ["Expiration risk","#FF4D6D","Short call vencendo em ate 3 dias."],
-    ["Manage this week","#FB923C","Short call vencendo em ate 7 dias."],
-    ["Near milestone","#FFD84D","LEAP com recovery entre 75% e 99%."],
+    ["Manage this week","#FF7A1A","Short call vencendo em ate 7 dias."],
+    ["Near milestone","#FDE047","LEAP com recovery entre 75% e 99%."],
     ["Engine idle","#5B8CFF","Tem LEAP aberto, mas nao tem short call ativo gerando premium."],
   ];
   const allOpenRows = useMemo(()=>totals.flatMap(t=>{
@@ -3144,13 +3144,13 @@ function Home({ assets, strategies=[], onSelectAsset, onShowPositions, onSaveMan
     const leapRisk = t.leapContracts>0 && t.openSells.length===0
       ? {label:"Engine idle", color:"#5B8CFF"}
       : t.leapCost>0 && recovery>=75 && recovery<100
-        ? {label:"Near milestone", color:"#FFD84D"}
+        ? {label:"Near milestone", color:"#FDE047"}
         : null;
     const riskForTrade = (tr) => {
       if(!(tr.action==="SELL" && (tr.option_type||"call")==="call")) return null;
       const days = Math.ceil((new Date(tr.expiration)-new Date())/(1000*60*60*24));
       if(days<=3) return {label:"Expiration risk", color:"#FF4D6D"};
-      if(days<=7) return {label:"Manage this week", color:"#FB923C"};
+      if(days<=7) return {label:"Manage this week", color:"#FF7A1A"};
       return null;
     };
     return [
