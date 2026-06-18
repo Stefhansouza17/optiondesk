@@ -1171,7 +1171,32 @@ function AssetDashboard({ asset, strategies=[], onCreateStrategy, onChangeTradeS
   const openTrades = trades.filter(t=>t.status==="open").sort((a,b)=>new Date(a.expiration)-new Date(b.expiration));
   const closedTrades = trades.filter(t=>t.status==="closed").sort((a,b)=>new Date(b.date)-new Date(a.date));
   const expiredTrades = trades.filter(t=>t.status==="expired").sort((a,b)=>new Date(b.date)-new Date(a.date));
-  const filteredTrades = (statusFilter==="open"?openTrades:statusFilter==="closed"?closedTrades:statusFilter==="expired"?expiredTrades:trades).sort((a,b)=>new Date(b.date)-new Date(a.date));
+  const allOrderRows = [
+    ...leaps.map(l=>({
+      ...l,
+      id:l.id,
+      rowKey:`leap-${l.id}`,
+      isLeap:true,
+      typeLabel:"LEAP",
+      action:"BUY",
+      option_type:"call",
+      premium:l.cost,
+      status:"open",
+      value:l.cost*l.contracts*100,
+    })),
+    ...trades.map(t=>({
+      ...t,
+      rowKey:`trade-${t.id}`,
+      isLeap:false,
+      typeLabel:optionType(t)==="put"?"Put":"Call",
+      premium:tradePremium(t),
+      contracts:tradeContracts(t),
+      value:tradeDollarValue(t),
+    })),
+  ];
+  const filteredOrders = allOrderRows
+    .filter(o=>statusFilter==="all" || o.status===statusFilter)
+    .sort((a,b)=>new Date(b.date||0)-new Date(a.date||0));
   const assetStrategies = strategies.filter(s=>normalizeTicker(s.ticker)===normalizeTicker(asset.ticker));
   const pmccShortCalls = trades
     .filter(t=>isPremiumIncomeSellTrade(t,trades)&&optionType(t)==="call")
@@ -1643,30 +1668,31 @@ function AssetDashboard({ asset, strategies=[], onCreateStrategy, onChangeTradeS
                     <button key={v} onClick={()=>setStatusFilter(v)} style={{padding:"4px 10px",borderRadius:4,border:"none",cursor:"pointer",fontFamily:"DM Mono,monospace",fontSize:10,background:statusFilter===v?color:"transparent",color:statusFilter===v?"#071019":"#7D91AA"}}>{l}</button>
                   ))}
                 </div>
-                <button className="btn bsm" onClick={()=>exportCSV(trades,asset.ticker)} style={{color,borderColor:color+"44",background:color+"15"}}>↓ CSV</button>
+                <button className="btn bsm" onClick={()=>exportCSV(allOrderRows,asset.ticker)} style={{color,borderColor:color+"44",background:color+"15"}}>↓ CSV</button>
                 <button className="btn bsm bneutral" onClick={()=>setShowCreateStrategy(true)}>+ Strategy</button>
                 <button className="btn" onClick={openAdd} style={{color,borderColor:color+"44",background:color+"15"}}>+ Add trade</button>
               </div>
             </div>
-            {filteredTrades.length===0?<EmptyState title="No trades match this view" copy="Change the status filter or add a new trade to build this asset's history."><button className="btn" onClick={openAdd} style={{color,borderColor:color+"44",background:color+"15"}}>Add trade</button></EmptyState>:(
+            {filteredOrders.length===0?<EmptyState title="No orders match this view" copy="Change the status filter or add a new trade to build this asset's order ledger."><button className="btn" onClick={openAdd} style={{color,borderColor:color+"44",background:color+"15"}}>Add trade</button></EmptyState>:(
               <table>
-                <thead><tr><th>Date</th><th>Action</th><th>Strategy</th><th>Strike</th><th>Expiration</th><th>Premium</th><th>Contracts</th><th>Value $</th><th>Status</th><th></th></tr></thead>
+                <thead><tr><th>Date</th><th>Type</th><th>Action</th><th>Strategy</th><th>Strike</th><th>Expiration</th><th>Price</th><th>Contracts</th><th>Value $</th><th>Status</th><th></th></tr></thead>
                 <tbody>
-                  {filteredTrades.map(t=>(
-                    <tr key={t.id}>
+                  {filteredOrders.map(t=>(
+                    <tr key={t.rowKey}>
                       <td style={{color:"#7D91AA"}}>{t.date}</td>
+                      <td><span style={{fontSize:10,padding:"2px 8px",borderRadius:4,background:t.isLeap?"#5B8CFF20":"#1B2A3A",border:`1px solid ${t.isLeap?"#5B8CFF44":"#2a3a4a"}`,color:t.isLeap?"#5B8CFF":"#8aaac8",whiteSpace:"nowrap"}}>{t.typeLabel}</span></td>
                       <td><span style={{color:t.action==="SELL"?color:"#FF4D6D"}}>{t.action==="SELL"?"SELL":"BUY"}</span></td>
-                      <td><TradeStrategyBadge trade={t} strategies={strategies}/></td>
+                      <td>{t.isLeap?"-":<TradeStrategyBadge trade={t} strategies={strategies}/>}</td>
                       <td><span style={{color:"#FFD84D"}}>${t.strike}</span></td>
                       <td>{t.expiration}</td>
                       <td style={{color:t.action==="SELL"?color:"#FF4D6D"}}>{t.action==="SELL"?"+":"-"}${fmt(t.premium)}</td>
                       <td style={{color:"#8aaac8"}}>{t.contracts||1}</td>
-                      <td style={{color:t.action==="SELL"?color:"#FF4D6D"}}>{t.action==="SELL"?"+":"-"}${fmt(t.premium*(t.contracts||1)*100)}</td>
+                      <td style={{color:t.action==="SELL"?color:"#FF4D6D"}}>{t.action==="SELL"?"+":"-"}${fmt(t.value)}</td>
                       <td>{t.status==="open"?<span className="stopen" style={{color,borderColor:color+"44",background:color+"15"}}>Open</span>:t.status==="expired"?<span className="stexpired">Expired</span>:<span className="stclosed">Closed</span>}</td>
                       <td><div style={{display:"flex",gap:5}}>
-                        <button className="btn bsm bneutral" onClick={()=>openEdit(t)}>Edit</button>
-                        <button className="btn bsm bneutral" onClick={()=>setStrategyEditorTrade(t)}>Strategy</button>
-                        <button className="btn bsm bdanger" title="Delete order without history" onClick={()=>removeTrade(t.id, `${asset.ticker} ${t.action} $${t.strike}`)}>✕</button>
+                        <button className="btn bsm bneutral" onClick={()=>t.isLeap?setEditLeapData(t):openEdit(t)}>Edit</button>
+                        {!t.isLeap&&<button className="btn bsm bneutral" onClick={()=>setStrategyEditorTrade(t)}>Strategy</button>}
+                        <button className="btn bsm bdanger" title="Delete order without history" onClick={()=>t.isLeap?removeLeap(t.id, `${asset.ticker} LEAP $${t.strike}`):removeTrade(t.id, `${asset.ticker} ${t.action} $${t.strike}`)}>✕</button>
                       </div></td>
                     </tr>
                   ))}
