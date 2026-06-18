@@ -89,7 +89,8 @@ const SIM_STRATEGIES = STRATEGY_TYPES;
 
 const tradeContracts = (trade) => Math.max(1, parseInt(trade?.contracts||1));
 const tradePremium = (trade) => parseFloat(trade?.premium||0);
-const tradeDollarValue = (trade) => tradePremium(trade) * tradeContracts(trade) * 100;
+const roundMoney = (n) => Math.round((Number(n)||0)*100)/100;
+const tradeDollarValue = (trade) => roundMoney(tradePremium(trade) * tradeContracts(trade) * 100);
 const optionType = (trade) => trade?.option_type || "call";
 const tradeDteAtOpen = (trade) => {
   if(!trade?.date || !trade?.expiration) return null;
@@ -126,8 +127,11 @@ const isThetaClosingBuyTrade = (trade, trades=[]) =>
   && hasOpeningThetaShortCallMatch(trade, trades);
 const hasLeapContracts = (asset) =>
   (asset?.leaps||[]).reduce((sum,l)=>sum+tradeContracts(l),0)>0;
-const isThetaEngineTrade = (trade, hasLeap=false) =>
-  hasLeap && optionType(trade)==="call" && !isLeapCloseTrade(trade);
+const isThetaEngineTrade = (trade, trades=[], hasLeap=false) =>
+  hasLeap && (
+    isThetaShortCallTrade(trade) ||
+    isThetaClosingBuyTrade(trade, trades)
+  );
 const thetaEngineGrossDollars = (trades=[], hasLeap=false) =>
   !hasLeap ? 0 : trades.reduce((sum,t)=>
     isThetaShortCallTrade(t) ? sum + tradeDollarValue(t) : sum
@@ -144,7 +148,7 @@ function closeTradeLots(lots, contracts, closePremium, multiplier, onClose) {
     remaining -= consumed;
     if(lot.remaining<=0) lots.shift();
   }
-  return realized;
+  return roundMoney(realized);
 }
 
 const realizedOptionPnLDollars = (trades=[], includeTrade=()=>true) => {
@@ -153,7 +157,7 @@ const realizedOptionPnLDollars = (trades=[], includeTrade=()=>true) => {
   const sorted = [...trades]
     .filter(includeTrade)
     .sort((a,b)=>new Date(a.date||0)-new Date(b.date||0));
-  return sorted.reduce((realized,t)=>{
+  return roundMoney(sorted.reduce((realized,t)=>{
     const action = (t?.action||"").toUpperCase();
     const status = t?.status || "open";
     const key = `${optionType(t)}|${parseFloat(t?.strike||0).toFixed(2)}|${t?.expiration||""}`;
@@ -191,10 +195,10 @@ const realizedOptionPnLDollars = (trades=[], includeTrade=()=>true) => {
     }
 
     return realized;
-  },0);
+  },0));
 };
 const thetaEngineRealizedDollars = (trades=[], hasLeap=false) =>
-  realizedOptionPnLDollars(trades, t=>isThetaEngineTrade(t, hasLeap));
+  realizedOptionPnLDollars(trades, t=>isThetaEngineTrade(t, trades, hasLeap));
 
 const strategyLabelForTrade = (trade) => {
   const action = (trade?.action||"").toUpperCase();
@@ -1256,10 +1260,10 @@ function AssetDashboard({ asset, strategies=[], onCreateStrategy, onChangeTradeS
     .sort((a,b)=>new Date(b.date||0)-new Date(a.date||0));
   const assetStrategies = strategies.filter(s=>normalizeTicker(s.ticker)===normalizeTicker(asset.ticker));
   const pmccShortCalls = trades
-    .filter(t=>isThetaEngineTrade(t,hasLeap)&&isThetaShortCallTrade(t))
+    .filter(t=>hasLeap&&isThetaShortCallTrade(t))
     .sort((a,b)=>new Date(a.date||0)-new Date(b.date||0));
   const pmccClosingBuys = trades
-    .filter(t=>isThetaEngineTrade(t,hasLeap)&&isThetaClosingBuyTrade(t,trades))
+    .filter(t=>isThetaEngineTrade(t,trades,hasLeap)&&isThetaClosingBuyTrade(t,trades))
     .sort((a,b)=>new Date(a.date||0)-new Date(b.date||0));
   const remainingClosingBuys = pmccClosingBuys.map(trade=>({
     trade,
@@ -1289,25 +1293,31 @@ function AssetDashboard({ asset, strategies=[], onCreateStrategy, onChangeTradeS
       closeMatches = consumeCloseMatches(false);
     }
     const close = closeMatches[0]?.trade || null;
-    const credit = tradePremium(sell)*contracts*100;
+    const isExpired = sell.status==="expired";
+    const isOpen = sell.status==="open";
+    const isClosed = sell.status==="closed" && !!close;
+    const missingClose = sell.status==="closed" && !close;
+    const credit = tradeDollarValue(sell);
     const debit = closeMatches.reduce((sum,match)=>sum+tradePremium(match.trade)*match.consumed*100,0);
-    const net = credit-debit;
+    const net = isExpired ? credit : isClosed ? credit-debit : null;
     const dte = sell.expiration?Math.max(Math.ceil((new Date(sell.expiration)-new Date())/(1000*60*60*24)),0):0;
     return {
       id:sell.id||idx,
       number:idx+1,
       short:sell,
       close,
-      status:sell.status==="open"?"open":sell.status==="expired"?"expired":close?"closed":sell.status,
+      status:isOpen?"open":isExpired?"expired":isClosed?"closed":missingClose?"missing close":sell.status,
+      realized:isExpired||isClosed,
+      missingClose,
       credit,
-      debit,
+      debit: roundMoney(debit),
       net,
       contracts,
       dte,
     };
   });
   const activeCycle = pmccCycles.find(c=>c.status==="open");
-  const realizedPremium = pmccCycles.filter(c=>c.status!=="open").reduce((s,c)=>s+c.net,0);
+  const realizedPremium = roundMoney(pmccCycles.filter(c=>c.realized).reduce((s,c)=>s+c.net,0));
   const openCycleCredit = pmccCycles.filter(c=>c.status==="open").reduce((s,c)=>s+c.credit,0);
   const premiumCaptured = realizedPremium + openCycleCredit;
   const weeklyPremium = pmccCycles.length
@@ -1392,6 +1402,11 @@ function AssetDashboard({ asset, strategies=[], onCreateStrategy, onChangeTradeS
     setCrGroup(group);
     setShowCR(t);
     setCrForm({mode:"close",closePrem:"",newStrike:t.strike,newExp:"",newPrem:"",contracts:total});
+  }
+  function openMissingClose(t){
+    setCrGroup([t]);
+    setShowCR(t);
+    setCrForm({mode:"close",closePrem:"",newStrike:t.strike,newExp:"",newPrem:"",contracts:tradeContracts(t)});
   }
   async function confirmCR(){
     if(crForm.mode!=="expired"&&!crForm.closePrem)return;
@@ -1529,10 +1544,14 @@ function AssetDashboard({ asset, strategies=[], onCreateStrategy, onChangeTradeS
                             <tr key={c.id}>
                               <td style={{color:"#7D91AA"}}>{c.number}</td>
                               <td><span style={{color:"#FFD84D"}}>${c.short.strike}C</span> <span style={{color:"#7D91AA"}}>{c.short.expiration}</span></td>
-                              <td><span className={c.status==="open"?"stopen":c.status==="expired"?"stexpired":"stclosed"} style={c.status==="open"?{color,borderColor:color+"44",background:color+"15"}:undefined}>{c.status}</span></td>
+                              <td><span className={c.status==="open"?"stopen":c.status==="expired"?"stexpired":c.missingClose?"stclosed":"stclosed"} style={c.status==="open"?{color,borderColor:color+"44",background:color+"15"}:c.missingClose?{color:"#FFD84D",borderColor:"#FFD84D44",background:"#FFD84D15"}:undefined}>{c.status}</span></td>
                               <td style={{color:"#63E6BE"}}>${fmt(c.credit)}</td>
-                              <td style={{color:c.debit>0?"#FF4D6D":"#4A6A8A"}}>{c.debit>0?`-$${fmt(c.debit)}`:"-"}</td>
-                              <td style={{color:c.net>=0?"#63E6BE":"#FF4D6D"}}>{c.net>=0?"+":""}${fmt(c.net)}</td>
+                              <td style={{color:c.debit>0?"#FF4D6D":c.missingClose?"#FFD84D":"#4A6A8A"}}>
+                                {c.debit>0?`-$${fmt(c.debit)}`:c.missingClose?(
+                                  <button className="btn bsm bwarn" onClick={()=>openMissingClose(c.short)}>Add close price</button>
+                                ):"-"}
+                              </td>
+                              <td style={{color:c.net==null?"#7D91AA":c.net>=0?"#63E6BE":"#FF4D6D"}}>{c.net==null?"—":`${c.net>=0?"+":""}$${fmt(c.net)}`}</td>
                             </tr>
                           ))}
                         </tbody>
@@ -3082,7 +3101,7 @@ function Home({ assets, strategies=[], onSelectAsset, onShowPositions, onSaveMan
     const netColDollar = thetaEngineRealizedDollars(a.trades, hasLeap);
     const realizedPnLDollar = realizedOptionPnLDollars(a.trades);
     const openTrades=a.trades.filter(t=>t.status==="open");
-    const openSells=openTrades.filter(t=>isThetaEngineTrade(t,hasLeap)&&isThetaShortCallTrade(t));
+    const openSells=openTrades.filter(t=>hasLeap&&isThetaShortCallTrade(t));
     const openPremium=openSells.reduce((acc,t)=>acc+tradePremium(t)*tradeContracts(t),0);
     const nearestExp=[...openSells].sort((a,b)=>new Date(a.expiration)-new Date(b.expiration))[0];
     const daysLeft=nearestExp?Math.ceil((new Date(nearestExp.expiration)-new Date())/(1000*60*60*24)):null;
@@ -3315,25 +3334,21 @@ function Home({ assets, strategies=[], onSelectAsset, onShowPositions, onSaveMan
 
             {/* Velocity metrics */}
             {(()=>{
-              const fourWeeksAgo = new Date(); fourWeeksAgo.setDate(fourWeeksAgo.getDate()-28);
-              const recentPremium = totals.reduce((acc,t)=>{
-                const recent = t.trades.filter(tr=>
-                  t.leapContracts>0 &&
-                  tr.status!=="open" &&
-                  isThetaEngineTrade(tr,true) &&
-                  isThetaShortCallTrade(tr) &&
-                  new Date(tr.date)>=fourWeeksAgo
-                );
-                return acc + recent.reduce((s,tr)=>s+tradeDollarValue(tr),0);
-              },0);
-              const weeklyVelocity = recentPremium / 4;
+              const thetaDates = totals.flatMap(t=>
+                t.leapContracts>0
+                  ? t.trades.filter(tr=>isThetaEngineTrade(tr,t.trades,true)).map(tr=>new Date(tr.date||0))
+                  : []
+              ).filter(d=>!isNaN(d));
+              const firstThetaDate = thetaDates.length ? new Date(Math.min(...thetaDates.map(d=>d.getTime()))) : null;
+              const elapsedWeeks = firstThetaDate ? Math.max(1,(new Date()-firstThetaDate)/(1000*60*60*24*7)) : 1;
+              const weeklyVelocity = grandNetCol / elapsedWeeks;
               const remaining = Math.max(grandCost - grandNetCol, 0);
               const daysToFree = weeklyVelocity > 0 ? Math.ceil((remaining / weeklyVelocity) * 7) : null;
               const annualized = weeklyVelocity > 0 && grandCost > 0 ? (weeklyVelocity * 52 / grandCost * 100) : 0;
               return (
                 <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:10,marginTop:16,paddingTop:16,borderTop:"1px solid #1B2A3A"}}>
                   <div style={{textAlign:"center"}}>
-                    <div style={{fontSize:10,letterSpacing:1.5,textTransform:"uppercase",color:"#4A6A8A",marginBottom:4}}>Theta Velocity <Tooltip text="Average weekly premium collected over the last 4 weeks."/></div>
+                    <div style={{fontSize:10,letterSpacing:1.5,textTransform:"uppercase",color:"#4A6A8A",marginBottom:4}}>Theta Velocity <Tooltip text="Average weekly realized theta income since the first LEAP-backed short-call cycle."/></div>
                     <div style={{fontFamily:"Syne,sans-serif",fontSize:18,fontWeight:700,color:"#63E6BE"}}>${fmt(weeklyVelocity)}<span style={{fontSize:11,color:"#7D91AA"}}>/wk</span></div>
                   </div>
                   <div style={{textAlign:"center",borderLeft:"1px solid #1B2A3A",borderRight:"1px solid #1B2A3A"}}>
@@ -4317,7 +4332,7 @@ function ExpirationAlertModal({ trades, onResolve }) {
       <div className="fbox" style={{width:540,maxWidth:"95vw"}}>
         <div className="ftitle">⚠️ Expired positions</div>
         <p style={{fontSize:12,color:"#8aaac8",lineHeight:1.6,marginBottom:14}}>
-          The positions below have passed their expiration date. What happened to each one?
+          The positions below have passed their expiration date. Mark only worthless expirations here. If you closed or rolled, keep it open and enter the closing price through Close/Roll.
         </p>
         {trades.map(t=>(
           <div key={t.id} style={{background:"#071019",border:"1px solid #1B2A3A",borderRadius:6,padding:"10px 14px",marginBottom:10}}>
@@ -4334,8 +4349,8 @@ function ExpirationAlertModal({ trades, onResolve }) {
             <div className="toggle-group">
               <button className="tgl" style={{flex:1,background:decisions[t.id]==="expired"?"#B37CFF":"transparent",color:decisions[t.id]==="expired"?"#fff":"#7D91AA"}}
                 onClick={()=>setDecisions(p=>({...p,[t.id]:"expired"}))}>Expired worthless</button>
-              <button className="tgl" style={{flex:1,background:decisions[t.id]==="closed"?"#FFD84D":"transparent",color:decisions[t.id]==="closed"?"#071019":"#7D91AA"}}
-                onClick={()=>setDecisions(p=>({...p,[t.id]:"closed"}))}>Closed / Rolled</button>
+              <button className="tgl" style={{flex:1,background:decisions[t.id]==="open"?"#FFD84D":"transparent",color:decisions[t.id]==="open"?"#071019":"#7D91AA"}}
+                onClick={()=>setDecisions(p=>({...p,[t.id]:"open"}))}>Needs close price</button>
             </div>
           </div>
         ))}
