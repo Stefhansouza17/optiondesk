@@ -484,8 +484,6 @@ tr:hover td{background:#101e2c}
 .calc-cta{margin-top:18px;background:#0B131D;border:1px solid #1B2A3A;border-radius:8px;padding:20px 22px;display:flex;align-items:center;justify-content:space-between;gap:18px}
 .calc-cta-title{font-family:'Syne',sans-serif;font-size:18px;font-weight:800;color:#fff;margin-bottom:6px}
 .calc-cta-copy{font-size:12px;color:#8aaac8;line-height:1.55;max-width:720px}
-.learn-shortcut{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px;background:linear-gradient(90deg,#0B131D,#071019);border:1px solid #1B2A3A;border-radius:8px;padding:13px 16px;cursor:pointer;transition:all .18s}
-.learn-shortcut:hover{border-color:#63E6BE66;background:#0B131D}
 /* ── Simulator ── */
 .sim-wrap{display:flex;border:1px solid #22364A;border-radius:8px;overflow:hidden;margin-top:0;background:#050A0F;min-height:690px;box-shadow:0 26px 80px rgba(0,0,0,.52),inset 0 1px 0 rgba(255,255,255,.035);font-family:'DM Mono','IBM Plex Mono',monospace}
 .sim-left{width:326px;flex-shrink:0;border-right:1px solid #22364A;background:radial-gradient(circle at 18% 0%,rgba(91,140,255,.08),transparent 33%),linear-gradient(180deg,#071019,#050A0F);overflow-y:auto;padding:16px 16px;display:flex;flex-direction:column;gap:14px}
@@ -3124,14 +3122,6 @@ function Home({ assets, strategies=[], onSelectAsset, onShowPositions, onSaveMan
           <div className="csub" style={{cursor:"pointer",color:"#FFD84D88",textDecoration:"underline",textDecorationStyle:"dotted"}} onClick={onShowPositions}>see all positions →</div>
         </div>
       </div>
-
-      <button className="learn-shortcut" onClick={onOpenLearn}>
-        <span>
-          <span style={{display:"block",fontSize:10,letterSpacing:1.6,textTransform:"uppercase",color:"#63E6BE",marginBottom:4}}>Education desk</span>
-          <span style={{fontFamily:"Syne,sans-serif",fontSize:16,fontWeight:800,color:"#fff"}}>Learn & Calculators</span>
-        </span>
-        <span style={{fontSize:18,color:"#63E6BE"}}>&rarr;</span>
-      </button>
 
       {totals.length>0&&(
         <div className="priority-desk">
