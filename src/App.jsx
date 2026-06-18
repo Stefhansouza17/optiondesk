@@ -3164,8 +3164,8 @@ function Home({ assets, strategies=[], onSelectAsset, onShowPositions, onSaveMan
       <div className="cards" style={{gridTemplateColumns:"repeat(4,1fr)"}}>
         <div className="card" style={{"--top":"#63E6BE",borderColor:"#63E6BE22"}}>
           <div className="clbl">Income Generated <Tooltip text="Net short-call premium from assets that still have an open position. LEAP sale proceeds are excluded."/></div>
-          <div className="cval" style={{color:"#63E6BE",textShadow:"0 0 20px rgba(0,212,170,0.3)"}}>${fmt(grandCol)}</div>
-          <div className="csub">{fmt(avgRecovery,1)}% avg recovered</div>
+          <div className="cval" style={{color:"#63E6BE",textShadow:"0 0 20px rgba(0,212,170,0.3)"}}>{grandNetCol>=0?"+":""}${fmt(grandNetCol)}</div>
+          <div className="csub">${fmt(grandCol)} gross collected</div>
         </div>
         <div className="card" style={{"--top":"#B37CFF",borderColor:"#B37CFF22"}}>
           <div className="clbl">Engine Progress <Tooltip text="Average percentage of LEAP costs recovered through premium. At 100% your LEAPs are free."/></div>
