@@ -98,27 +98,32 @@ const tradeDteAtOpen = (trade) => {
 const isLeapCloseTrade = (trade) => {
   const strategy = trade?.strategy || "";
   const notes = (trade?.notes||"").toLowerCase();
-  const longDatedCallSell = (trade?.action||"").toUpperCase()==="SELL"
-    && optionType(trade)==="call"
-    && tradeDteAtOpen(trade)>180;
+  const longDatedCall = optionType(trade)==="call" && tradeDteAtOpen(trade)>180;
   return THETA_EXCLUDED_STRATEGIES.has(strategy)
     || notes.includes("leap close")
     || notes.includes("closing leap")
-    || longDatedCallSell;
+    || longDatedCall;
 };
 const isThetaShortCallTrade = (trade) =>
   (trade?.action||"").toUpperCase()==="SELL"
   && optionType(trade)==="call"
   && !isLeapCloseTrade(trade);
-const isThetaClosingBuyTrade = (trade) =>
-  (trade?.action||"").toUpperCase()==="BUY"
-  && optionType(trade)==="call"
-  && trade?.status!=="open"
-  && !isLeapCloseTrade(trade);
 const sameOptionContract = (a,b) =>
   optionType(a)===optionType(b)
   && Math.abs(parseFloat(a?.strike)-parseFloat(b?.strike))<0.01
   && a?.expiration===b?.expiration;
+const hasOpeningThetaShortCallMatch = (buy, trades=[]) =>
+  trades.some(t =>
+    isThetaShortCallTrade(t)
+    && sameOptionContract(t, buy)
+    && new Date(t?.date||buy?.date||0) <= new Date(buy?.date||0)
+  );
+const isThetaClosingBuyTrade = (trade, trades=[]) =>
+  (trade?.action||"").toUpperCase()==="BUY"
+  && optionType(trade)==="call"
+  && trade?.status!=="open"
+  && !isLeapCloseTrade(trade)
+  && hasOpeningThetaShortCallMatch(trade, trades);
 const hasClosingBuyMatch = (sell, trades=[]) =>
   trades.some(t =>
     (t?.action||"").toUpperCase()==="BUY"
@@ -138,6 +143,12 @@ const isPremiumIncomeSellTrade = (trade, trades=[]) =>
   && !isLikelyLongOptionClose(trade, trades);
 const premiumIncomeDollars = (trades=[]) =>
   trades.reduce((sum,t)=>isPremiumIncomeSellTrade(t,trades) ? sum + tradeDollarValue(t) : sum, 0);
+const netPremiumCashDollars = (trades=[]) =>
+  trades.reduce((sum,t)=>{
+    if(isPremiumIncomeSellTrade(t,trades)) return sum + tradeDollarValue(t);
+    if(isThetaClosingBuyTrade(t,trades)) return sum - tradeDollarValue(t);
+    return sum;
+  }, 0);
 
 const strategyLabelForTrade = (trade) => {
   const action = (trade?.action||"").toUpperCase();
@@ -1158,13 +1169,10 @@ function AssetDashboard({ asset, strategies=[], onCreateStrategy, onChangeTradeS
   const leapAvg = leapContracts>0 ? totalLeapCost/leapContracts : 0; // dollars per contract
   const leapAvgPerShare = leapContracts>0 ? leaps.reduce((s,l)=>s+l.cost*l.contracts,0)/leapContracts : 0;
 
-  const totalCollected = trades.reduce((a,t)=>{
-    if(isPremiumIncomeSellTrade(t,trades)) return a+tradePremium(t)*tradeContracts(t);
-    if(isThetaClosingBuyTrade(t)) return a-tradePremium(t)*tradeContracts(t);
-    return a;
-  },0);
-  const netPremiumDollar = totalCollected*100;
-  const incomeDollar = premiumIncomeDollars(trades);
+  const grossPremiumDollar = premiumIncomeDollars(trades);
+  const netPremiumDollar = netPremiumCashDollars(trades);
+  const totalCollected = netPremiumDollar/100;
+  const incomeDollar = netPremiumDollar;
   const premiumPerLeap = leapContracts>0 ? netPremiumDollar/leapContracts : 0;
   const costBasis = leapAvg - premiumPerLeap;
   const recovPct = Math.min(totalLeapCost>0?netPremiumDollar/totalLeapCost:0,1);
@@ -1202,7 +1210,7 @@ function AssetDashboard({ asset, strategies=[], onCreateStrategy, onChangeTradeS
     .filter(t=>isPremiumIncomeSellTrade(t,trades)&&optionType(t)==="call")
     .sort((a,b)=>new Date(a.date||0)-new Date(b.date||0));
   const pmccClosingBuys = trades
-    .filter(isThetaClosingBuyTrade)
+    .filter(t=>isThetaClosingBuyTrade(t,trades))
     .sort((a,b)=>new Date(a.date||0)-new Date(b.date||0));
   const remainingClosingBuys = pmccClosingBuys.map(trade=>({
     trade,
@@ -1250,8 +1258,8 @@ function AssetDashboard({ asset, strategies=[], onCreateStrategy, onChangeTradeS
     };
   });
   const activeCycle = pmccCycles.find(c=>c.status==="open");
-  const realizedPremium = pmccCycles.filter(c=>c.status!=="open").reduce((s,c)=>s+c.credit,0);
-  const openCycleCredit = activeCycle?.credit||0;
+  const realizedPremium = pmccCycles.filter(c=>c.status!=="open").reduce((s,c)=>s+c.net,0);
+  const openCycleCredit = pmccCycles.filter(c=>c.status==="open").reduce((s,c)=>s+c.credit,0);
   const premiumCaptured = realizedPremium + openCycleCredit;
   const weeklyPremium = pmccCycles.length
     ? premiumCaptured/Math.max(1,(new Date()-new Date(pmccCycles[0].short.date||new Date()))/(1000*60*60*24))*7
@@ -1425,10 +1433,10 @@ function AssetDashboard({ asset, strategies=[], onCreateStrategy, onChangeTradeS
           <>
             <div className="cards">
               {(isPremium?[
-                [color,"Premium collected",`$${fmt(incomeDollar)}`,`${(recovPct*100).toFixed(2)}% net recovered`],
+                [color,"Premium collected",`${incomeDollar>=0?"+":""}$${fmt(incomeDollar)}`,`${fmt(grossPremiumDollar)} gross collected`],
                 ["#5B8CFF","Current cost basis",`$${fmt(costBasis)}`,`avg was $${fmt(leapAvg)}`],
                 ["#FFD84D","Open positions",openTrades.filter(t=>t.action==="SELL").length,`${closedTrades.length} closed`],
-                ["#FF4D6D","Accumulated P&L",`${netPremiumDollar>=0?"+":""}$${fmt(netPremiumDollar)}`,`${fmt(totalLeapCost>0?(netPremiumDollar/totalLeapCost)*100:0)}% return`],
+                ["#FF4D6D","Accumulated P&L",`${realizedPremium>=0?"+":""}$${fmt(realizedPremium)}`,`${fmt(totalLeapCost>0?(realizedPremium/totalLeapCost)*100:0)}% realized`],
               ]:[
                 [color,"Open P&L","—","mark to market"],
                 ["#5B8CFF","Cost basis",`$${fmt(asset.leapCost*100)}`,`${strategy}`],
@@ -3021,18 +3029,13 @@ function Home({ assets, strategies=[], onSelectAsset, onShowPositions, onSaveMan
     const leapCost = leaps.reduce((s,l)=>s+l.cost*l.contracts*100,0); // total cost in dollars
     const leapContracts = leaps.reduce((s,l)=>s+l.contracts,0);
     const leapAvg = leapContracts>0 ? leapCost/leapContracts : 0; // dollars per contract
-    const netCol=a.trades.reduce((acc,t)=>{
-      if(isPremiumIncomeSellTrade(t,a.trades)) return acc+tradePremium(t)*tradeContracts(t);
-      if(isThetaClosingBuyTrade(t)) return acc-tradePremium(t)*tradeContracts(t);
-      return acc;
-    },0);
+    const netColDollar = netPremiumCashDollars(a.trades);
     const openTrades=a.trades.filter(t=>t.status==="open");
     const openSells=openTrades.filter(t=>isPremiumIncomeSellTrade(t,a.trades)&&optionType(t)==="call");
     const openPremium=openSells.reduce((acc,t)=>acc+tradePremium(t)*tradeContracts(t),0);
     const nearestExp=[...openSells].sort((a,b)=>new Date(a.expiration)-new Date(b.expiration))[0];
     const daysLeft=nearestExp?Math.ceil((new Date(nearestExp.expiration)-new Date())/(1000*60*60*24)):null;
     const colDollar = premiumIncomeDollars(a.trades);
-    const netColDollar = netCol*100;
     const premiumPerLeap = leapContracts>0 ? netColDollar/leapContracts : 0;
     const hasOpenPosition = leapContracts>0 || openTrades.length>0;
     return {...a,leaps,leapCost,leapContracts,leapAvg,col:colDollar/100,colDollar,netColDollar,basis:leapAvg-premiumPerLeap,openTrades,openSells,openPremium,nearestExp,daysLeft,hasOpenPosition};
@@ -4293,7 +4296,7 @@ function ClosedStrategies({ closedAssets }) {
         <EmptyState title="No closed strategies yet" copy="Closed, expired, and archived strategy records will appear here after a full lifecycle is completed." style={{padding:"60px 0"}}/>
       ):(
         closedAssets.map(a=>{
-          const total=premiumIncomeDollars(a.trades)/100;
+          const total=netPremiumCashDollars(a.trades);
           return (
             <div key={a.id} className="sec" style={{marginBottom:16}}>
               <div className="sechdr">
@@ -4305,7 +4308,7 @@ function ClosedStrategies({ closedAssets }) {
                 </div>
                 <div style={{display:"flex",gap:16,fontSize:12}}>
                   <span style={{color:"#7D91AA"}}>LEAP: <span style={{color:"#D6E2F0"}}>${a.leapStrike} {a.leapExpiration}</span></span>
-                  <span style={{color:"#7D91AA"}}>Theta collected: <span style={{color:total>=0?"#63E6BE":"#FF4D6D"}}>${fmt(total*100)}</span></span>
+                  <span style={{color:"#7D91AA"}}>Theta collected: <span style={{color:total>=0?"#63E6BE":"#FF4D6D"}}>{total>=0?"+":""}${fmt(total)}</span></span>
                 </div>
               </div>
               <table>
