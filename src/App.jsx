@@ -98,13 +98,13 @@ const tradeDteAtOpen = (trade) => {
 const isLeapCloseTrade = (trade) => {
   const strategy = trade?.strategy || "";
   const notes = (trade?.notes||"").toLowerCase();
-  const longDatedClosedSell = (trade?.action||"").toUpperCase()==="SELL"
-    && trade?.status==="closed"
+  const longDatedCallSell = (trade?.action||"").toUpperCase()==="SELL"
+    && optionType(trade)==="call"
     && tradeDteAtOpen(trade)>180;
   return THETA_EXCLUDED_STRATEGIES.has(strategy)
     || notes.includes("leap close")
     || notes.includes("closing leap")
-    || longDatedClosedSell;
+    || longDatedCallSell;
 };
 const isThetaShortCallTrade = (trade) =>
   (trade?.action||"").toUpperCase()==="SELL"
@@ -1330,7 +1330,7 @@ function AssetDashboard({ asset, strategies=[], onCreateStrategy, onChangeTradeS
       contracts:closeLeap.contracts||1, status:"closed",
       option_type:"call", strategy:"LEAP_CLOSE",
       notes:`LEAP close for ${asset.ticker}`
-    });
+    }, {skipStrategyAssignment:true, skipDuplicateCheck:true});
     await onDeleteLeap(closeLeap.id);
     setCloseLeap(null);
     setCloseLeapPrem("");
@@ -5189,7 +5189,9 @@ function App() {
     try {
       const asset = assets.find(a=>a.id===assetId);
       let normalized = normalizeTradeForLifecycle(trade);
-      normalized = {...normalized, strategy:null};
+      const preserveTechnicalStrategy = THETA_EXCLUDED_STRATEGIES.has(normalized.strategy || "");
+      normalized = {...normalized, strategy:preserveTechnicalStrategy ? normalized.strategy : null};
+      const technicalLeapClose = isLeapCloseTrade(normalized);
       if(normalized.positionEffect==="auto" && normalized.action==="BUY") {
         const closeMatches = getOppositeOpenMatches(asset, normalized);
         if(closeMatches.length) {
@@ -5205,7 +5207,7 @@ function App() {
           });
         }
       }
-      if(!options.skipDuplicateCheck) {
+      if(!options.skipDuplicateCheck && !technicalLeapClose) {
         const duplicate = findDuplicateTrade(asset, normalized);
         if(duplicate) {
           const approved = await requestDuplicateApproval({asset, trade:normalized, duplicate});
@@ -5217,7 +5219,7 @@ function App() {
       }
       const result = await saveTradeLifecycle(assetId, normalized);
       const closedContracts = result?.closingPlan.reduce((sum,p)=>sum+p.consumed,0) || 0;
-      if(result?.saved && !options.skipStrategyAssignment) {
+      if(result?.saved && !options.skipStrategyAssignment && !technicalLeapClose) {
         const assignmentAsset = options.assignmentAsset || asset || {id:assetId,ticker:assetId,trades:[],leaps:[]};
         const assetStrategies = strategies.filter(s=>normalizeTicker(s.ticker)===normalizeTicker(assignmentAsset.ticker||assetId));
         const savedWithContext = {...result.saved,ticker:assignmentAsset.ticker||assetId};
@@ -5387,7 +5389,7 @@ function App() {
           onCreateStrategy={handleCreateStrategy}
           onChangeTradeStrategy={handleChangeTradeStrategy}
           onDetachTradeStrategy={handleDetachTradeStrategy}
-          onSaveTrade={(t)=>handleSaveTrade(a.id,t)}
+          onSaveTrade={(t,o)=>handleSaveTrade(a.id,t,o)}
           onUpdateTrade={(id,c)=>handleUpdateTrade(a.id,id,c)}
           onDeleteTrade={(id)=>handleDeleteTrade(a.id,id)}
           onDeleteLeap={(id)=>handleDeleteLeap(a.id,id)}
