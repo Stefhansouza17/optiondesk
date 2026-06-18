@@ -622,6 +622,16 @@ function Tooltip({ text }) {
 }
 
 // ── Strategy Badge ────────────────────────────────────────────────────────────
+function EmptyState({ title, copy, children, style }) {
+  return (
+    <div className="empty" style={style}>
+      <div className="empty-title">{title}</div>
+      {copy&&<div className="empty-copy" style={{margin:"0 auto"}}>{copy}</div>}
+      {children&&<div className="empty-actions">{children}</div>}
+    </div>
+  );
+}
+
 function StratBadge({ strategy }) {
   const colors = { PMCC:"#5B8CFF", "Covered Call":"#FFD84D", "Cash Secured Put":"#fb923c", "Long Call":"#63E6BE", "Long Put":"#ff6b9d", "Bull Call Spread":"#B37CFF", "Bear Put Spread":"#FF4D6D", "Bull Put Spread":"#63E6BE", "Bear Call Spread":"#FF4D6D", "Iron Condor":"#63E6BE", Straddle:"#FFD84D", Strangle:"#7D91AA" };
   const c = colors[strategy] || "#7D91AA";
@@ -812,12 +822,12 @@ function MarketTab({ defaultSymbol, color }) {
     setLoading(true); setError(null); setChain([]);
     try {
       const e = await fetchExpirations(s);
-      if (!e||!e.length) { setError(`No options found for "${s}"`); setLoading(false); return; }
+      if (!e||!e.length) { setError(`No listed option expirations found for "${s}".`); setLoading(false); return; }
       setExps(e); setSelExp(e[0]);
       const [q, ch] = await Promise.all([fetchQuote(s), fetchOptionChain(s, e[0])]);
       if (q?.last) setPrice(q.last);
       setChain(ch);
-    } catch { setError("Error fetching data."); }
+    } catch { setError("Market data is unavailable right now. Try refreshing in a moment."); }
     setLoading(false);
   }, []);
 
@@ -855,7 +865,7 @@ function MarketTab({ defaultSymbol, color }) {
             <button className="btn bsm" onClick={()=>loadSym(sym)} disabled={loading} style={{color,borderColor:color+"44",background:color+"15"}}>↻</button>
           </div>
         </div>
-        {loading?<div className="empty">Loading...</div>:filtered.length===0?<div className="empty">No data available</div>:(
+        {loading?<EmptyState title="Loading option chain" copy="Fetching the latest contracts and market data."/>:filtered.length===0?<EmptyState title="No contracts available" copy="Try another expiration, switch calls/puts, or search a different ticker."/>:(
           <table>
             <thead><tr><th>Strike</th><th>Last</th><th>Bid</th><th>Ask</th><th>Vol</th><th>OI</th><th>IV</th><th>Delta</th><th>Theta</th><th>Gamma</th></tr></thead>
             <tbody>
@@ -1014,7 +1024,7 @@ function UnifiedTradeModal({ title="Add Trade", initial={}, asset=null, isEdit=f
             <div style={col}>
               <label style={{...lbl,color:"#FFD84D"}}>Associated LEAP <span style={{opacity:.4,fontWeight:400,textTransform:"none",letterSpacing:0}}>— optional</span></label>
               {leaps.length===0?(
-                <div style={{fontSize:11,color:"#4A6A8A",padding:"8px 10px",background:"#071019",border:"1px solid #1B2A3A",borderRadius:5}}>No LEAPs found for this asset</div>
+                <div style={{fontSize:11,color:"#4A6A8A",padding:"8px 10px",background:"#071019",border:"1px solid #1B2A3A",borderRadius:5}}>No LEAP positions available for this asset</div>
               ):(
                 <select style={{...inp,borderColor:"#FFD84D44",color:"#FFD84D"}} value={form.trade_group||"none"} onChange={e=>upd("trade_group",e.target.value==="none"?null:e.target.value)}>
                   <option value="none">— None —</option>
@@ -1118,7 +1128,7 @@ function AssetDashboard({ asset, strategies=[], onCreateStrategy, onChangeTradeS
 
   const fetchLive = useCallback(async()=>{
     setLoadingLive(true);setLiveErr(null);
-    try{const q=await fetchQuote(asset.ticker);if(q?.last)setEtfPrice(q.last);setLiveData(q);}catch{setLiveErr("Error fetching data.");}
+    try{const q=await fetchQuote(asset.ticker);if(q?.last)setEtfPrice(q.last);setLiveData(q);}catch{setLiveErr("Market data is unavailable right now.");}
     setLoadingLive(false);
   },[asset.ticker]);
   useEffect(()=>{fetchLive();},[fetchLive]);
@@ -1409,7 +1419,7 @@ function AssetDashboard({ asset, strategies=[], onCreateStrategy, onChangeTradeS
                       <div className="sectitle">Theta Engine - {asset.ticker}</div>
                       <div style={{fontSize:11,color:"#7D91AA"}}>{pmccCycles.length} short-call cycle{pmccCycles.length!==1?"s":""}</div>
                     </div>
-                    {pmccCycles.length===0?<div className="empty">No short-call cycles yet</div>:(
+                    {pmccCycles.length===0?<EmptyState title="No short-call cycles yet" copy="Sell a call against this LEAP to start tracking premium capture, cycle status, and net theta income."/>:(
                       <table>
                         <thead><tr><th>#</th><th>Short Call</th><th>Status</th><th>Credit</th><th>Debit</th><th>Net</th></tr></thead>
                         <tbody>
@@ -1466,7 +1476,7 @@ function AssetDashboard({ asset, strategies=[], onCreateStrategy, onChangeTradeS
                             <div><span style={{color:"#4A6A8A"}}>Open credit</span><div style={{color:"#63E6BE",fontWeight:700}}>${fmt(openCycleCredit)}</div></div>
                           </div>
                         </>
-                      ):<div className="empty" style={{padding:22}}>No active short call</div>}
+                      ):<EmptyState title="No active short call" copy="This position has no open short call cycle right now." style={{padding:22}}/>}
                     </div>
                   </div>
                   <div className="sec" style={{marginBottom:0}}>
@@ -1474,7 +1484,7 @@ function AssetDashboard({ asset, strategies=[], onCreateStrategy, onChangeTradeS
                       <div className="sectitle">Roll History</div>
                       <div style={{fontSize:11,color:"#7D91AA"}}>{inferredRolls.length} inferred</div>
                     </div>
-                    {inferredRolls.length===0?<div className="empty">No same-day rolls detected</div>:(
+                    {inferredRolls.length===0?<EmptyState title="No rolls detected" copy="Roll history appears after a close and replacement sell are entered on the same date."/>:(
                       <table>
                         <thead><tr><th>Date</th><th>From</th><th>To</th><th>Net</th><th>Type</th></tr></thead>
                         <tbody>
@@ -1567,7 +1577,7 @@ function AssetDashboard({ asset, strategies=[], onCreateStrategy, onChangeTradeS
                   <button className="btn" onClick={openAdd} style={{color,borderColor:color+"44",background:color+"15"}}>+ Add trade</button>
                 </div>
               </div>
-              {openTrades.length===0?<div className="empty">No open positions</div>:(
+              {openTrades.length===0?<EmptyState title="No open positions" copy="Add a trade to begin tracking expiration, premium, and position actions."><button className="btn" onClick={openAdd} style={{color,borderColor:color+"44",background:color+"15"}}>Add trade</button></EmptyState>:(
                 <table>
                   <thead><tr><th>Date</th><th>Strategy</th><th>Strike</th><th>Premium</th><th>Contracts</th><th>Value $</th><th>Expiration</th><th></th></tr></thead>
                   <tbody>
@@ -1618,7 +1628,7 @@ function AssetDashboard({ asset, strategies=[], onCreateStrategy, onChangeTradeS
                 <button className="btn" onClick={openAdd} style={{color,borderColor:color+"44",background:color+"15"}}>+ Add trade</button>
               </div>
             </div>
-            {filteredTrades.length===0?<div className="empty">No trades found</div>:(
+            {filteredTrades.length===0?<EmptyState title="No trades match this view" copy="Change the status filter or add a new trade to build this asset's history."><button className="btn" onClick={openAdd} style={{color,borderColor:color+"44",background:color+"15"}}>Add trade</button></EmptyState>:(
               <table>
                 <thead><tr><th>Date</th><th>Action</th><th>Strategy</th><th>Strike</th><th>Expiration</th><th>Premium</th><th>Contracts</th><th>Value $</th><th>Status</th><th></th></tr></thead>
                 <tbody>
@@ -1651,7 +1661,7 @@ function AssetDashboard({ asset, strategies=[], onCreateStrategy, onChangeTradeS
         )}
 
         {tab==="calculator"&&isPremium&&<Calculator asset={asset} totalCollected={totalCollected} etfPrice={etfPrice}/>}
-        {tab==="calculator"&&!isPremium&&<div className="empty" style={{padding:48}}>Calculator available for PMCC and premium strategies only.</div>}
+        {tab==="calculator"&&!isPremium&&<EmptyState title="Calculator not available for this strategy" copy="The recovery calculator is designed for PMCC and premium income strategies." style={{padding:48}}/>}
         {tab==="market"&&<MarketTab defaultSymbol={asset.ticker} color={color}/>}
       </div>
 
@@ -2192,12 +2202,12 @@ function SimulatorPanel({ onSaveManualTrade, simulatorPreset }) {
     setLegs([{id:1,side:"buy",optType:"call",strike:null,strikeInput:"",customPremium:null,premInput:""}]);
     try{
       const e=await fetchExpirations(s);
-      if(!e?.length){setError(`No options for "${s}"`);setLoading(false);return;}
+      if(!e?.length){setError(`No listed option expirations found for "${s}".`);setLoading(false);return;}
       const defaultExp=e[Math.min(11,e.length-1)];
       setExps(e); setSelExp(defaultExp); setSym(s);
       const[q,ch]=await Promise.all([fetchQuote(s),fetchOptionChain(s,defaultExp)]);
       setQuote(q); setChain(ch);
-    }catch{setError("Error fetching data.");}
+    }catch{setError("Market data is unavailable right now. Try refreshing in a moment.");}
     setLoading(false);
   },[]);
 
@@ -4232,7 +4242,7 @@ function ClosedStrategies({ closedAssets }) {
   return (
     <div className="main">
       {closedAssets.length===0?(
-        <div style={{textAlign:"center",padding:"60px 0",color:"#4A6A8A",fontSize:12}}>No closed strategies yet</div>
+        <EmptyState title="No closed strategies yet" copy="Closed, expired, and archived strategy records will appear here after a full lifecycle is completed." style={{padding:"60px 0"}}/>
       ):(
         closedAssets.map(a=>{
           const total=a.trades.reduce((acc,t)=>{
@@ -4623,7 +4633,7 @@ function ManualTradeModal({ onClose, onSave, defaultData }) {
                   {showDrop&&(
                     <div style={{position:"absolute",top:"calc(100% + 2px)",left:0,right:0,background:"#0B131D",border:"1px solid #1B2A3A",borderRadius:6,zIndex:400,boxShadow:"0 8px 24px rgba(0,0,0,0.6)",maxHeight:220,overflowY:"auto"}}>
                       {suggestions.length===0?(
-                        <div style={{padding:"10px 14px",fontSize:12,color:"#4A6A8A"}}>No assets found</div>
+                        <div style={{padding:"10px 14px",fontSize:12,color:"#4A6A8A"}}>No matching assets</div>
                       ):(
                         suggestions.map(s=>(
                           <div key={s.symbol}
