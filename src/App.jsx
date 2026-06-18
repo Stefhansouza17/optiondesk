@@ -2146,9 +2146,39 @@ function SimulatorPanel({ onSaveManualTrade, simulatorPreset }) {
   const [tipPos, setTipPos]   = useState({x:0,y:0});
   const [priceRangeLevel, setPriceRangeLevel] = useState(20);
   const [showGreeks, setShowGreeks] = useState(true);
+  const [showSymbolSearch, setShowSymbolSearch] = useState(false);
+  const [symbolSuggestions, setSymbolSuggestions] = useState([]);
+  const [searchingSymbols, setSearchingSymbols] = useState(false);
 
   const spot = quote?.last || 0;
   const activeSpot = spot;
+
+  useEffect(()=>{
+    if(!showSymbolSearch) return;
+    const q = searchInput.trim();
+    if(q.length<1) { setSymbolSuggestions([]); return; }
+    let canceled = false;
+    const timer = setTimeout(async()=>{
+      setSearchingSymbols(true);
+      try {
+        const results = await fetchSymbolSearch(q);
+        if(!canceled) setSymbolSuggestions(results.slice(0,7));
+      } catch {
+        if(!canceled) setSymbolSuggestions([]);
+      }
+      if(!canceled) setSearchingSymbols(false);
+    },220);
+    return ()=>{ canceled = true; clearTimeout(timer); };
+  },[searchInput, showSymbolSearch]);
+
+  const selectSimulatorSymbol = (symbol) => {
+    const s = (symbol||"").trim().toUpperCase();
+    if(!s) return;
+    setShowSymbolSearch(false);
+    setSymbolSuggestions([]);
+    setSearchInput(s);
+    loadSym(s);
+  };
 
   const filteredChain = useMemo(()=>
     chain.filter(o=>o.option_type===optType).sort((a,b)=>a.strike-b.strike),
@@ -2487,12 +2517,39 @@ function SimulatorPanel({ onSaveManualTrade, simulatorPreset }) {
         {sym?(
           <div style={{background:"radial-gradient(circle at 18% 0%,rgba(99,230,190,.09),transparent 34%),linear-gradient(180deg,#071019,#050A0F)",border:"1px solid #22364A",borderRadius:7,padding:"17px 18px",boxShadow:"inset 0 1px 0 rgba(255,255,255,.035)"}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:6}}>
-              <div style={{display:"flex",alignItems:"center",gap:7}}>
-                <div title="Change symbol" onClick={()=>{setSym("");setExps([]);setChain([]);setQuote(null);setSearchInput("");}}
-                  style={{fontFamily:"Syne,sans-serif",fontSize:31,fontWeight:800,color:"#63E6BE",letterSpacing:1,lineHeight:1,cursor:"pointer",textShadow:"0 0 24px rgba(99,230,190,.20)"}}>
+              <div style={{display:"flex",alignItems:"center",gap:7,position:"relative"}}>
+                <div
+                  style={{fontFamily:"Syne,sans-serif",fontSize:31,fontWeight:800,color:"#63E6BE",letterSpacing:1,lineHeight:1,textShadow:"0 0 24px rgba(99,230,190,.20)"}}>
                   {sym}
                 </div>
+                <button title="Search symbol" onClick={()=>{setShowSymbolSearch(v=>!v);setSearchInput(sym);}}
+                  style={{background:"#050A0F",border:"1px solid #22364A",borderRadius:6,color:"#8EF0D0",fontSize:13,cursor:"pointer",padding:"4px 7px",lineHeight:1,flexShrink:0}}>
+                  &#8981;
+                </button>
                 <button title="Favorite" style={{background:"none",border:"none",color:"#4A6A8A",fontSize:15,cursor:"pointer",padding:0,lineHeight:1,flexShrink:0}}>☆</button>
+                {showSymbolSearch&&(
+                  <div style={{position:"absolute",top:"calc(100% + 8px)",left:0,width:310,maxWidth:"78vw",background:"#071019",border:"1px solid #22364A",borderRadius:8,padding:8,zIndex:30,boxShadow:"0 18px 42px rgba(0,0,0,.45)"}}>
+                    <div style={{display:"flex",gap:6,marginBottom:7}}>
+                      <input className="finput" autoFocus value={searchInput}
+                        onChange={e=>setSearchInput(e.target.value.toUpperCase())}
+                        onKeyDown={e=>{if(e.key==="Enter") selectSimulatorSymbol(searchInput); if(e.key==="Escape") setShowSymbolSearch(false);}}
+                        placeholder="Search ticker..."
+                        style={{fontSize:12,textTransform:"uppercase",letterSpacing:.8,color:"#63E6BE",padding:"6px 9px"}}/>
+                      <button className="btn bsm" onClick={()=>selectSimulatorSymbol(searchInput)} disabled={loading||!searchInput.trim()}>Go</button>
+                    </div>
+                    <div style={{maxHeight:220,overflowY:"auto"}}>
+                      {searchingSymbols&&<div style={{fontSize:11,color:"#7D91AA",padding:"8px 9px"}}>Searching...</div>}
+                      {!searchingSymbols&&symbolSuggestions.length===0&&searchInput.trim()&&<div style={{fontSize:11,color:"#7D91AA",padding:"8px 9px"}}>No matches found.</div>}
+                      {symbolSuggestions.map(s=>(
+                        <button key={s.symbol} onMouseDown={e=>e.preventDefault()} onClick={()=>selectSimulatorSymbol(s.symbol)}
+                          style={{width:"100%",display:"flex",alignItems:"center",gap:10,background:"transparent",border:"none",borderRadius:6,padding:"8px 9px",cursor:"pointer",textAlign:"left",fontFamily:"DM Mono,monospace"}}>
+                          <span style={{fontWeight:800,color:"#D6E2F0",minWidth:58}}>{s.symbol}</span>
+                          <span style={{fontSize:10,color:"#7D91AA",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{s.description||"US equity"}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
               <button title="Refresh" onClick={()=>loadSym(sym)} disabled={loading}
                 style={{background:"#050A0F",border:"1px solid #22364A",borderRadius:7,color:loading?"#22364A":"#63E6BE",
