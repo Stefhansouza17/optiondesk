@@ -438,11 +438,11 @@ tr:hover td{background:#101e2c}
 .priority-label{font-size:9px;letter-spacing:1.3px;text-transform:uppercase;color:var(--pc,#63E6BE);margin-bottom:8px}
 .priority-main{font-family:'Syne',sans-serif;font-size:15px;font-weight:800;color:#fff;line-height:1.15;margin-bottom:8px}
 .priority-meta{font-size:11px;color:#8aaac8;line-height:1.45}
-.priority-strip{display:grid;grid-template-columns:minmax(280px,1fr) minmax(420px,1.45fr);align-items:center;gap:18px;width:100%}
+.priority-strip{display:grid;grid-template-columns:minmax(250px,.82fr) minmax(420px,1.65fr);align-items:center;gap:12px;width:100%}
 .priority-strip-main{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
 .priority-strip-title{font-family:'Syne',sans-serif;font-size:15px;font-weight:800;color:#fff;line-height:1}
 .priority-strip-copy{font-size:10px;color:#7D91AA;margin-top:3px;letter-spacing:0;text-transform:none}
-.risk-legend{display:flex;align-items:center;justify-content:center;gap:14px;flex-wrap:wrap}
+.risk-legend{display:flex;align-items:center;justify-content:flex-start;gap:14px;flex-wrap:wrap}
 .risk-legend-item{display:inline-flex;align-items:center;gap:6px;font-size:9px;letter-spacing:1px;text-transform:uppercase;color:#8aaac8;white-space:nowrap}
 .risk-dot{--risk:#63E6BE;display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--risk);box-shadow:0 0 0 0 color-mix(in srgb,var(--risk) 42%,transparent);animation:riskPulse 1.55s infinite;flex-shrink:0}
 .risk-dot.muted{opacity:.28;animation:none}
@@ -729,12 +729,7 @@ function TradeStrategyBadge({ trade, strategies=[] }) {
   if(!strategy) {
     return <span style={{fontSize:10,padding:"2px 7px",borderRadius:4,background:"#1B2A3A",border:"1px solid #2a3a4a",color:"#7D91AA",whiteSpace:"nowrap"}}>Unassigned</span>;
   }
-  return (
-    <span style={{display:"inline-flex",alignItems:"center",gap:5,whiteSpace:"nowrap"}}>
-      <StratBadge strategy={strategy.strategy_type}/>
-      <span style={{fontSize:11,color:"#D6E2F0"}}>{strategy.name}</span>
-    </span>
-  );
+  return <StratBadge strategy={strategy.strategy_type}/>;
 }
 
 function CreateStrategyModal({ asset, onCreate, onClose }) {
