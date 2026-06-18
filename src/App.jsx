@@ -136,6 +136,10 @@ const thetaEngineGrossDollars = (trades=[], hasLeap=false) =>
   !hasLeap ? 0 : trades.reduce((sum,t)=>
     isThetaShortCallTrade(t) ? sum + tradeDollarValue(t) : sum
   ,0);
+const thetaEngineOpenCreditDollars = (trades=[], hasLeap=false) =>
+  !hasLeap ? 0 : trades.reduce((sum,t)=>
+    t?.status==="open" && isThetaShortCallTrade(t) ? sum + tradeDollarValue(t) : sum
+  ,0);
 
 function closeTradeLots(lots, contracts, closePremium, multiplier, onClose) {
   let remaining = Math.max(1, parseInt(contracts||1));
@@ -199,6 +203,8 @@ const realizedOptionPnLDollars = (trades=[], includeTrade=()=>true) => {
 };
 const thetaEngineRealizedDollars = (trades=[], hasLeap=false) =>
   realizedOptionPnLDollars(trades, t=>isThetaEngineTrade(t, trades, hasLeap));
+const thetaEngineCashDollars = (trades=[], hasLeap=false) =>
+  roundMoney(thetaEngineRealizedDollars(trades, hasLeap) + thetaEngineOpenCreditDollars(trades, hasLeap));
 
 const strategyLabelForTrade = (trade) => {
   const action = (trade?.action||"").toUpperCase();
@@ -1222,13 +1228,14 @@ function AssetDashboard({ asset, strategies=[], onCreateStrategy, onChangeTradeS
 
   const grossPremiumDollar = thetaEngineGrossDollars(trades, hasLeap);
   const thetaRealizedDollar = thetaEngineRealizedDollars(trades, hasLeap);
+  const thetaCashDollar = thetaEngineCashDollars(trades, hasLeap);
   const realizedPnLDollar = realizedOptionPnLDollars(trades);
-  const netPremiumDollar = hasLeap ? thetaRealizedDollar : realizedPnLDollar;
-  const totalCollected = netPremiumDollar/100;
-  const incomeDollar = netPremiumDollar;
-  const premiumPerLeap = leapContracts>0 ? netPremiumDollar/leapContracts : 0;
+  const realizedDisplayDollar = hasLeap ? thetaRealizedDollar : realizedPnLDollar;
+  const totalCollected = thetaCashDollar/100;
+  const incomeDollar = hasLeap ? thetaCashDollar : realizedPnLDollar;
+  const premiumPerLeap = leapContracts>0 ? thetaCashDollar/leapContracts : 0;
   const costBasis = leapAvg - premiumPerLeap;
-  const recovPct = Math.min(totalLeapCost>0?netPremiumDollar/totalLeapCost:0,1);
+  const recovPct = Math.min(totalLeapCost>0?thetaCashDollar/totalLeapCost:0,1);
   const openTrades = trades.filter(t=>t.status==="open").sort((a,b)=>new Date(a.expiration)-new Date(b.expiration));
   const closedTrades = trades.filter(t=>t.status==="closed").sort((a,b)=>new Date(b.date)-new Date(a.date));
   const expiredTrades = trades.filter(t=>t.status==="expired").sort((a,b)=>new Date(b.date)-new Date(a.date));
@@ -1523,11 +1530,11 @@ function AssetDashboard({ asset, strategies=[], onCreateStrategy, onChangeTradeS
                   <div style={{padding:"14px 16px"}}>
                     <div style={{display:"flex",justifyContent:"space-between",fontSize:11,color:"#7D91AA",marginBottom:8}}>
                       <span>$0</span>
-                      <span style={{color}}>${fmt(netPremiumDollar)} net recovered</span>
+                      <span style={{color}}>${fmt(thetaCashDollar)} net recovered</span>
                       <span>${fmt(totalLeapCost)} target</span>
                     </div>
                     <div className="ptrack"><div className="pfill" style={{width:`${recovPct*100}%`,background:`linear-gradient(90deg,${color},#5B8CFF)`}}/></div>
-                    <div style={{fontSize:11,color:"#7D91AA",marginTop:6}}>$<span style={{color:"#FFD84D"}}>{fmt(Math.max(totalLeapCost-netPremiumDollar,0))}</span> remaining to free LEAP</div>
+                    <div style={{fontSize:11,color:"#7D91AA",marginTop:6}}>$<span style={{color:"#FFD84D"}}>{fmt(Math.max(totalLeapCost-thetaCashDollar,0))}</span> remaining to free LEAP</div>
                   </div>
                 </div>
                 <div style={{display:"grid",gridTemplateColumns:"1.2fr 1fr",gap:14,marginBottom:16}}>
@@ -1777,7 +1784,7 @@ function AssetDashboard({ asset, strategies=[], onCreateStrategy, onChangeTradeS
             )}
             <div style={{padding:"10px 16px",borderTop:"1px solid #1B2A3A",display:"flex",justifyContent:"flex-end",gap:20,fontSize:13}}>
               <span style={{color:"#7D91AA"}}>Net total:</span>
-              <span style={{fontFamily:"Syne",fontSize:15,fontWeight:700,color:netPremiumDollar>=0?color:"#FF4D6D"}}>${fmt(netPremiumDollar)}</span>
+              <span style={{fontFamily:"Syne",fontSize:15,fontWeight:700,color:realizedDisplayDollar>=0?color:"#FF4D6D"}}>{realizedDisplayDollar>=0?"+":""}${fmt(realizedDisplayDollar)}</span>
             </div>
           </div>
         )}
@@ -3098,7 +3105,8 @@ function Home({ assets, strategies=[], onSelectAsset, onShowPositions, onSaveMan
     const leapContracts = leaps.reduce((s,l)=>s+l.contracts,0);
     const hasLeap = leapContracts>0;
     const leapAvg = leapContracts>0 ? leapCost/leapContracts : 0; // dollars per contract
-    const netColDollar = thetaEngineRealizedDollars(a.trades, hasLeap);
+    const netColDollar = thetaEngineCashDollars(a.trades, hasLeap);
+    const thetaRealizedDollar = thetaEngineRealizedDollars(a.trades, hasLeap);
     const realizedPnLDollar = realizedOptionPnLDollars(a.trades);
     const openTrades=a.trades.filter(t=>t.status==="open");
     const openSells=openTrades.filter(t=>hasLeap&&isThetaShortCallTrade(t));
@@ -3108,7 +3116,7 @@ function Home({ assets, strategies=[], onSelectAsset, onShowPositions, onSaveMan
     const colDollar = thetaEngineGrossDollars(a.trades, hasLeap);
     const premiumPerLeap = leapContracts>0 ? netColDollar/leapContracts : 0;
     const hasOpenPosition = leapContracts>0 || openTrades.length>0;
-    return {...a,leaps,leapCost,leapContracts,leapAvg,col:colDollar/100,colDollar,netColDollar,realizedPnLDollar,basis:leapAvg-premiumPerLeap,openTrades,openSells,openPremium,nearestExp,daysLeft,hasOpenPosition};
+    return {...a,leaps,leapCost,leapContracts,leapAvg,col:colDollar/100,colDollar,netColDollar,thetaRealizedDollar,realizedPnLDollar,basis:leapAvg-premiumPerLeap,openTrades,openSells,openPremium,nearestExp,daysLeft,hasOpenPosition};
   }).filter(a=>a.hasOpenPosition),[assets]);
   const grandCol=useMemo(()=>totals.reduce((a,t)=>a+t.colDollar,0),[totals]);
   const grandCost=useMemo(()=>totals.reduce((a,t)=>a+t.leapCost,0),[totals]);
@@ -3233,7 +3241,7 @@ function Home({ assets, strategies=[], onSelectAsset, onShowPositions, onSaveMan
       {/* KPI Cards */}
       <div className="cards" style={{gridTemplateColumns:"repeat(4,1fr)"}}>
         <div className="card" style={{"--top":"#63E6BE",borderColor:"#63E6BE22"}}>
-          <div className="clbl">Income Generated <Tooltip text="Realized short-call premium from LEAP-backed theta cycles. Open trades and LEAP sale proceeds are excluded."/></div>
+          <div className="clbl">Income Generated <Tooltip text="Net theta cash from LEAP-backed short-call cycles, including open short-call credits. LEAP sale proceeds are excluded."/></div>
           <div className="cval" style={{color:"#63E6BE",textShadow:"0 0 20px rgba(0,212,170,0.3)"}}>{grandNetCol>=0?"+":""}${fmt(grandNetCol)}</div>
           <div className="csub">${fmt(grandCol)} gross collected</div>
         </div>
@@ -3293,7 +3301,7 @@ function Home({ assets, strategies=[], onSelectAsset, onShowPositions, onSaveMan
       {grandCost>0&&(
         <div className="sec" style={{marginBottom:18}}>
           <div className="sechdr">
-            <div className="sectitle">Theta Engine <Tooltip text="Progress toward making open LEAP positions free using realized short-call premium only."/></div>
+            <div className="sectitle">Theta Engine <Tooltip text="Progress toward making open LEAP positions free using net theta cash, including open short-call credits."/></div>
             <div style={{fontSize:11,color:"#7D91AA"}}><span style={{color:"#63E6BE"}}>{grandNetCol>=0?"+":""}${fmt(grandNetCol)}</span> net of <span style={{color:"#D6E2F0"}}>${fmt(grandCost)}</span> target</div>
           </div>
           <div style={{padding:"18px 20px"}}>
@@ -3348,7 +3356,7 @@ function Home({ assets, strategies=[], onSelectAsset, onShowPositions, onSaveMan
               return (
                 <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:10,marginTop:16,paddingTop:16,borderTop:"1px solid #1B2A3A"}}>
                   <div style={{textAlign:"center"}}>
-                    <div style={{fontSize:10,letterSpacing:1.5,textTransform:"uppercase",color:"#4A6A8A",marginBottom:4}}>Theta Velocity <Tooltip text="Average weekly realized theta income since the first LEAP-backed short-call cycle."/></div>
+                    <div style={{fontSize:10,letterSpacing:1.5,textTransform:"uppercase",color:"#4A6A8A",marginBottom:4}}>Theta Velocity <Tooltip text="Average weekly net theta cash since the first LEAP-backed short-call cycle, including open short-call credits."/></div>
                     <div style={{fontFamily:"Syne,sans-serif",fontSize:18,fontWeight:700,color:"#63E6BE"}}>${fmt(weeklyVelocity)}<span style={{fontSize:11,color:"#7D91AA"}}>/wk</span></div>
                   </div>
                   <div style={{textAlign:"center",borderLeft:"1px solid #1B2A3A",borderRight:"1px solid #1B2A3A"}}>
