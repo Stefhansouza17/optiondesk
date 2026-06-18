@@ -124,31 +124,77 @@ const isThetaClosingBuyTrade = (trade, trades=[]) =>
   && trade?.status!=="open"
   && !isLeapCloseTrade(trade)
   && hasOpeningThetaShortCallMatch(trade, trades);
-const hasClosingBuyMatch = (sell, trades=[]) =>
-  trades.some(t =>
-    (t?.action||"").toUpperCase()==="BUY"
-    && t?.status!=="open"
-    && sameOptionContract(t, sell)
-    && new Date(t?.date||sell?.date||0) >= new Date(sell?.date||0)
-  );
-const isLikelyLongOptionClose = (trade, trades=[]) =>
-  (trade?.action||"").toUpperCase()==="SELL"
-  && ["call","put"].includes(optionType(trade))
-  && trade?.status==="closed"
-  && !hasClosingBuyMatch(trade, trades);
-const isPremiumIncomeSellTrade = (trade, trades=[]) =>
-  (trade?.action||"").toUpperCase()==="SELL"
-  && ["call","put"].includes(optionType(trade))
-  && !isLeapCloseTrade(trade)
-  && !isLikelyLongOptionClose(trade, trades);
-const premiumIncomeDollars = (trades=[]) =>
-  trades.reduce((sum,t)=>isPremiumIncomeSellTrade(t,trades) ? sum + tradeDollarValue(t) : sum, 0);
-const netPremiumCashDollars = (trades=[]) =>
-  trades.reduce((sum,t)=>{
-    if(isPremiumIncomeSellTrade(t,trades)) return sum + tradeDollarValue(t);
-    if(isThetaClosingBuyTrade(t,trades)) return sum - tradeDollarValue(t);
-    return sum;
-  }, 0);
+const hasLeapContracts = (asset) =>
+  (asset?.leaps||[]).reduce((sum,l)=>sum+tradeContracts(l),0)>0;
+const isThetaEngineTrade = (trade, hasLeap=false) =>
+  hasLeap && optionType(trade)==="call" && !isLeapCloseTrade(trade);
+const thetaEngineGrossDollars = (trades=[], hasLeap=false) =>
+  !hasLeap ? 0 : trades.reduce((sum,t)=>
+    isThetaShortCallTrade(t) ? sum + tradeDollarValue(t) : sum
+  ,0);
+
+function closeTradeLots(lots, contracts, closePremium, multiplier, onClose) {
+  let remaining = Math.max(1, parseInt(contracts||1));
+  let realized = 0;
+  while(remaining>0 && lots.length>0) {
+    const lot = lots[0];
+    const consumed = Math.min(remaining, lot.remaining);
+    realized += onClose(lot.premium, closePremium, consumed, multiplier);
+    lot.remaining -= consumed;
+    remaining -= consumed;
+    if(lot.remaining<=0) lots.shift();
+  }
+  return realized;
+}
+
+const realizedOptionPnLDollars = (trades=[], includeTrade=()=>true) => {
+  const longLots = {};
+  const shortLots = {};
+  const sorted = [...trades]
+    .filter(includeTrade)
+    .sort((a,b)=>new Date(a.date||0)-new Date(b.date||0));
+  return sorted.reduce((realized,t)=>{
+    const action = (t?.action||"").toUpperCase();
+    const status = t?.status || "open";
+    const key = `${optionType(t)}|${parseFloat(t?.strike||0).toFixed(2)}|${t?.expiration||""}`;
+    const premium = tradePremium(t);
+    const contracts = tradeContracts(t);
+    longLots[key] = longLots[key] || [];
+    shortLots[key] = shortLots[key] || [];
+
+    if(status==="expired") {
+      if(action==="SELL") return realized + tradeDollarValue(t);
+      if(action==="BUY") return realized - tradeDollarValue(t);
+      return realized;
+    }
+
+    if(action==="BUY") {
+      if(status!=="open" && shortLots[key].length>0) {
+        return realized + closeTradeLots(
+          shortLots[key], contracts, premium, 100,
+          (openPremium, closePremium, qty, multiplier)=>(openPremium-closePremium)*qty*multiplier
+        );
+      }
+      longLots[key].push({premium, remaining:contracts});
+      return realized;
+    }
+
+    if(action==="SELL") {
+      if(status!=="open" && longLots[key].length>0) {
+        return realized + closeTradeLots(
+          longLots[key], contracts, premium, 100,
+          (openPremium, closePremium, qty, multiplier)=>(closePremium-openPremium)*qty*multiplier
+        );
+      }
+      shortLots[key].push({premium, remaining:contracts});
+      return realized;
+    }
+
+    return realized;
+  },0);
+};
+const thetaEngineRealizedDollars = (trades=[], hasLeap=false) =>
+  realizedOptionPnLDollars(trades, t=>isThetaEngineTrade(t, hasLeap));
 
 const strategyLabelForTrade = (trade) => {
   const action = (trade?.action||"").toUpperCase();
@@ -1166,11 +1212,14 @@ function AssetDashboard({ asset, strategies=[], onCreateStrategy, onChangeTradeS
   const leaps = asset.leaps||[];
   const totalLeapCost = leaps.reduce((s,l)=>s+l.cost*l.contracts*100,0);
   const leapContracts = leaps.reduce((s,l)=>s+l.contracts,0);
+  const hasLeap = leapContracts>0;
   const leapAvg = leapContracts>0 ? totalLeapCost/leapContracts : 0; // dollars per contract
   const leapAvgPerShare = leapContracts>0 ? leaps.reduce((s,l)=>s+l.cost*l.contracts,0)/leapContracts : 0;
 
-  const grossPremiumDollar = premiumIncomeDollars(trades);
-  const netPremiumDollar = netPremiumCashDollars(trades);
+  const grossPremiumDollar = thetaEngineGrossDollars(trades, hasLeap);
+  const thetaRealizedDollar = thetaEngineRealizedDollars(trades, hasLeap);
+  const realizedPnLDollar = realizedOptionPnLDollars(trades);
+  const netPremiumDollar = hasLeap ? thetaRealizedDollar : realizedPnLDollar;
   const totalCollected = netPremiumDollar/100;
   const incomeDollar = netPremiumDollar;
   const premiumPerLeap = leapContracts>0 ? netPremiumDollar/leapContracts : 0;
@@ -1207,10 +1256,10 @@ function AssetDashboard({ asset, strategies=[], onCreateStrategy, onChangeTradeS
     .sort((a,b)=>new Date(b.date||0)-new Date(a.date||0));
   const assetStrategies = strategies.filter(s=>normalizeTicker(s.ticker)===normalizeTicker(asset.ticker));
   const pmccShortCalls = trades
-    .filter(t=>isPremiumIncomeSellTrade(t,trades)&&optionType(t)==="call")
+    .filter(t=>isThetaEngineTrade(t,hasLeap)&&isThetaShortCallTrade(t))
     .sort((a,b)=>new Date(a.date||0)-new Date(b.date||0));
   const pmccClosingBuys = trades
-    .filter(t=>isThetaClosingBuyTrade(t,trades))
+    .filter(t=>isThetaEngineTrade(t,hasLeap)&&isThetaClosingBuyTrade(t,trades))
     .sort((a,b)=>new Date(a.date||0)-new Date(b.date||0));
   const remainingClosingBuys = pmccClosingBuys.map(trade=>({
     trade,
@@ -1412,7 +1461,7 @@ function AssetDashboard({ asset, strategies=[], onCreateStrategy, onChangeTradeS
           <input className="pinput" type="number" step="0.01" value={etfPrice} onChange={e=>setEtfPrice(parseFloat(e.target.value)||0)} style={{color}}/>
         </div>
         {liveData&&<><div className="dvdr"/><div className="sml">open <span>${liveData.open||"—"}</span></div><div className="dvdr"/><div className="sml">high <span style={{color:"#63E6BE"}}>${liveData.high||"—"}</span></div><div className="dvdr"/><div className="sml">low <span style={{color:"#FF4D6D"}}>${liveData.low||"—"}</span></div><div className="dvdr"/><div className="sml">vol <span>{liveData.volume?.toLocaleString()||"—"}</span></div></>}
-        {isPremium&&<><div className="dvdr"/><div className="sml">LEAP <span>${asset.leapStrike}</span></div><div className="dvdr"/><div className="sml">distance <span className={etfPrice>=asset.leapStrike?"green":"red"}>{etfPrice>=asset.leapStrike?"+":""}{fmt(etfPrice-asset.leapStrike)}</span></div><div className="dvdr"/><div className="sml">avg cost <span style={{color}}>${fmt(leapAvg)}</span></div></>}
+        {isPremium&&hasLeap&&<><div className="dvdr"/><div className="sml">LEAP <span>${asset.leapStrike}</span></div><div className="dvdr"/><div className="sml">distance <span className={etfPrice>=asset.leapStrike?"green":"red"}>{etfPrice>=asset.leapStrike?"+":""}{fmt(etfPrice-asset.leapStrike)}</span></div><div className="dvdr"/><div className="sml">avg cost <span style={{color}}>${fmt(leapAvg)}</span></div></>}
         <div style={{marginLeft:"auto",display:"flex",gap:8}}>
           <button className="btn bsm" onClick={fetchLive} disabled={loadingLive} style={{color,borderColor:color+"44",background:color+"15"}}>{loadingLive?"...":"↻"}</button>
           <button className="btn bsm bneutral" onClick={()=>setShowDelete(true)}>✕ Delete</button>
@@ -1432,7 +1481,7 @@ function AssetDashboard({ asset, strategies=[], onCreateStrategy, onChangeTradeS
         {tab==="dashboard"&&(
           <>
             <div className="cards">
-              {(isPremium?[
+              {(isPremium&&hasLeap?[
                 [color,"Premium collected",`${incomeDollar>=0?"+":""}$${fmt(incomeDollar)}`,`${fmt(grossPremiumDollar)} gross collected`],
                 ["#5B8CFF","Current cost basis",`$${fmt(costBasis)}`,`avg was $${fmt(leapAvg)}`],
                 ["#FFD84D","Open positions",openTrades.filter(t=>t.action==="SELL").length,`${closedTrades.length} closed`],
@@ -1441,7 +1490,7 @@ function AssetDashboard({ asset, strategies=[], onCreateStrategy, onChangeTradeS
                 [color,"Open P&L","—","mark to market"],
                 ["#5B8CFF","Cost basis",`$${fmt(asset.leapCost*100)}`,`${strategy}`],
                 ["#FFD84D","Open positions",openTrades.length,`${closedTrades.length} closed`],
-                ["#FF4D6D","Realized P&L",`${netPremiumDollar>=0?"+":""}$${fmt(netPremiumDollar)}`,`from closed trades`],
+                ["#FF4D6D","Realized P&L",`${realizedPnLDollar>=0?"+":""}$${fmt(realizedPnLDollar)}`,`from closed trades`],
               ]).map(([c,l,v,s])=>(
                 <div className="card" key={l} style={{"--top":c}}>
                   <div className="clbl">{l}</div><div className="cval">{v}</div><div className="csub">{s}</div>
@@ -1449,7 +1498,7 @@ function AssetDashboard({ asset, strategies=[], onCreateStrategy, onChangeTradeS
               ))}
             </div>
 
-            {isPremium&&(
+            {isPremium&&hasLeap&&(
               <>
                 <div className="sec">
                   <div className="sechdr">
@@ -1714,8 +1763,8 @@ function AssetDashboard({ asset, strategies=[], onCreateStrategy, onChangeTradeS
           </div>
         )}
 
-        {tab==="calculator"&&isPremium&&<Calculator asset={asset} totalCollected={totalCollected} etfPrice={etfPrice}/>}
-        {tab==="calculator"&&!isPremium&&<EmptyState title="Calculator not available for this strategy" copy="The recovery calculator is designed for PMCC and premium income strategies." style={{padding:48}}/>}
+        {tab==="calculator"&&isPremium&&hasLeap&&<Calculator asset={asset} totalCollected={totalCollected} etfPrice={etfPrice}/>}
+        {tab==="calculator"&&(!isPremium||!hasLeap)&&<EmptyState title="Calculator not available for this strategy" copy="The recovery calculator is designed for LEAP-backed PMCC positions." style={{padding:48}}/>}
         {tab==="market"&&<MarketTab defaultSymbol={asset.ticker} color={color}/>}
       </div>
 
@@ -3028,17 +3077,19 @@ function Home({ assets, strategies=[], onSelectAsset, onShowPositions, onSaveMan
     const leaps = a.leaps||[];
     const leapCost = leaps.reduce((s,l)=>s+l.cost*l.contracts*100,0); // total cost in dollars
     const leapContracts = leaps.reduce((s,l)=>s+l.contracts,0);
+    const hasLeap = leapContracts>0;
     const leapAvg = leapContracts>0 ? leapCost/leapContracts : 0; // dollars per contract
-    const netColDollar = netPremiumCashDollars(a.trades);
+    const netColDollar = thetaEngineRealizedDollars(a.trades, hasLeap);
+    const realizedPnLDollar = realizedOptionPnLDollars(a.trades);
     const openTrades=a.trades.filter(t=>t.status==="open");
-    const openSells=openTrades.filter(t=>isPremiumIncomeSellTrade(t,a.trades)&&optionType(t)==="call");
+    const openSells=openTrades.filter(t=>isThetaEngineTrade(t,hasLeap)&&isThetaShortCallTrade(t));
     const openPremium=openSells.reduce((acc,t)=>acc+tradePremium(t)*tradeContracts(t),0);
     const nearestExp=[...openSells].sort((a,b)=>new Date(a.expiration)-new Date(b.expiration))[0];
     const daysLeft=nearestExp?Math.ceil((new Date(nearestExp.expiration)-new Date())/(1000*60*60*24)):null;
-    const colDollar = premiumIncomeDollars(a.trades);
+    const colDollar = thetaEngineGrossDollars(a.trades, hasLeap);
     const premiumPerLeap = leapContracts>0 ? netColDollar/leapContracts : 0;
     const hasOpenPosition = leapContracts>0 || openTrades.length>0;
-    return {...a,leaps,leapCost,leapContracts,leapAvg,col:colDollar/100,colDollar,netColDollar,basis:leapAvg-premiumPerLeap,openTrades,openSells,openPremium,nearestExp,daysLeft,hasOpenPosition};
+    return {...a,leaps,leapCost,leapContracts,leapAvg,col:colDollar/100,colDollar,netColDollar,realizedPnLDollar,basis:leapAvg-premiumPerLeap,openTrades,openSells,openPremium,nearestExp,daysLeft,hasOpenPosition};
   }).filter(a=>a.hasOpenPosition),[assets]);
   const grandCol=useMemo(()=>totals.reduce((a,t)=>a+t.colDollar,0),[totals]);
   const grandCost=useMemo(()=>totals.reduce((a,t)=>a+t.leapCost,0),[totals]);
@@ -3163,7 +3214,7 @@ function Home({ assets, strategies=[], onSelectAsset, onShowPositions, onSaveMan
       {/* KPI Cards */}
       <div className="cards" style={{gridTemplateColumns:"repeat(4,1fr)"}}>
         <div className="card" style={{"--top":"#63E6BE",borderColor:"#63E6BE22"}}>
-          <div className="clbl">Income Generated <Tooltip text="Net short-call premium from assets that still have an open position. LEAP sale proceeds are excluded."/></div>
+          <div className="clbl">Income Generated <Tooltip text="Realized short-call premium from LEAP-backed theta cycles. Open trades and LEAP sale proceeds are excluded."/></div>
           <div className="cval" style={{color:"#63E6BE",textShadow:"0 0 20px rgba(0,212,170,0.3)"}}>{grandNetCol>=0?"+":""}${fmt(grandNetCol)}</div>
           <div className="csub">${fmt(grandCol)} gross collected</div>
         </div>
@@ -3220,11 +3271,11 @@ function Home({ assets, strategies=[], onSelectAsset, onShowPositions, onSaveMan
       )}
 
       {/* Theta Engine */}
-      {totals.length>0&&(
+      {grandCost>0&&(
         <div className="sec" style={{marginBottom:18}}>
           <div className="sechdr">
-            <div className="sectitle">Theta Engine <Tooltip text="Progress toward making open LEAP positions free using short-call premium only."/></div>
-            <div style={{fontSize:11,color:"#7D91AA"}}><span style={{color:"#63E6BE"}}>${fmt(grandNetCol)}</span> net of <span style={{color:"#D6E2F0"}}>${fmt(grandCost)}</span> target</div>
+            <div className="sectitle">Theta Engine <Tooltip text="Progress toward making open LEAP positions free using realized short-call premium only."/></div>
+            <div style={{fontSize:11,color:"#7D91AA"}}><span style={{color:"#63E6BE"}}>{grandNetCol>=0?"+":""}${fmt(grandNetCol)}</span> net of <span style={{color:"#D6E2F0"}}>${fmt(grandCost)}</span> target</div>
           </div>
           <div style={{padding:"18px 20px"}}>
             {/* Bar */}
@@ -3258,7 +3309,7 @@ function Home({ assets, strategies=[], onSelectAsset, onShowPositions, onSaveMan
             </div>
             <div style={{display:"flex",justifyContent:"space-between",fontSize:11,color:"#7D91AA"}}>
               <span>$0</span>
-              <span style={{color:"#63E6BE"}}>${fmt(grandNetCol)} net recovered</span>
+              <span style={{color:"#63E6BE"}}>{grandNetCol>=0?"+":""}${fmt(grandNetCol)} net recovered</span>
               <span>Target: LEAP fully paid</span>
             </div>
 
@@ -3266,7 +3317,13 @@ function Home({ assets, strategies=[], onSelectAsset, onShowPositions, onSaveMan
             {(()=>{
               const fourWeeksAgo = new Date(); fourWeeksAgo.setDate(fourWeeksAgo.getDate()-28);
               const recentPremium = totals.reduce((acc,t)=>{
-                const recent = t.trades.filter(tr=>isPremiumIncomeSellTrade(tr,t.trades)&&new Date(tr.date)>=fourWeeksAgo);
+                const recent = t.trades.filter(tr=>
+                  t.leapContracts>0 &&
+                  tr.status!=="open" &&
+                  isThetaEngineTrade(tr,true) &&
+                  isThetaShortCallTrade(tr) &&
+                  new Date(tr.date)>=fourWeeksAgo
+                );
                 return acc + recent.reduce((s,tr)=>s+tradeDollarValue(tr),0);
               },0);
               const weeklyVelocity = recentPremium / 4;
@@ -4296,7 +4353,9 @@ function ClosedStrategies({ closedAssets }) {
         <EmptyState title="No closed strategies yet" copy="Closed, expired, and archived strategy records will appear here after a full lifecycle is completed." style={{padding:"60px 0"}}/>
       ):(
         closedAssets.map(a=>{
-          const total=netPremiumCashDollars(a.trades);
+          const total=hasLeapContracts(a)
+            ? thetaEngineRealizedDollars(a.trades, true)
+            : realizedOptionPnLDollars(a.trades);
           return (
             <div key={a.id} className="sec" style={{marginBottom:16}}>
               <div className="sechdr">
@@ -4307,8 +4366,8 @@ function ClosedStrategies({ closedAssets }) {
                   <span style={{fontSize:11,color:"#7D91AA"}}>{a.closedAt}</span>
                 </div>
                 <div style={{display:"flex",gap:16,fontSize:12}}>
-                  <span style={{color:"#7D91AA"}}>LEAP: <span style={{color:"#D6E2F0"}}>${a.leapStrike} {a.leapExpiration}</span></span>
-                  <span style={{color:"#7D91AA"}}>Theta collected: <span style={{color:total>=0?"#63E6BE":"#FF4D6D"}}>{total>=0?"+":""}${fmt(total)}</span></span>
+                  {hasLeapContracts(a)&&<span style={{color:"#7D91AA"}}>LEAP: <span style={{color:"#D6E2F0"}}>${a.leapStrike} {a.leapExpiration}</span></span>}
+                  <span style={{color:"#7D91AA"}}>{hasLeapContracts(a)?"Theta collected":"Realized P&L"}: <span style={{color:total>=0?"#63E6BE":"#FF4D6D"}}>{total>=0?"+":""}${fmt(total)}</span></span>
                 </div>
               </div>
               <table>
@@ -4344,7 +4403,7 @@ function AddAssetModal({ onAdd, onClose, usedColors }) {
   const [leapCost, setLeapCost] = useState("");
   const [leapDelta, setLeapDelta] = useState("");
   const avColor=COLORS.find(c=>!usedColors.includes(c))||"#B37CFF";
-  const needsLeap = isPremiumStrategy(selectedStrategy) || selectedStrategy==="PMCC" || selectedStrategy==="";
+  const needsLeap = selectedStrategy==="PMCC" || selectedStrategy==="";
   const stratInfo = Object.values(STRATEGIES).flat().find(s=>s.id===selectedStrategy);
 
   const submit=()=>{
