@@ -3131,7 +3131,7 @@ function Home({ assets, strategies=[], onSelectAsset, onShowPositions, onSaveMan
   const riskLegend = [
     ["Expiration risk","#FF4D6D","Short call vencendo em ate 3 dias."],
     ["Manage this week","#FF7A1A","Short call vencendo em ate 7 dias."],
-    ["Near milestone","#FDE047","LEAP com recovery entre 75% e 99%."],
+    ["Near milestone","#63E6BE","LEAP com recovery entre 75% e 99%."],
     ["Engine idle","#5B8CFF","Tem LEAP aberto, mas nao tem short call ativo gerando premium."],
   ];
   const allOpenRows = useMemo(()=>totals.flatMap(t=>{
@@ -3139,7 +3139,7 @@ function Home({ assets, strategies=[], onSelectAsset, onShowPositions, onSaveMan
     const leapRisk = t.leapContracts>0 && t.openSells.length===0
       ? {label:"Engine idle", color:"#5B8CFF"}
       : t.leapCost>0 && recovery>=75 && recovery<100
-        ? {label:"Near milestone", color:"#FDE047"}
+        ? {label:"Near milestone", color:"#63E6BE"}
         : null;
     const riskForTrade = (tr) => {
       if(!(tr.action==="SELL" && (tr.option_type||"call")==="call")) return null;
