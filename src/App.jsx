@@ -37,7 +37,14 @@ async function fetchSymbolSearch(query) {
   const data = await res.json();
   const raw = data?.securities?.security;
   if (!raw) return [];
-  return (Array.isArray(raw) ? raw : [raw]).slice(0, 8);
+  return (Array.isArray(raw) ? raw : [raw])
+    .map((item) => ({
+      ...item,
+      symbol: String(item?.symbol || item?.root_symbol || "").toUpperCase(),
+      description: item?.description || item?.name || "",
+    }))
+    .filter((item) => item.symbol)
+    .slice(0, 8);
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -2180,6 +2187,22 @@ function SimulatorPanel({ onSaveManualTrade, simulatorPreset }) {
     loadSym(s);
   };
 
+  const typedSymbol = searchInput.trim().toUpperCase();
+  const canUseTypedSymbol = /^[A-Z][A-Z0-9.]{0,9}$/.test(typedSymbol);
+  const visibleSymbolSuggestions = useMemo(() => {
+    const normalized = symbolSuggestions
+      .map((item) => ({
+        ...item,
+        symbol: String(item?.symbol || "").toUpperCase(),
+        description: item?.description || "",
+      }))
+      .filter((item) => item.symbol);
+    if(canUseTypedSymbol && !normalized.some((item) => item.symbol===typedSymbol)) {
+      return [{ symbol: typedSymbol, description: "Use typed ticker" }, ...normalized].slice(0, 8);
+    }
+    return normalized.slice(0, 8);
+  }, [symbolSuggestions, canUseTypedSymbol, typedSymbol]);
+
   const filteredChain = useMemo(()=>
     chain.filter(o=>o.option_type===optType).sort((a,b)=>a.strike-b.strike),
     [chain, optType]
@@ -2539,8 +2562,8 @@ function SimulatorPanel({ onSaveManualTrade, simulatorPreset }) {
                     </div>
                     <div style={{maxHeight:220,overflowY:"auto"}}>
                       {searchingSymbols&&<div style={{fontSize:11,color:"#7D91AA",padding:"8px 9px"}}>Searching...</div>}
-                      {!searchingSymbols&&symbolSuggestions.length===0&&searchInput.trim()&&<div style={{fontSize:11,color:"#7D91AA",padding:"8px 9px"}}>No matches found.</div>}
-                      {symbolSuggestions.map(s=>(
+                      {!searchingSymbols&&visibleSymbolSuggestions.length===0&&searchInput.trim()&&<div style={{fontSize:11,color:"#7D91AA",padding:"8px 9px"}}>No matches found.</div>}
+                      {visibleSymbolSuggestions.map(s=>(
                         <button key={s.symbol} onMouseDown={e=>e.preventDefault()} onClick={()=>selectSimulatorSymbol(s.symbol)}
                           style={{width:"100%",display:"flex",alignItems:"center",gap:10,background:"transparent",border:"none",borderRadius:6,padding:"8px 9px",cursor:"pointer",textAlign:"left",fontFamily:"DM Mono,monospace"}}>
                           <span style={{fontWeight:800,color:"#D6E2F0",minWidth:58}}>{s.symbol}</span>
