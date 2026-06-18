@@ -3407,9 +3407,7 @@ function Home({ assets, strategies=[], onSelectAsset, onShowPositions, onSaveMan
                   What needs attention now
                   <Tooltip text={"Expiration risk: Short call vencendo em ate 3 dias.\nManage this week: Short call vencendo em ate 7 dias.\nNear milestone: LEAP com recovery entre 75% e 99%.\nEngine idle: Tem LEAP aberto, mas nao tem short call ativo gerando premium."}/>
                 </div>
-                <div className="priority-strip-copy">Sorted from expiration risk to idle income cycles.</div>
               </div>
-              <span style={{fontSize:11,color:"#7D91AA"}}>{allOpenRows.length} open position{allOpenRows.length!==1?"s":""}</span>
             </div>
             <div className="risk-legend">
               {riskLegend.map(([label,c,tip])=>(
