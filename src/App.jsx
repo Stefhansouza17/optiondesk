@@ -536,10 +536,12 @@ tr:hover td{background:#101e2c}
 .calc-page .learn-head{align-items:flex-start;margin-bottom:18px}
 .calc-page .learn-title{font-size:clamp(23px,3vw,30px)}
 .calc-subtitle{font-size:13px;color:#8aaac8;margin-top:8px}
-.calc-hero-copy{margin-top:14px;max-width:690px}
-.calc-hero-copy .calc-cta-title{font-size:15px;margin-bottom:5px}
-.calc-hero-copy .calc-cta-copy{font-size:12px}
-.calc-hero-copy .btn{margin-top:10px}
+.calc-head-kicker-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:9px}
+.calc-head-kicker-row .learn-kicker{margin-bottom:0}
+.calc-panel-cta{margin-top:2px;background:#071019;border:1px solid #1B2A3A;border-radius:8px;padding:14px}
+.calc-panel-cta .calc-cta-title{font-size:14px;margin-bottom:6px}
+.calc-panel-cta .calc-cta-copy{font-size:11px;line-height:1.55}
+.calc-panel-cta .btn{margin-top:12px}
 .calc-wrap{display:grid;grid-template-columns:minmax(320px,380px) 1fr;gap:18px;align-items:stretch}
 .calc-panel{background:#0B131D;border:1px solid #1B2A3A;border-radius:8px;padding:22px;min-width:0}
 .calc-form{display:grid;gap:14px}
@@ -4292,16 +4294,12 @@ function CalculatorsPage({ onNavigate }) {
     <div className="main calc-page fade-in">
       <div className="learn-head">
         <div>
-          <div className="learn-kicker">Calculators</div>
-          <div className="learn-title">Compound Interest Calculator</div>
-          <div className="calc-subtitle">Plan long-term portfolio growth.</div>
-          <div className="calc-hero-copy">
-            <div className="calc-cta-title">Looking for higher income strategies?</div>
-            <div className="calc-cta-copy">
-              Learn how option traders generate premium income using Covered Calls, Cash-Secured Puts, PMCCs and other income strategies.
-            </div>
+          <div className="calc-head-kicker-row">
+            <div className="learn-kicker">Calculators</div>
             <button className="btn" onClick={()=>onNavigate("learn-courses")}>Learn About Options</button>
           </div>
+          <div className="learn-title">Compound Interest Calculator</div>
+          <div className="calc-subtitle">Plan long-term portfolio growth.</div>
         </div>
         <button className="btn bneutral" onClick={()=>onNavigate("learn")}>Back to Learn</button>
       </div>
@@ -4358,6 +4356,13 @@ function CalculatorsPage({ onNavigate }) {
                 placeholder={formatIntegerInput("10")}
                 onChange={updateWhole(setYears)}
               />
+            </div>
+            <div className="calc-panel-cta">
+              <div className="calc-cta-title">Looking for higher income strategies?</div>
+              <div className="calc-cta-copy">
+                Learn how option traders generate premium income using Covered Calls, Cash-Secured Puts, PMCCs and other income strategies.
+              </div>
+              <button className="btn" onClick={()=>onNavigate("learn-courses")}>Learn About Options</button>
             </div>
           </div>
         </div>
