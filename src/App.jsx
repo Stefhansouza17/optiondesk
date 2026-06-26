@@ -347,19 +347,19 @@ const importJSON = (onSuccess) => {
 // ── CSS ───────────────────────────────────────────────────────────────────────
 const CSS = `
 *{box-sizing:border-box;margin:0;padding:0}
-html,body{font-family:'DM Mono','IBM Plex Mono',monospace;background:#050A0F;color:#D6E2F0;-webkit-font-smoothing:antialiased}
+html,body{font-family:'IBM Plex Mono','DM Mono',monospace;background:#050A0F;color:#D6E2F0;-webkit-font-smoothing:antialiased}
 ::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:#071019}::-webkit-scrollbar-thumb{background:#1e3a5f;border-radius:2px}
 .hdr{border-bottom:1px solid #1B2A3A;padding:13px 24px;display:flex;align-items:center;justify-content:space-between;background:rgba(10,20,35,0.97);position:sticky;top:0;z-index:100;backdrop-filter:blur(10px)}
-.logo{display:inline-flex;align-items:center;gap:16px;font-family:'Syne',sans-serif;font-size:20px;font-weight:800;color:#fff;cursor:pointer;user-select:none;line-height:1}
+.logo{display:inline-flex;align-items:center;gap:16px;font-family:'Syne',sans-serif;font-size:20px;font-weight:760;color:#fff;cursor:pointer;user-select:none;line-height:1.18}
 .logo-mark{width:52px;height:52px;border-radius:0;object-fit:contain;filter:drop-shadow(0 6px 14px rgba(99,230,190,.16));flex-shrink:0}
 .logo-lockup{display:inline-flex;align-items:center;gap:8px}
 .logo-name{background:linear-gradient(105deg,#FFFFFF 0%,#F4FFFB 58%,#8EF0D0 100%);-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent;letter-spacing:0}
 .beta-badge{font-family:'DM Mono','IBM Plex Mono',monospace;font-size:9px;font-weight:600;letter-spacing:.8px;line-height:1;text-transform:uppercase;color:rgba(142,240,208,.68);background:rgba(99,230,190,.07);border:1px solid rgba(142,240,208,.16);border-radius:3px;padding:3px 6px}
 .badge{font-size:10px;background:#0a2a1a;color:#63E6BE;border:1px solid #63E6BE33;padding:3px 8px;border-radius:3px;letter-spacing:1px;text-transform:uppercase}
-.home-btn{background:#1B2A3A;border:1px solid #2a3a4a;color:#8aaac8;padding:6px 12px;border-radius:4px;cursor:pointer;font-family:'DM Mono',monospace;font-size:11px;transition:all 0.2s}
+.home-btn{background:#1B2A3A;border:1px solid #2a3a4a;color:#8aaac8;padding:6px 12px;border-radius:4px;cursor:pointer;font-family:'IBM Plex Mono','DM Mono',monospace;font-size:11px;transition:all 0.2s}
 .home-btn:hover{background:#2a3a4a;color:#D6E2F0}
 .tabs{display:flex;border-bottom:1px solid #1B2A3A;padding:0 24px;background:#071019;overflow-x:auto}
-.tab{background:none;border:none;border-bottom:2px solid transparent;color:#7D91AA;padding:10px 16px;cursor:pointer;font-family:'DM Mono',monospace;font-size:12px;font-weight:500;transition:all 0.2s;margin-bottom:-1px;white-space:nowrap}
+.tab{background:none;border:none;border-bottom:2px solid transparent;color:#7D91AA;padding:10px 16px;cursor:pointer;font-family:'IBM Plex Mono','DM Mono',monospace;font-size:12px;font-weight:500;transition:all 0.2s;margin-bottom:-1px;white-space:nowrap}
 .tab:hover{color:#D6E2F0}
 .tab.active{color:var(--tc);border-bottom-color:var(--tc)}
 .add-tab{background:none;border:none;color:#4A6A8A;padding:10px 12px;cursor:pointer;font-size:18px;transition:color 0.2s;margin-bottom:-1px}
@@ -370,16 +370,16 @@ html,body{font-family:'DM Mono','IBM Plex Mono',monospace;background:#050A0F;col
 .learn-menu{display:none;position:fixed;top:94px;right:24px;min-width:150px;background:#0B131D;border:1px solid #1B2A3A;border-radius:8px;padding:5px;z-index:500;box-shadow:0 18px 44px rgba(0,0,0,.42)}
 .learn-menu::before{content:'';position:absolute;left:0;right:0;top:-8px;height:8px}
 .learn-nav:hover .learn-menu,.learn-nav.open .learn-menu,.learn-menu:hover{display:block}
-.learn-menu button{display:block;width:100%;background:none;border:none;border-radius:5px;color:#8aaac8;padding:8px 10px;text-align:left;cursor:pointer;font-family:'DM Mono',monospace;font-size:11px;transition:all .15s}
+.learn-menu button{display:block;width:100%;background:none;border:none;border-radius:5px;color:#8aaac8;padding:8px 10px;text-align:left;cursor:pointer;font-family:'IBM Plex Mono','DM Mono',monospace;font-size:11px;transition:all .15s}
 .learn-menu button:hover,.learn-menu button.active{background:#071019;color:#D6E2F0}
 .subnav{display:flex;gap:4px;padding:12px 24px 0}
-.snbtn{background:none;border:none;color:#7D91AA;padding:7px 12px;cursor:pointer;font-family:'DM Mono',monospace;font-size:11px;letter-spacing:0.5px;border-radius:4px;transition:all 0.2s;text-transform:uppercase}
+.snbtn{background:none;border:none;color:#7D91AA;padding:7px 12px;cursor:pointer;font-family:'IBM Plex Mono','DM Mono',monospace;font-size:11px;letter-spacing:0.5px;border-radius:4px;transition:all 0.2s;text-transform:uppercase}
 .snbtn:hover{color:#D6E2F0;background:#1B2A3A}
 .snbtn.active{color:var(--ac,#63E6BE);background:#0a2a1a;border:1px solid #63E6BE33}
 .main{padding:12px 20px;max-width:1500px;margin:0 auto}
 .pbar{display:flex;align-items:center;gap:12px;padding:10px 16px;background:#0B131D;border:1px solid #1B2A3A;border-radius:8px;margin:14px 24px 0;flex-wrap:wrap}
-.tlbl{font-family:'Syne',sans-serif;font-size:15px;font-weight:700}
-.pinput{background:#071019;border:1px solid #1B2A3A;font-family:'DM Mono',monospace;font-size:18px;font-weight:500;padding:4px 10px;border-radius:4px;width:100px;text-align:right}
+.tlbl{font-family:'Syne',sans-serif;font-size:15px;font-weight:760;line-height:1.18}
+.pinput{background:#071019;border:1px solid #1B2A3A;font-family:'IBM Plex Mono','DM Mono',monospace;font-size:18px;font-weight:500;padding:4px 10px;border-radius:4px;width:100px;text-align:right}
 .pinput:focus{outline:none;border-color:#63E6BE66}
 .dvdr{width:1px;height:18px;background:#1B2A3A;flex-shrink:0}
 .sml{font-size:11px;color:#7D91AA;white-space:nowrap}
@@ -389,12 +389,12 @@ html,body{font-family:'DM Mono','IBM Plex Mono',monospace;background:#050A0F;col
 .card:hover{border-color:#2a4a6a}
 .card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--top,#1a3a5a);border-radius:8px 8px 0 0}
 .clbl{font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:#7D91AA;margin-bottom:7px;display:flex;align-items:center;gap:4px}
-.cval{font-family:'Syne',sans-serif;font-size:20px;font-weight:700;color:#fff;line-height:1;margin-bottom:4px}
+.cval{font-family:'IBM Plex Mono','DM Mono',monospace;font-size:20px;font-weight:650;color:#fff;line-height:1.18;margin-bottom:4px;letter-spacing:0}
 .csub{font-size:11px;color:#7D91AA}
 .sec{background:#0B131D;border:1px solid #1B2A3A;border-radius:8px;margin-bottom:12px}
 .sechdr{padding:12px 16px;border-bottom:1px solid #1B2A3A;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px}
 .sectitle{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#7D91AA;display:flex;align-items:center;gap:4px}
-.btn{background:#63E6BE15;border:1px solid #63E6BE44;color:#63E6BE;padding:6px 12px;border-radius:4px;cursor:pointer;font-family:'DM Mono',monospace;font-size:11px;letter-spacing:0.5px;transition:all 0.2s}
+.btn{background:#63E6BE15;border:1px solid #63E6BE44;color:#63E6BE;padding:6px 12px;border-radius:4px;cursor:pointer;font-family:'IBM Plex Mono','DM Mono',monospace;font-size:11px;letter-spacing:0.5px;transition:all 0.2s}
 .btn:hover{opacity:0.8}
 .btn:disabled{opacity:0.4;cursor:not-allowed}
 .bsm{padding:3px 9px;font-size:10px}
@@ -403,7 +403,7 @@ html,body{font-family:'DM Mono','IBM Plex Mono',monospace;background:#050A0F;col
 .bwarn{background:#FFD84D15;border-color:#FFD84D44;color:#FFD84D}
 .ptrack{height:6px;background:#1B2A3A;border-radius:3px;overflow:hidden}
 .pfill{height:100%;border-radius:3px;transition:width 0.5s ease}
-table{width:100%;border-collapse:collapse}
+table{width:100%;border-collapse:collapse;font-family:'IBM Plex Mono','DM Mono',monospace}
 th{font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:#4A6A8A;padding:9px 16px;text-align:left;border-bottom:1px solid #1B2A3A;font-weight:400}
 td{padding:10px 16px;font-size:12px;border-bottom:1px solid #0f1e2e;vertical-align:middle}
 tr:last-child td{border-bottom:none}
@@ -413,11 +413,11 @@ tr:hover td{background:#101e2c}
 .stexpired{display:inline-block;padding:2px 8px;background:#B37CFF15;border:1px solid #B37CFF44;color:#B37CFF;border-radius:3px;font-size:10px;letter-spacing:1px;text-transform:uppercase}
 .overlay{position:fixed;inset:0;background:rgba(0,0,0,0.75);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;z-index:200}
 .fbox{background:#0B131D;border:1px solid #1B2A3A;border-radius:12px;padding:24px;width:480px;max-width:95vw;box-shadow:0 40px 80px rgba(0,0,0,0.6);max-height:90vh;overflow-y:auto}
-.ftitle{font-family:'Syne',sans-serif;font-size:16px;font-weight:700;color:#fff;margin-bottom:16px}
+.ftitle{font-family:'Syne',sans-serif;font-size:16px;font-weight:760;color:#fff;line-height:1.2;margin-bottom:16px}
 .frow{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}
 .fgrp{display:flex;flex-direction:column;gap:4px}
 .flbl{font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:#7D91AA}
-.finput,.fsel{background:#071019;border:1px solid #1B2A3A;color:#D6E2F0;font-family:'DM Mono',monospace;font-size:13px;padding:7px 11px;border-radius:4px;width:100%;transition:border-color 0.2s}
+.finput,.fsel{background:#071019;border:1px solid #1B2A3A;color:#D6E2F0;font-family:'IBM Plex Mono','DM Mono',monospace;font-size:13px;padding:7px 11px;border-radius:4px;width:100%;transition:border-color 0.2s}
 .finput:focus,.fsel:focus{outline:none;border-color:#63E6BE66}
 .fsel option{background:#0B131D}
 .fsel.sm{font-size:11px;padding:4px 8px;width:auto}
@@ -432,38 +432,38 @@ tr:hover td{background:#101e2c}
 .empty{padding:22px;text-align:center;color:#4A6A8A;font-size:12px}
 .start-desk{background:linear-gradient(135deg,#0B131D,#071019);border:1px solid #1B2A3A;border-radius:8px;margin-bottom:12px;padding:18px;display:grid;grid-template-columns:minmax(260px,.95fr) 1.5fr;gap:18px;align-items:stretch}
 .start-kicker,.priority-kicker{font-size:10px;letter-spacing:1.8px;text-transform:uppercase;color:#63E6BE;margin-bottom:7px}
-.start-title{font-family:'Syne',sans-serif;font-size:26px;font-weight:800;color:#fff;line-height:1.05;margin-bottom:8px}
-.start-copy{font-size:12px;color:#8aaac8;line-height:1.55;max-width:420px}
+.start-title{font-family:'Syne',sans-serif;font-size:26px;font-weight:760;color:#fff;line-height:1.18;margin-bottom:8px}
+.start-copy{font-size:12px;color:#B7C9EA;line-height:1.65;max-width:420px}
 .start-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
 .start-card{background:#071019;border:1px solid #1B2A3A;border-radius:8px;padding:14px;display:flex;flex-direction:column;justify-content:space-between;min-height:142px}
 .start-step{font-size:10px;color:var(--accent,#63E6BE);letter-spacing:1.2px;text-transform:uppercase;margin-bottom:10px}
-.start-card-title{font-family:'Syne',sans-serif;font-size:16px;font-weight:800;color:#fff;margin-bottom:6px}
+.start-card-title{font-family:'Syne',sans-serif;font-size:16px;font-weight:760;color:#fff;line-height:1.2;margin-bottom:6px}
 .start-card-copy{font-size:11px;color:#8aaac8;line-height:1.45;margin-bottom:12px}
-.start-action{align-self:flex-start;background:color-mix(in srgb,var(--accent,#63E6BE) 11%,transparent);border:1px solid color-mix(in srgb,var(--accent,#63E6BE) 35%,transparent);color:var(--accent,#63E6BE);border-radius:4px;padding:6px 9px;font-family:'DM Mono',monospace;font-size:10px;cursor:pointer}
-.priority-title{font-family:'Syne',sans-serif;font-size:18px;font-weight:800;color:#fff;line-height:1}
+.start-action{align-self:flex-start;background:color-mix(in srgb,var(--accent,#63E6BE) 11%,transparent);border:1px solid color-mix(in srgb,var(--accent,#63E6BE) 35%,transparent);color:var(--accent,#63E6BE);border-radius:4px;padding:6px 9px;font-family:'IBM Plex Mono','DM Mono',monospace;font-size:10px;cursor:pointer}
+.priority-title{font-family:'Syne',sans-serif;font-size:18px;font-weight:760;color:#fff;line-height:1.18}
 .priority-copy{font-size:11px;color:#7D91AA;margin-top:7px;line-height:1.45}
 .priority-label{font-size:9px;letter-spacing:1.3px;text-transform:uppercase;color:var(--pc,#63E6BE);margin-bottom:8px}
-.priority-main{font-family:'Syne',sans-serif;font-size:15px;font-weight:800;color:#fff;line-height:1.15;margin-bottom:8px}
+.priority-main{font-family:'Syne',sans-serif;font-size:15px;font-weight:760;color:#fff;line-height:1.18;margin-bottom:8px}
 .priority-meta{font-size:11px;color:#8aaac8;line-height:1.45}
 .priority-strip{display:grid;grid-template-columns:minmax(250px,.82fr) minmax(420px,1.65fr);align-items:center;gap:12px;width:100%}
 .priority-strip-main{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
-.priority-strip-title{font-family:'Syne',sans-serif;font-size:15px;font-weight:800;color:#fff;line-height:1}
+.priority-strip-title{font-family:'Syne',sans-serif;font-size:15px;font-weight:760;color:#fff;line-height:1.18}
 .priority-strip-copy{font-size:10px;color:#7D91AA;margin-top:3px;letter-spacing:0;text-transform:none}
 .risk-legend{display:flex;align-items:center;justify-content:flex-start;gap:14px;flex-wrap:wrap}
 .risk-legend-item{display:inline-flex;align-items:center;gap:6px;font-size:9px;letter-spacing:1px;text-transform:uppercase;color:#8aaac8;white-space:nowrap}
 .risk-dot{--risk:#63E6BE;display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--risk);box-shadow:0 0 0 0 color-mix(in srgb,var(--risk) 42%,transparent);animation:riskPulse 1.55s infinite;flex-shrink:0}
 .risk-dot.muted{opacity:.28;animation:none}
 @keyframes riskPulse{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--risk) 48%,transparent)}70%{box-shadow:0 0 0 7px color-mix(in srgb,var(--risk) 0%,transparent)}100%{box-shadow:0 0 0 0 color-mix(in srgb,var(--risk) 0%,transparent)}}
-.empty-title{font-family:'Syne',sans-serif;font-size:16px;font-weight:800;color:#fff;margin-bottom:6px}
+.empty-title{font-family:'Syne',sans-serif;font-size:16px;font-weight:760;color:#fff;line-height:1.2;margin-bottom:6px}
 .empty-copy{color:#8aaac8;line-height:1.5;max-width:540px}
 .empty-actions{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:14px}
 .toggle-group{display:flex;background:#0B131D;border:1px solid #1B2A3A;border-radius:12px;padding:3px;gap:2px}
-.tgl{background:none;border:none;padding:7px 18px;border-radius:9px;cursor:pointer;font-family:'DM Mono',monospace;font-size:11px;font-weight:600;transition:all 0.2s;color:#7D91AA}
+.tgl{background:none;border:none;padding:7px 18px;border-radius:9px;cursor:pointer;font-family:'IBM Plex Mono','DM Mono',monospace;font-size:11px;font-weight:600;transition:all 0.2s;color:#7D91AA}
 .green{color:#63E6BE!important}
 .red{color:#FF4D6D!important}
 .yellow{color:#FFD84D!important}
 .strat-grid{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
-.strat-chip{border:1px solid #1B2A3A;border-radius:6px;padding:6px 12px;cursor:pointer;font-family:'DM Mono',monospace;font-size:12px;color:#D6E2F0;transition:all 0.2s;background:transparent}
+.strat-chip{border:1px solid #1B2A3A;border-radius:6px;padding:6px 12px;cursor:pointer;font-family:'IBM Plex Mono','DM Mono',monospace;font-size:12px;color:#D6E2F0;transition:all 0.2s;background:transparent}
 .strat-chip:hover{border-color:#4A6A8A}
 .strat-chip.active{border-color:#63E6BE;background:#63E6BE15;color:#63E6BE}
 .tooltip-wrap{position:relative;display:inline-flex;align-items:center}
@@ -477,30 +477,30 @@ tr:hover td{background:#101e2c}
 .learn-main{padding-top:34px;max-width:1180px}
 .learn-head{display:flex;justify-content:space-between;align-items:flex-end;gap:24px;margin:0 0 34px}
 .learn-kicker{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#63E6BE;margin-bottom:9px}
-.learn-title{font-family:'Syne',sans-serif;font-size:34px;font-weight:800;color:#fff;line-height:1.05}
-.learn-copy{font-size:13px;color:#8aaac8;line-height:1.65;max-width:420px}
+.learn-title{font-family:'Syne',sans-serif;font-size:34px;font-weight:760;color:#fff;line-height:1.18}
+.learn-copy{font-size:13px;color:#B7C9EA;line-height:1.7;max-width:420px}
 .learn-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:18px}
 .learn-card{background:#0B131D;border:1px solid #1B2A3A;border-radius:8px;padding:28px;position:relative;min-height:270px;display:flex;flex-direction:column;justify-content:space-between;transition:all .18s;cursor:pointer;overflow:hidden}
 .learn-card:hover{border-color:var(--accent,#63E6BE);transform:translateY(-2px);box-shadow:0 22px 56px rgba(0,0,0,.32)}
 .learn-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--accent,#63E6BE);opacity:.8}
-.learn-icon{width:38px;height:38px;border-radius:8px;border:1px solid color-mix(in srgb,var(--accent,#63E6BE) 34%,transparent);background:color-mix(in srgb,var(--accent,#63E6BE) 10%,transparent);color:var(--accent,#63E6BE);display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-size:14px;font-weight:800;margin-bottom:26px}
-.learn-card-title{font-family:'Syne',sans-serif;font-size:24px;font-weight:800;color:#fff;margin-bottom:10px}
+.learn-icon{width:38px;height:38px;border-radius:8px;border:1px solid color-mix(in srgb,var(--accent,#63E6BE) 34%,transparent);background:color-mix(in srgb,var(--accent,#63E6BE) 10%,transparent);color:var(--accent,#63E6BE);display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono','DM Mono',monospace;font-size:14px;font-weight:650;margin-bottom:26px}
+.learn-card-title{font-family:'Syne',sans-serif;font-size:24px;font-weight:760;color:#fff;line-height:1.18;margin-bottom:10px}
 .learn-card-copy{font-size:13px;color:#9EB9E9;line-height:1.55;max-width:220px}
 .learn-card-action{align-self:flex-start;font-size:11px;color:var(--accent,#63E6BE);letter-spacing:.7px;margin-top:28px;padding:7px 12px;border:1px solid color-mix(in srgb,var(--accent,#63E6BE) 32%,transparent);border-radius:4px;background:color-mix(in srgb,var(--accent,#63E6BE) 8%,transparent)}
 .learn-card.disabled{cursor:default;opacity:.72}
 .learn-card.disabled:hover{transform:none;border-color:#1B2A3A;box-shadow:none}
 .glossary-tools{display:grid;grid-template-columns:minmax(240px,1fr) auto;gap:12px;align-items:center;margin-bottom:16px}
-.glossary-search{background:#071019;border:1px solid #1B2A3A;color:#D6E2F0;font-family:'DM Mono',monospace;font-size:13px;padding:11px 13px;border-radius:6px;width:100%;min-width:0}
+.glossary-search{background:#071019;border:1px solid #1B2A3A;color:#D6E2F0;font-family:'IBM Plex Mono','DM Mono',monospace;font-size:13px;padding:11px 13px;border-radius:6px;width:100%;min-width:0}
 .glossary-search:focus{outline:none;border-color:#FFD84D88;box-shadow:0 0 0 2px #FFD84D12}
 .glossary-filters{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
-.glossary-filter{background:#071019;border:1px solid #1B2A3A;color:#8aaac8;border-radius:5px;padding:8px 10px;font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.5px;cursor:pointer;transition:all .16s}
+.glossary-filter{background:#071019;border:1px solid #1B2A3A;color:#8aaac8;border-radius:5px;padding:8px 10px;font-family:'IBM Plex Mono','DM Mono',monospace;font-size:10px;letter-spacing:.5px;cursor:pointer;transition:all .16s}
 .glossary-filter:hover{border-color:#FFD84D55;color:#D6E2F0}
 .glossary-filter.active{background:#FFD84D15;border-color:#FFD84D66;color:#FFD84D}
 .glossary-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
 .term-card{background:#0B131D;border:1px solid #1B2A3A;border-radius:8px;padding:16px;text-align:left;cursor:pointer;transition:all .16s;min-height:148px;display:flex;flex-direction:column;gap:10px}
 .term-card:hover{border-color:#FFD84D66;background:#101A27;transform:translateY(-1px)}
 .term-card-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
-.term-name{font-family:'Syne',sans-serif;font-size:18px;font-weight:800;color:#fff;line-height:1.12}
+.term-name{font-family:'Syne',sans-serif;font-size:18px;font-weight:760;color:#fff;line-height:1.2}
 .term-category{font-size:9px;letter-spacing:1px;text-transform:uppercase;color:#FFD84D;border:1px solid #FFD84D44;background:#FFD84D12;border-radius:4px;padding:3px 6px;white-space:nowrap}
 .term-definition{font-size:12px;color:#9EB9E9;line-height:1.55}
 .glossary-empty{background:#0B131D;border:1px solid #1B2A3A;border-radius:8px;padding:26px;text-align:center;color:#7D91AA;font-size:12px}
@@ -508,21 +508,21 @@ tr:hover td{background:#101e2c}
 .term-modal-label{font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:#4A6A8A;margin-bottom:6px}
 .term-modal-copy{font-size:12px;color:#D6E2F0;line-height:1.6}
 .related-terms{display:flex;gap:6px;flex-wrap:wrap}
-.related-term{border:1px solid #2a3a4a;background:#1B2A3A;color:#8aaac8;border-radius:4px;padding:5px 8px;font-family:'DM Mono',monospace;font-size:10px;cursor:pointer;transition:all .16s}
+.related-term{border:1px solid #2a3a4a;background:#1B2A3A;color:#8aaac8;border-radius:4px;padding:5px 8px;font-family:'IBM Plex Mono','DM Mono',monospace;font-size:10px;cursor:pointer;transition:all .16s}
 .related-term:hover{border-color:#FFD84D66;color:#FFD84D;background:#FFD84D12}
 .playbook-tools{display:flex;justify-content:flex-end;margin-bottom:16px}
 .playbook-filters{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
-.playbook-filter{background:#071019;border:1px solid #1B2A3A;color:#8aaac8;border-radius:5px;padding:8px 10px;font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.5px;cursor:pointer;transition:all .16s}
+.playbook-filter{background:#071019;border:1px solid #1B2A3A;color:#8aaac8;border-radius:5px;padding:8px 10px;font-family:'IBM Plex Mono','DM Mono',monospace;font-size:10px;letter-spacing:.5px;cursor:pointer;transition:all .16s}
 .playbook-filter:hover{border-color:#5B8CFF66;color:#D6E2F0}
 .playbook-filter.active{background:#5B8CFF15;border-color:#5B8CFF66;color:#9EB9E9}
 .playbook-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
 .playbook-card{background:#0B131D;border:1px solid #1B2A3A;border-radius:8px;padding:16px;text-align:left;cursor:pointer;transition:all .16s;min-height:168px;display:flex;flex-direction:column;justify-content:space-between;gap:14px}
 .playbook-card:hover{border-color:#5B8CFF66;background:#101A27;transform:translateY(-1px)}
 .playbook-card-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
-.playbook-title{font-family:'Syne',sans-serif;font-size:19px;font-weight:800;color:#fff;line-height:1.12}
+.playbook-title{font-family:'Syne',sans-serif;font-size:19px;font-weight:760;color:#fff;line-height:1.2}
 .playbook-category{font-size:9px;letter-spacing:1px;text-transform:uppercase;color:#9EB9E9;border:1px solid #5B8CFF44;background:#5B8CFF12;border-radius:4px;padding:3px 6px;white-space:nowrap}
 .playbook-summary{font-size:12px;color:#9EB9E9;line-height:1.5}
-.playbook-action{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.5px;color:#5B8CFF}
+.playbook-action{font-family:'IBM Plex Mono','DM Mono',monospace;font-size:10px;letter-spacing:.5px;color:#5B8CFF}
 .playbook-modal-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-bottom:12px}
 .playbook-section{background:#071019;border:1px solid #1B2A3A;border-radius:8px;padding:12px;min-width:0}
 .playbook-label{font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:#4A6A8A;margin-bottom:6px}
@@ -530,7 +530,7 @@ tr:hover td{background:#101e2c}
 .playbook-list{margin:0;padding-left:16px;color:#D6E2F0;font-size:12px;line-height:1.55}
 .playbook-list li{margin:0 0 5px}
 .playbook-related{display:flex;gap:6px;flex-wrap:wrap}
-.playbook-related-btn{border:1px solid #2a3a4a;background:#1B2A3A;color:#8aaac8;border-radius:4px;padding:5px 8px;font-family:'DM Mono',monospace;font-size:10px;cursor:pointer;transition:all .16s}
+.playbook-related-btn{border:1px solid #2a3a4a;background:#1B2A3A;color:#8aaac8;border-radius:4px;padding:5px 8px;font-family:'IBM Plex Mono','DM Mono',monospace;font-size:10px;cursor:pointer;transition:all .16s}
 .playbook-related-btn:hover{border-color:#5B8CFF66;color:#9EB9E9;background:#5B8CFF12}
 .calc-page{padding-top:28px;max-width:1180px}
 .calc-page .learn-head{align-items:flex-start;margin-bottom:18px}
@@ -547,28 +547,28 @@ tr:hover td{background:#101e2c}
 .calc-form{display:grid;gap:14px}
 .return-field-head{display:flex;align-items:center;justify-content:space-between;gap:10px}
 .return-toggle{display:inline-flex;align-items:center;background:#071019;border:1px solid #1B2A3A;border-radius:6px;padding:2px;flex-shrink:0}
-.return-toggle button{border:0;background:transparent;color:#7D91AA;border-radius:4px;padding:4px 7px;font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.4px;cursor:pointer;text-transform:uppercase}
+.return-toggle button{border:0;background:transparent;color:#7D91AA;border-radius:4px;padding:4px 7px;font-family:'IBM Plex Mono','DM Mono',monospace;font-size:9px;letter-spacing:.4px;cursor:pointer;text-transform:uppercase}
 .return-toggle button.active{background:#132033;color:#D6E2F0}
 .calc-results{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-bottom:18px}
 .calc-result{background:#071019;border:1px solid #1B2A3A;border-radius:8px;padding:16px;min-width:0;overflow:hidden}
 .calc-result-label{font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:#7D91AA;margin-bottom:9px}
-.calc-result-value{font-family:'Syne',sans-serif;font-size:clamp(15px,1.35vw,20px);font-weight:800;color:#fff;line-height:1;white-space:nowrap}
+.calc-result-value{font-family:'IBM Plex Mono','DM Mono',monospace;font-size:clamp(15px,1.35vw,20px);font-weight:650;color:#fff;line-height:1.2;white-space:nowrap;letter-spacing:0}
 .breakdown-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}
-.full-chart-btn{background:#0B131D;border:1px solid #1B2A3A;color:#9EB9E9;border-radius:5px;padding:7px 10px;font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.4px;cursor:pointer;transition:all .18s}
+.full-chart-btn{background:#0B131D;border:1px solid #1B2A3A;color:#9EB9E9;border-radius:5px;padding:7px 10px;font-family:'IBM Plex Mono','DM Mono',monospace;font-size:10px;letter-spacing:.4px;cursor:pointer;transition:all .18s}
 .full-chart-btn:hover{border-color:#63E6BE66;color:#D6E2F0;background:#101A27}
 .investment-breakdown{display:grid;grid-template-columns:250px 1fr;gap:12px}
 .breakdown-card{background:#071019;border:1px solid #1B2A3A;border-radius:8px;padding:14px;min-width:0}
 .donut-wrap{display:flex;align-items:center;justify-content:center;gap:14px;min-height:170px}
 .donut-legend{display:grid;gap:8px;font-size:11px;color:#8aaac8}
 .legend-dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:7px}
-.legend-value{display:block;color:#D6E2F0;font-family:'Syne',sans-serif;font-size:14px;font-weight:800;margin-top:2px}
+.legend-value{display:block;color:#D6E2F0;font-family:'IBM Plex Mono','DM Mono',monospace;font-size:14px;font-weight:650;margin-top:2px}
 .calc-chart{height:210px;background:#071019;border:1px solid #1B2A3A;border-radius:8px;padding:12px}
 .chart-top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:8px}
 .chart-toggle{display:inline-flex;align-items:center;background:#0B131D;border:1px solid #1B2A3A;border-radius:6px;padding:2px}
-.chart-toggle button{border:0;background:transparent;color:#7D91AA;border-radius:4px;padding:4px 8px;font-family:'DM Mono',monospace;font-size:10px;cursor:pointer}
+.chart-toggle button{border:0;background:transparent;color:#7D91AA;border-radius:4px;padding:4px 8px;font-family:'IBM Plex Mono','DM Mono',monospace;font-size:10px;cursor:pointer}
 .chart-toggle button.active{background:#132033;color:#D6E2F0}
 .chart-legend{display:flex;justify-content:flex-end;gap:14px;font-size:10px;color:#8aaac8}
-.chart-caption{text-align:center;font-size:10px;color:#7D91AA;letter-spacing:1.2px;margin-top:4px;font-family:'DM Mono',monospace}
+.chart-caption{text-align:center;font-size:10px;color:#7D91AA;letter-spacing:1.2px;margin-top:4px;font-family:'IBM Plex Mono','DM Mono',monospace}
 .monthly-return-table{margin-top:14px;background:#071019;border:1px solid #1B2A3A;border-radius:8px;overflow:hidden}
 .monthly-return-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px;border-bottom:1px solid #1B2A3A}
 .monthly-return-note{font-size:10px;color:#7D91AA}
@@ -579,7 +579,7 @@ tr:hover td{background:#101e2c}
 .monthly-return-table td:nth-child(4){color:#FFD84D}
 .chart-modal{width:min(90vw,1220px);max-height:88vh;background:#071019;border:1px solid #22364A;border-radius:10px;box-shadow:0 28px 90px rgba(0,0,0,.64);padding:22px;display:flex;flex-direction:column;gap:16px;overflow:hidden}
 .chart-modal-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;border-bottom:1px solid #1B2A3A;padding-bottom:14px}
-.chart-modal-title{font-family:'Syne',sans-serif;font-size:26px;font-weight:800;color:#fff;line-height:1}
+.chart-modal-title{font-family:'Syne',sans-serif;font-size:26px;font-weight:760;color:#fff;line-height:1.18}
 .chart-modal-subtitle{font-size:12px;color:#8aaac8;margin-top:8px}
 .modal-close{background:#0B131D;border:1px solid #1B2A3A;color:#D6E2F0;border-radius:6px;width:34px;height:34px;cursor:pointer;font-size:18px;line-height:1}
 .chart-modal-body{display:grid;grid-template-columns:minmax(0,1fr) 260px;gap:16px;min-height:0;flex:1;overflow-y:auto}
@@ -588,17 +588,17 @@ tr:hover td{background:#101e2c}
 .expanded-chart-legend{display:flex;gap:16px;flex-wrap:wrap;font-size:11px;color:#8aaac8;justify-content:flex-end}
 .expanded-chart{height:270px}
 .chart-tooltip{position:absolute;min-width:238px;background:#0B131D;border:1px solid #2C425C;border-radius:8px;padding:12px;box-shadow:0 18px 48px rgba(0,0,0,.5);pointer-events:none;color:#D6E2F0;font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:12px;line-height:1.55;z-index:2}
-.chart-tooltip-title{font-family:'Syne',sans-serif;font-weight:800;color:#fff;font-size:15px;margin-bottom:6px}
+.chart-tooltip-title{font-family:'Syne',sans-serif;font-weight:760;color:#fff;font-size:15px;line-height:1.18;margin-bottom:6px}
 .chart-tooltip-row{display:flex;justify-content:space-between;gap:12px}
-.chart-tooltip-row span:last-child{font-family:'Syne',sans-serif;font-weight:800;color:#fff}
-.milestones-title{font-family:'Syne',sans-serif;font-size:18px;font-weight:800;color:#fff;margin-bottom:12px}
+.chart-tooltip-row span:last-child{font-family:'IBM Plex Mono','DM Mono',monospace;font-weight:650;color:#fff}
+.milestones-title{font-family:'Syne',sans-serif;font-size:18px;font-weight:760;color:#fff;line-height:1.18;margin-bottom:12px}
 .milestone-list{display:grid;gap:10px}
 .milestone{border:1px solid #1B2A3A;background:#071019;border-radius:7px;padding:12px}
-.milestone-target{font-family:'Syne',sans-serif;font-size:20px;font-weight:800;color:#fff;line-height:1}
+.milestone-target{font-family:'IBM Plex Mono','DM Mono',monospace;font-size:20px;font-weight:650;color:#fff;line-height:1.18}
 .milestone-status{font-size:11px;color:#8aaac8;margin-top:8px}
 .milestone-status.reached{color:#63E6BE}
 .calc-cta{margin-top:18px;background:#0B131D;border:1px solid #1B2A3A;border-radius:8px;padding:20px 22px;display:flex;align-items:center;justify-content:space-between;gap:18px}
-.calc-cta-title{font-family:'Syne',sans-serif;font-size:18px;font-weight:800;color:#fff;margin-bottom:6px}
+.calc-cta-title{font-family:'Syne',sans-serif;font-size:18px;font-weight:760;color:#fff;line-height:1.18;margin-bottom:6px}
 .calc-cta-copy{font-size:12px;color:#8aaac8;line-height:1.55;max-width:720px}
 /* ── Simulator ── */
 .sim-wrap{display:flex;border:1px solid #22364A;border-radius:8px;overflow:hidden;margin-top:0;background:#050A0F;min-height:690px;box-shadow:0 26px 80px rgba(0,0,0,.52),inset 0 1px 0 rgba(255,255,255,.035);font-family:'DM Mono','IBM Plex Mono',monospace}
@@ -606,8 +606,8 @@ tr:hover td{background:#101e2c}
 .sim-right{flex:1;overflow:hidden;display:flex;flex-direction:column;min-width:0;background:linear-gradient(180deg,#050A0F,#071019)}
 .sim-slbl{font-size:11px;letter-spacing:2.15px;text-transform:uppercase;color:#B7C9EA;margin-bottom:10px;font-weight:700;font-family:'DM Mono','IBM Plex Mono',monospace}
 .sim-strike-box{background:#071019;border:1px solid #1B2A3A;border-radius:9px;padding:10px 11px}
-.sim-strike-big{font-family:'Syne',sans-serif;font-size:23px;font-weight:800;color:#FFD84D;flex:1}
-.sim-strike-input{background:#0B131D;border:1px solid #FFD84D44;color:#FFD84D;font-family:'DM Mono',monospace;font-size:12px;padding:4px 8px;border-radius:5px;width:76px;text-align:center}
+.sim-strike-big{font-family:'IBM Plex Mono','DM Mono',monospace;font-size:23px;font-weight:650;color:#FFD84D;flex:1;letter-spacing:0;line-height:1.18}
+.sim-strike-input{background:#0B131D;border:1px solid #FFD84D44;color:#FFD84D;font-family:'IBM Plex Mono','DM Mono',monospace;font-size:12px;padding:4px 8px;border-radius:5px;width:76px;text-align:center}
 .sim-strike-input:focus{outline:none;border-color:#FFD84Daa}
 .sim-chip{background:#071019;border:1px solid #102033;color:#AFC4E9;padding:7px 9px;border-radius:8px;cursor:pointer;font-family:'DM Mono','IBM Plex Mono',monospace;font-size:12px;white-space:nowrap;flex-shrink:0;transition:all .15s;min-width:50px}
 .sim-chip:hover{border-color:#22364A;color:#D6E2F0;background:#0B131D}
@@ -851,7 +851,7 @@ function StrategyAssignmentModal({ asset, trade, strategies=[], suggestions=[], 
                 {(trade?.action||"").toUpperCase()} {(trade?.option_type||"call").toUpperCase()} ${trade?.strike} exp {trade?.expiration}
               </div>
             </div>
-            <div style={{fontSize:12,color:"#FFD84D",fontFamily:"DM Mono,monospace"}}>
+            <div style={{fontSize:12,color:"#FFD84D",fontFamily:"IBM Plex Mono,DM Mono,monospace"}}>
               {trade?.contracts||1} contract{(trade?.contracts||1)>1?"s":""} @ ${fmt(trade?.premium)}
             </div>
           </div>
@@ -1025,7 +1025,7 @@ function Calculator({ asset, totalCollected, etfPrice }) {
           {[["Net credit",`$${fmt(net)}`,net>=0?color:"#FF4D6D"],["Per contract",`$${fmt(net*100)}`,net>=0?color:"#FF4D6D"],["Return on LEAP",`${(wpct*100).toFixed(2)}%`,"#5B8CFF"],["Spread",`$${fmt(spread)}`,"#FFD84D"],["Weeks to free LEAP",`~${Math.ceil(projW)}`,"#D6E2F0"],["Projected total",`$${fmt(proj*100)}`,color]].map(([l,v,c])=>(
             <div key={l} style={{background:"#071019",border:"1px solid #1B2A3A",borderRadius:6,padding:"12px 14px"}}>
               <div style={{fontSize:10,letterSpacing:"1.5px",textTransform:"uppercase",color:"#4A6A8A",marginBottom:4}}>{l}</div>
-              <div style={{fontSize:17,fontFamily:"Syne",fontWeight:700,color:c}}>{v}</div>
+              <div style={{fontSize:17,fontFamily:"IBM Plex Mono,DM Mono,monospace",fontWeight:650,color:c,lineHeight:1.18}}>{v}</div>
             </div>
           ))}
         </div>
@@ -1083,7 +1083,7 @@ function UnifiedTradeModal({ title="Add Trade", initial={}, asset=null, isEdit=f
     onClose();
   }
 
-  const inp={background:"#071019",border:"1px solid #1B2A3A",color:"#D6E2F0",fontFamily:"DM Mono,monospace",fontSize:12,padding:"7px 10px",borderRadius:5,outline:"none",width:"100%",boxSizing:"border-box"};
+  const inp={background:"#071019",border:"1px solid #1B2A3A",color:"#D6E2F0",fontFamily:"IBM Plex Mono,DM Mono,monospace",fontSize:12,padding:"7px 10px",borderRadius:5,outline:"none",width:"100%",boxSizing:"border-box"};
   const lbl={fontSize:9,letterSpacing:1.5,textTransform:"uppercase",color:"#4A6A8A",marginBottom:4,display:"block"};
   const g2={display:"grid",gridTemplateColumns:"1fr 1fr",gap:10};
   const col={display:"flex",flexDirection:"column"};
@@ -1124,7 +1124,7 @@ function UnifiedTradeModal({ title="Add Trade", initial={}, asset=null, isEdit=f
             <div style={col}><label style={lbl}>Contracts</label>
               <div style={{display:"flex",alignItems:"center",gap:5,background:"#071019",border:"1px solid #1B2A3A",borderRadius:5,padding:"4px 8px"}}>
                 <button onClick={()=>upd("contracts",Math.max(1,(parseInt(form.contracts)||1)-1))} style={{background:"#1B2A3A",border:"none",color:"#D6E2F0",width:22,height:22,borderRadius:4,cursor:"pointer",fontSize:14,lineHeight:"22px",textAlign:"center"}}>−</button>
-                <input value={form.contracts} onChange={e=>upd("contracts",Math.max(1,parseInt(e.target.value)||1))} style={{flex:1,background:"transparent",border:"none",outline:"none",color:"#fff",fontFamily:"DM Mono,monospace",fontSize:14,fontWeight:600,textAlign:"center"}}/>
+                <input value={form.contracts} onChange={e=>upd("contracts",Math.max(1,parseInt(e.target.value)||1))} style={{flex:1,background:"transparent",border:"none",outline:"none",color:"#fff",fontFamily:"IBM Plex Mono,DM Mono,monospace",fontSize:14,fontWeight:600,textAlign:"center"}}/>
                 <button onClick={()=>upd("contracts",(parseInt(form.contracts)||1)+1)} style={{background:"#1B2A3A",border:"none",color:"#D6E2F0",width:22,height:22,borderRadius:4,cursor:"pointer",fontSize:14,lineHeight:"22px",textAlign:"center"}}>+</button>
               </div>
             </div>
@@ -1161,7 +1161,7 @@ function UnifiedTradeModal({ title="Add Trade", initial={}, asset=null, isEdit=f
           {form.premium&&form.contracts&&(
             <div style={{background:"#071019",border:"1px solid #1B2A3A",borderRadius:6,padding:"9px 12px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
               <span style={{fontSize:10,color:"#4A6A8A"}}>Total value</span>
-              <span style={{fontFamily:"DM Mono,monospace",fontSize:15,fontWeight:700,color:form.action==="SELL"?"#63E6BE":"#FF4D6D"}}>
+              <span style={{fontFamily:"IBM Plex Mono,DM Mono,monospace",fontSize:15,fontWeight:700,color:form.action==="SELL"?"#63E6BE":"#FF4D6D"}}>
                 {form.action==="SELL"?"+":"-"}${totalVal.toFixed(0)}
               </span>
             </div>
@@ -1600,7 +1600,7 @@ function AssetDashboard({ asset, strategies=[], onCreateStrategy, onChangeTradeS
                       ].map(([label,value,c])=>(
                         <div key={label} style={{background:"#071019",border:"1px solid #1B2A3A",borderRadius:6,padding:"11px 12px"}}>
                           <div style={{fontSize:9,letterSpacing:1.4,textTransform:"uppercase",color:"#4A6A8A",marginBottom:5}}>{label}</div>
-                          <div style={{fontFamily:"Syne,sans-serif",fontSize:18,fontWeight:800,color:c}}>{value}</div>
+                          <div style={{fontFamily:"IBM Plex Mono,DM Mono,monospace",fontSize:18,fontWeight:650,color:c,lineHeight:1.18}}>{value}</div>
                         </div>
                       ))}
                     </div>
@@ -1616,7 +1616,7 @@ function AssetDashboard({ asset, strategies=[], onCreateStrategy, onChangeTradeS
                       {currentShort?(
                         <>
                           <div style={{display:"flex",alignItems:"center",gap:14,marginBottom:12}}>
-                            <div style={{fontFamily:"Syne,sans-serif",fontSize:36,fontWeight:800,color:healthColor,lineHeight:1}}>{healthScore}</div>
+                            <div style={{fontFamily:"IBM Plex Mono,DM Mono,monospace",fontSize:36,fontWeight:650,color:healthColor,lineHeight:1.18}}>{healthScore}</div>
                             <div style={{flex:1}}>
                               <div className="ptrack"><div className="pfill" style={{width:`${healthScore}%`,background:`linear-gradient(90deg,${healthColor},#5B8CFF)`}}/></div>
                               <div style={{fontSize:11,color:"#7D91AA",marginTop:6}}>Short ${currentShort.strike}C exp {currentShort.expiration}</div>
@@ -1772,7 +1772,7 @@ function AssetDashboard({ asset, strategies=[], onCreateStrategy, onChangeTradeS
               <div style={{display:"flex",gap:8,alignItems:"center"}}>
                 <div style={{display:"flex",background:"#1B2A3A",borderRadius:6,padding:3,gap:2}}>
                   {[["all","All"],["open","Open"],["closed","Closed"],["expired","Expired"]].map(([v,l])=>(
-                    <button key={v} onClick={()=>setStatusFilter(v)} style={{padding:"4px 10px",borderRadius:4,border:"none",cursor:"pointer",fontFamily:"DM Mono,monospace",fontSize:10,background:statusFilter===v?color:"transparent",color:statusFilter===v?"#071019":"#7D91AA"}}>{l}</button>
+                    <button key={v} onClick={()=>setStatusFilter(v)} style={{padding:"4px 10px",borderRadius:4,border:"none",cursor:"pointer",fontFamily:"IBM Plex Mono,DM Mono,monospace",fontSize:10,background:statusFilter===v?color:"transparent",color:statusFilter===v?"#071019":"#7D91AA"}}>{l}</button>
                   ))}
                 </div>
                 <button className="btn bsm" onClick={()=>exportCSV(allOrderRows,asset.ticker)} style={{color,borderColor:color+"44",background:color+"15"}}>↓ CSV</button>
@@ -1808,7 +1808,7 @@ function AssetDashboard({ asset, strategies=[], onCreateStrategy, onChangeTradeS
             )}
             <div style={{padding:"10px 16px",borderTop:"1px solid #1B2A3A",display:"flex",justifyContent:"flex-end",gap:20,fontSize:13}}>
               <span style={{color:"#7D91AA"}}>Net total:</span>
-              <span style={{fontFamily:"Syne",fontSize:15,fontWeight:700,color:realizedDisplayDollar>=0?color:"#FF4D6D"}}>{realizedDisplayDollar>=0?"+":""}${fmt(realizedDisplayDollar)}</span>
+              <span style={{fontFamily:"IBM Plex Mono,DM Mono,monospace",fontSize:15,fontWeight:650,color:realizedDisplayDollar>=0?color:"#FF4D6D"}}>{realizedDisplayDollar>=0?"+":""}${fmt(realizedDisplayDollar)}</span>
             </div>
           </div>
         )}
@@ -2091,7 +2091,7 @@ function PayoffChart({ spot, pnlAt, breakeven, singleLeg, height=185 }) {
       {gridVals.map(v => (
         <g key={v}>
           <line x1={PAD.l} y1={yOf(v)} x2={W - PAD.r} y2={yOf(v)} stroke={v === 0 ? "#2A4A6A" : "#102033"} strokeWidth={v === 0 ? 1.2 : 0.7} />
-          <text x={PAD.l - 10} y={yOf(v) + 4} textAnchor="end" fontSize={11} fill="#B7C9EA" fontFamily="DM Mono,monospace">{v > 0 ? "+$" : v < 0 ? "-$" : "$"}{Math.abs(v)}</text>
+          <text x={PAD.l - 10} y={yOf(v) + 4} textAnchor="end" fontSize={11} fill="#B7C9EA" fontFamily="IBM Plex Mono,DM Mono,monospace">{v > 0 ? "+$" : v < 0 ? "-$" : "$"}{Math.abs(v)}</text>
         </g>
       ))}
 
@@ -2108,7 +2108,7 @@ function PayoffChart({ spot, pnlAt, breakeven, singleLeg, height=185 }) {
         <circle cx={xOf(breakeven)} cy={yZero} r={5.2} fill="#63E6BE" stroke="#050A0F" strokeWidth={2.2} />
         <circle cx={xOf(breakeven)} cy={yZero} r={8.5} fill="none" stroke="#63E6BE55" strokeWidth={1} />
         <rect x={clampLabel(xOf(breakeven), 122) - 61} y={H - PAD.b - 20} width={122} height={18} rx={4} fill="#063D30" stroke="#63E6BE88" />
-        <text x={clampLabel(xOf(breakeven), 122)} y={H - PAD.b - 8} textAnchor="middle" fontSize={9} fill="#63E6BE" fontFamily="DM Mono,monospace">Breakeven ${breakeven.toFixed(2)}</text>
+        <text x={clampLabel(xOf(breakeven), 122)} y={H - PAD.b - 8} textAnchor="middle" fontSize={9} fill="#63E6BE" fontFamily="IBM Plex Mono,DM Mono,monospace">Breakeven ${breakeven.toFixed(2)}</text>
       </>}
 
       {/* Strike dot */}
@@ -2118,21 +2118,21 @@ function PayoffChart({ spot, pnlAt, breakeven, singleLeg, height=185 }) {
 
       {/* ATM label */}
       <rect x={clampLabel(xOf(spot), 84) - 42} y={PAD.t + 2} width={84} height={18} rx={4} fill="#0F2A66" stroke="#5B8CFF" />
-      <text x={clampLabel(xOf(spot), 84)} y={PAD.t + 14} textAnchor="middle" fontSize={9} fill="#9EB9FF" fontFamily="DM Mono,monospace">ATM ${spot.toFixed(2)}</text>
+      <text x={clampLabel(xOf(spot), 84)} y={PAD.t + 14} textAnchor="middle" fontSize={9} fill="#9EB9FF" fontFamily="IBM Plex Mono,DM Mono,monospace">ATM ${spot.toFixed(2)}</text>
 
       {/* Payoff line */}
       <polyline points={curvePts} fill="none" stroke="#63E6BE" strokeWidth={3.1} strokeLinejoin="round" clipPath={`url(#above-${uid})`} />
       <polyline points={curvePts} fill="none" stroke="#FF4D6D" strokeWidth={3.1} strokeLinejoin="round" clipPath={`url(#below-${uid})`} />
 
       {/* Annotations */}
-      {isUnlimited && <text x={W - PAD.r - 6} y={PAD.t + 18} textAnchor="end" fontSize={9} fill="#63E6BE66" fontFamily="DM Mono,monospace">Unlimited profit ↗</text>}
-      {isUnlimitedLoss && <text x={W - PAD.r - 6} y={PAD.t + 18} textAnchor="end" fontSize={9} fill="#ff6b6b66" fontFamily="DM Mono,monospace">Unlimited risk ↗</text>}
+      {isUnlimited && <text x={W - PAD.r - 6} y={PAD.t + 18} textAnchor="end" fontSize={9} fill="#63E6BE66" fontFamily="IBM Plex Mono,DM Mono,monospace">Unlimited profit ↗</text>}
+      {isUnlimitedLoss && <text x={W - PAD.r - 6} y={PAD.t + 18} textAnchor="end" fontSize={9} fill="#ff6b6b66" fontFamily="IBM Plex Mono,DM Mono,monospace">Unlimited risk ↗</text>}
 
       {/* X axis */}
       {xLabels.map((p, i) => (
-        <text key={i} x={xOf(p)} y={H - PAD.b + 18} textAnchor="middle" fontSize={9} fill="#9EB9E9" fontFamily="DM Mono,monospace">${p.toFixed(0)}</text>
+        <text key={i} x={xOf(p)} y={H - PAD.b + 18} textAnchor="middle" fontSize={9} fill="#9EB9E9" fontFamily="IBM Plex Mono,DM Mono,monospace">${p.toFixed(0)}</text>
       ))}
-      <text x={18} y={H / 2} textAnchor="middle" fontSize={10} fill="#B7C9EA" transform={`rotate(-90,18,${H / 2})`} fontFamily="DM Mono,monospace">P&L ($)</text>
+      <text x={18} y={H / 2} textAnchor="middle" fontSize={10} fill="#B7C9EA" transform={`rotate(-90,18,${H / 2})`} fontFamily="IBM Plex Mono,DM Mono,monospace">P&L ($)</text>
     </svg>
   );
 }
@@ -2553,7 +2553,7 @@ function SimulatorPanel({ onSaveManualTrade, simulatorPreset }) {
       {/* ── LEFT PANEL ── */}
       <div className="sim-left">
         {activePresetName&&(
-          <div style={{background:"#5B8CFF12",border:"1px solid #5B8CFF55",borderRadius:7,padding:"10px 12px",fontSize:11,color:"#9EB9E9",fontFamily:"DM Mono,monospace",letterSpacing:.3}}>
+          <div style={{background:"#5B8CFF12",border:"1px solid #5B8CFF55",borderRadius:7,padding:"10px 12px",fontSize:11,color:"#9EB9E9",fontFamily:"IBM Plex Mono,DM Mono,monospace",letterSpacing:.3}}>
             Loaded playbook: <span style={{color:"#D6E2F0",fontWeight:800}}>{activePresetName}</span>
           </div>
         )}
@@ -2587,7 +2587,7 @@ function SimulatorPanel({ onSaveManualTrade, simulatorPreset }) {
                       {!searchingSymbols&&visibleSymbolSuggestions.length===0&&searchInput.trim()&&<div style={{fontSize:11,color:"#7D91AA",padding:"8px 9px"}}>No matches found.</div>}
                       {visibleSymbolSuggestions.map(s=>(
                         <button key={s.symbol} onMouseDown={e=>e.preventDefault()} onClick={()=>selectSimulatorSymbol(s.symbol)}
-                          style={{width:"100%",display:"flex",alignItems:"center",gap:10,background:"transparent",border:"none",borderRadius:6,padding:"8px 9px",cursor:"pointer",textAlign:"left",fontFamily:"DM Mono,monospace"}}>
+                          style={{width:"100%",display:"flex",alignItems:"center",gap:10,background:"transparent",border:"none",borderRadius:6,padding:"8px 9px",cursor:"pointer",textAlign:"left",fontFamily:"IBM Plex Mono,DM Mono,monospace"}}>
                           <span style={{fontWeight:800,color:"#D6E2F0",minWidth:58}}>{s.symbol}</span>
                           <span style={{fontSize:10,color:"#7D91AA",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{s.description||"US equity"}</span>
                         </button>
@@ -2605,7 +2605,7 @@ function SimulatorPanel({ onSaveManualTrade, simulatorPreset }) {
             </div>
             {quote?.description&&<div style={{fontSize:11,color:"#9EB9E9",marginBottom:2,lineHeight:1.3}}>{quote.description}</div>}
             {spot>0&&(
-              <div style={{fontSize:11,color:"#7D91AA",marginTop:6,fontFamily:"DM Mono,monospace",letterSpacing:.3}}>
+              <div style={{fontSize:11,color:"#7D91AA",marginTop:6,fontFamily:"IBM Plex Mono,DM Mono,monospace",letterSpacing:.3}}>
                 Price: <span style={{color:"#D6E2F0",fontWeight:800}}>${spot.toFixed(2)}</span>
               </div>
             )}
@@ -2647,7 +2647,7 @@ function SimulatorPanel({ onSaveManualTrade, simulatorPreset }) {
                       <button key={label} onClick={fn}
                         style={{flex:1,padding:"10px 0",borderRadius:7,
                           border:`1px solid ${active?bg+"66":"#1B2A3A"}`,
-                          cursor:"pointer",fontFamily:"DM Mono,monospace",fontSize:12,fontWeight:700,
+                          cursor:"pointer",fontFamily:"IBM Plex Mono,DM Mono,monospace",fontSize:12,fontWeight:700,
                           letterSpacing:.3,transition:"all .15s",
                           background:active?bg:"#0B131D",
                           color:active?col:"#7D91AA",
@@ -2681,24 +2681,24 @@ function SimulatorPanel({ onSaveManualTrade, simulatorPreset }) {
                   )}
                   <div style={{display:"flex",gap:6,alignItems:"center"}}>
                     <div style={{display:"flex",alignItems:"center",gap:7,flex:1,background:"#050A0F",border:"1px solid #1B2A3A",borderRadius:6,padding:"9px 10px"}}>
-                      <span style={{fontSize:10,color:"#7D91AA",fontFamily:"DM Mono,monospace"}}>K</span>
+                      <span style={{fontSize:10,color:"#7D91AA",fontFamily:"IBM Plex Mono,DM Mono,monospace"}}>K</span>
                       <input value={leg.strikeInput}
                         onChange={e=>updateLeg(leg.id,{strikeInput:e.target.value})}
                         onBlur={e=>snapStrikeLeg(leg.id,e.target.value)}
                         onKeyDown={e=>e.key==="Enter"&&snapStrikeLeg(leg.id,leg.strikeInput)}
                         placeholder="strike"
-                        style={{background:"transparent",border:"none",outline:"none",color:"#D6E2F0",fontFamily:"DM Mono,monospace",fontSize:17,width:72}}/>
+                        style={{background:"transparent",border:"none",outline:"none",color:"#D6E2F0",fontFamily:"IBM Plex Mono,DM Mono,monospace",fontSize:17,width:72}}/>
                     </div>
                     <div style={{display:"flex",alignItems:"center",gap:7,flex:1,background:"#050A0F",border:`1px solid ${leg.customPremium!==null?"#FFD84D66":"#1B2A3A"}`,borderRadius:6,padding:"9px 10px"}}>
-                      <span style={{fontSize:10,color:"#7D91AA",fontFamily:"DM Mono,monospace"}}>$</span>
+                      <span style={{fontSize:10,color:"#7D91AA",fontFamily:"IBM Plex Mono,DM Mono,monospace"}}>$</span>
                       <input value={leg.premInput||legMktPrem.toFixed(2)}
                         onChange={e=>updateLeg(leg.id,{premInput:e.target.value})}
                         onBlur={e=>{const v=parseFloat(e.target.value);if(!isNaN(v)&&v>0){updateLeg(leg.id,{customPremium:v,premInput:v.toFixed(2)});}else{updateLeg(leg.id,{customPremium:null,premInput:legMktPrem>0?legMktPrem.toFixed(2):"0.00"});}}}
                         onKeyDown={e=>{if(e.key==="Enter"){const v=parseFloat(leg.premInput);if(!isNaN(v)&&v>0)updateLeg(leg.id,{customPremium:v,premInput:v.toFixed(2)});}}}
-                        style={{background:"transparent",border:"none",outline:"none",color:leg.customPremium!==null?"#FFD84D":"#D6E2F0",fontFamily:"DM Mono,monospace",fontSize:17,width:72}}/>
+                        style={{background:"transparent",border:"none",outline:"none",color:leg.customPremium!==null?"#FFD84D":"#D6E2F0",fontFamily:"IBM Plex Mono,DM Mono,monospace",fontSize:17,width:72}}/>
                       {leg.customPremium!==null&&(
                         <button onClick={()=>updateLeg(leg.id,{customPremium:null,premInput:legMktPrem>0?legMktPrem.toFixed(2):"0.00"})}
-                          title="Reset to market" style={{background:"none",border:"none",cursor:"pointer",color:"#5B8CFF",fontSize:9,padding:0,fontFamily:"DM Mono,monospace"}}>↺</button>
+                          title="Reset to market" style={{background:"none",border:"none",cursor:"pointer",color:"#5B8CFF",fontSize:9,padding:0,fontFamily:"IBM Plex Mono,DM Mono,monospace"}}>↺</button>
                       )}
                     </div>
                   </div>
@@ -2708,7 +2708,7 @@ function SimulatorPanel({ onSaveManualTrade, simulatorPreset }) {
           </div>
           <button onClick={addLeg}
             style={{width:"100%",padding:"13px 0",marginTop:10,background:"#63E6BE10",border:"1px dashed #63E6BE66",
-              borderRadius:7,color:"#63E6BE",fontFamily:"DM Mono,monospace",fontSize:13,fontWeight:700,
+              borderRadius:7,color:"#63E6BE",fontFamily:"IBM Plex Mono,DM Mono,monospace",fontSize:13,fontWeight:700,
               cursor:"pointer",letterSpacing:.5,display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>
             ＋ Add Leg
           </button>
@@ -2762,7 +2762,7 @@ function SimulatorPanel({ onSaveManualTrade, simulatorPreset }) {
                       <div style={{position:"relative",display:"inline-block"}}>
                         <button style={{width:15,height:15,borderRadius:"50%",background:"#1B2A3A",border:"1px solid #2a3a4a",
                           color:"#6a8aaa",fontSize:9,cursor:"default",display:"flex",alignItems:"center",justifyContent:"center",
-                          fontFamily:"DM Mono,monospace",padding:0}}>?</button>
+                          fontFamily:"IBM Plex Mono,DM Mono,monospace",padding:0}}>?</button>
                         <div className="ts-tooltip">
                           Theta Efficiency (35%) — decay per dollar of premium{"\n"}
                           DTE sweet spot (25%) — ideal 21–45 days{"\n"}
@@ -2773,7 +2773,7 @@ function SimulatorPanel({ onSaveManualTrade, simulatorPreset }) {
                       </div>
                     </div>
                     <div style={{textAlign:"right"}}>
-                      <div style={{fontFamily:"Syne,sans-serif",fontSize:26,fontWeight:800,color:col,lineHeight:1,textShadow:`0 0 18px ${col}44`}}>{sc}</div>
+                      <div style={{fontFamily:"IBM Plex Mono,DM Mono,monospace",fontSize:26,fontWeight:650,color:col,lineHeight:1.18,textShadow:`0 0 18px ${col}44`}}>{sc}</div>
                       <div style={{fontSize:10,color:col,letterSpacing:.5,marginTop:2}}>{lbl}</div>
                     </div>
                   </div>
@@ -2790,7 +2790,7 @@ function SimulatorPanel({ onSaveManualTrade, simulatorPreset }) {
         {selExp&&activePremium>0&&(
           <div style={{background:"#071019",border:"1px solid #63E6BE33",borderRadius:6,padding:"9px 11px"}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-              <div style={{fontFamily:"Syne,sans-serif",fontSize:13,fontWeight:700,color:"#63E6BE"}}>{selExp}</div>
+              <div style={{fontFamily:"IBM Plex Mono,DM Mono,monospace",fontSize:13,fontWeight:650,color:"#63E6BE"}}>{selExp}</div>
               <div style={{fontSize:11,fontWeight:700,color:"#FF4D6D",background:"#FF4D6D15",border:"1px solid #FF4D6D55",borderRadius:4,padding:"3px 9px",letterSpacing:.5}}>{dte} DTE</div>
             </div>
             <div style={{fontSize:10,color:"#4A6A8A",marginTop:3}}>
@@ -2805,7 +2805,7 @@ function SimulatorPanel({ onSaveManualTrade, simulatorPreset }) {
             style={{width:"100%",padding:"11px 0",marginTop:"auto",
               background:showQuickAdd?"#FF4D6D15":"#63E6BE14",
               border:`1px solid ${showQuickAdd?"#FF4D6D55":"#63E6BE55"}`,borderRadius:8,
-              color:showQuickAdd?"#FF4D6D":"#63E6BE",fontFamily:"DM Mono,monospace",fontSize:12,fontWeight:700,
+              color:showQuickAdd?"#FF4D6D":"#63E6BE",fontFamily:"IBM Plex Mono,DM Mono,monospace",fontSize:12,fontWeight:700,
               cursor:"pointer",letterSpacing:.5,display:"flex",alignItems:"center",justifyContent:"center",gap:7,
               boxShadow:showQuickAdd?"none":"0 0 18px rgba(99,230,190,.1)",transition:"all .2s"}}>
             {showQuickAdd?"✕ Cancel":"+ Add Trade"}
@@ -2849,9 +2849,9 @@ function SimulatorPanel({ onSaveManualTrade, simulatorPreset }) {
           const evColor=expectedValue!=null&&expectedValue>=0?"#63E6BE":"#FF4D6D";
           const evPct=expectedValue!=null&&activePremium>0?((expectedValue/Math.abs(activePremium*100))*100):null;
           const lowerCardStyle={background:"linear-gradient(180deg,#0B131D,#071019)",border:"1px solid #22364A",borderRadius:7,padding:"9px 11px",minHeight:58,display:"flex",flexDirection:"column",justifyContent:"center",alignItems:"flex-start",gap:7,boxSizing:"border-box"};
-          const lowerLabelStyle={fontSize:11,color:"#B7C9EA",letterSpacing:.5,fontWeight:800,fontFamily:"DM Mono,monospace",textTransform:"uppercase",lineHeight:1.2};
-          const lowerValueStyle={fontSize:14,fontWeight:800,fontFamily:"DM Mono,monospace",lineHeight:1.05};
-          const lowerSubStyle={fontSize:10,fontFamily:"DM Mono,monospace",lineHeight:1.05,marginTop:2};
+          const lowerLabelStyle={fontSize:11,color:"#B7C9EA",letterSpacing:.5,fontWeight:800,fontFamily:"IBM Plex Mono,DM Mono,monospace",textTransform:"uppercase",lineHeight:1.2};
+          const lowerValueStyle={fontSize:14,fontWeight:800,fontFamily:"IBM Plex Mono,DM Mono,monospace",lineHeight:1.05};
+          const lowerSubStyle={fontSize:10,fontFamily:"IBM Plex Mono,DM Mono,monospace",lineHeight:1.05,marginTop:2};
           return(
           <div style={{display:"grid",gridTemplateColumns:"minmax(470px,47%) minmax(430px,1fr)",gap:0,alignItems:"start",borderBottom:"1px solid #22364A",background:"#071019"}}>
             {/* LEFT: Probabilities */}
@@ -2863,18 +2863,18 @@ function SimulatorPanel({ onSaveManualTrade, simulatorPreset }) {
               {/* Top row — primary metrics */}
               <div style={{display:"grid",gridTemplateColumns:"1.15fr 1fr 1fr",gap:10,alignItems:"start"}}>
                 <div>
-                  <div style={{fontSize:12,color:"#D6E2F0",marginBottom:7,letterSpacing:.4,fontWeight:800,fontFamily:"DM Mono,monospace"}}>Chance of Profit</div>
-                  <div style={{fontFamily:"Syne,sans-serif",fontSize:29,fontWeight:800,color:"#5B8CFF",lineHeight:1,letterSpacing:.1,textShadow:"0 0 18px rgba(91,140,255,.18)"}}>{(chanceOfProfit*100).toFixed(1)}%</div>
+                  <div style={{fontSize:12,color:"#D6E2F0",marginBottom:7,letterSpacing:.4,fontWeight:800,fontFamily:"IBM Plex Mono,DM Mono,monospace"}}>Chance of Profit</div>
+                  <div style={{fontFamily:"IBM Plex Mono,DM Mono,monospace",fontSize:29,fontWeight:650,color:"#5B8CFF",lineHeight:1.18,letterSpacing:0,textShadow:"0 0 18px rgba(91,140,255,.18)"}}>{(chanceOfProfit*100).toFixed(1)}%</div>
                 </div>
                 <div>
-                  <div style={{fontSize:12,color:"#D6E2F0",marginBottom:7,letterSpacing:.4,fontWeight:800,fontFamily:"DM Mono,monospace"}}>Delta</div>
-                  <div style={{fontFamily:"Syne,sans-serif",fontSize:23,fontWeight:800,color:deltaDirColor,lineHeight:1,textShadow:"0 0 16px rgba(91,140,255,.14)"}}>{Math.abs(delta).toFixed(2)}</div>
-                  <div style={{fontSize:10,color:deltaDirColor,marginTop:5,fontWeight:700,fontFamily:"DM Mono,monospace"}}>{deltaDir}</div>
+                  <div style={{fontSize:12,color:"#D6E2F0",marginBottom:7,letterSpacing:.4,fontWeight:800,fontFamily:"IBM Plex Mono,DM Mono,monospace"}}>Delta</div>
+                  <div style={{fontFamily:"IBM Plex Mono,DM Mono,monospace",fontSize:23,fontWeight:650,color:deltaDirColor,lineHeight:1.18,textShadow:"0 0 16px rgba(91,140,255,.14)"}}>{Math.abs(delta).toFixed(2)}</div>
+                  <div style={{fontSize:10,color:deltaDirColor,marginTop:5,fontWeight:700,fontFamily:"IBM Plex Mono,DM Mono,monospace"}}>{deltaDir}</div>
                 </div>
                 <div>
-                  <div style={{fontSize:12,color:"#D6E2F0",marginBottom:7,letterSpacing:.4,fontWeight:800,fontFamily:"DM Mono,monospace"}}>IV (option)</div>
-                  <div style={{fontFamily:"Syne,sans-serif",fontSize:23,fontWeight:800,color:"#FFD84D",lineHeight:1,textShadow:"0 0 16px rgba(255,216,77,.14)"}}>{(iv*100).toFixed(1)}%</div>
-                  <div style={{fontSize:10,color:ivColor,marginTop:5,fontWeight:700,fontFamily:"DM Mono,monospace"}}>{ivLbl}</div>
+                  <div style={{fontSize:12,color:"#D6E2F0",marginBottom:7,letterSpacing:.4,fontWeight:800,fontFamily:"IBM Plex Mono,DM Mono,monospace"}}>IV (option)</div>
+                  <div style={{fontFamily:"IBM Plex Mono,DM Mono,monospace",fontSize:23,fontWeight:650,color:"#FFD84D",lineHeight:1.18,textShadow:"0 0 16px rgba(255,216,77,.14)"}}>{(iv*100).toFixed(1)}%</div>
+                  <div style={{fontSize:10,color:ivColor,marginTop:5,fontWeight:700,fontFamily:"IBM Plex Mono,DM Mono,monospace"}}>{ivLbl}</div>
                 </div>
               </div>
 
@@ -2917,7 +2917,7 @@ function SimulatorPanel({ onSaveManualTrade, simulatorPreset }) {
             {/* RIGHT: Payoff Chart */}
             <div style={{minWidth:0,padding:"15px 20px 0",background:"radial-gradient(circle at 50% 0%,rgba(91,140,255,.08),transparent 42%),#050A0F"}}>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
-                <div style={{fontSize:11,letterSpacing:2,textTransform:"uppercase",color:"#B7C9EA",fontFamily:"DM Mono,monospace",fontWeight:700}}>
+                <div style={{fontSize:11,letterSpacing:2,textTransform:"uppercase",color:"#B7C9EA",fontFamily:"IBM Plex Mono,DM Mono,monospace",fontWeight:700}}>
                   Payoff at Expiration — <span style={{color:"#D6E2F0"}}>{strategy}</span>
                 </div>
 
@@ -2943,7 +2943,7 @@ function SimulatorPanel({ onSaveManualTrade, simulatorPreset }) {
             <div style={{display:"flex",alignItems:"center",gap:5,fontSize:10,color:"#63E6BE"}}>
               <div style={{width:20,height:2,background:"#63E6BE33",boxShadow:"0 0 4px #63E6BE44"}}/>
               <span style={{opacity:.7}}>ATM</span>
-              <span style={{color:"#D6E2F0",fontFamily:"DM Mono,monospace"}}>${spot.toFixed(2)}</span>
+              <span style={{color:"#D6E2F0",fontFamily:"IBM Plex Mono,DM Mono,monospace"}}>${spot.toFixed(2)}</span>
             </div>
             <div style={{marginLeft:"auto",fontSize:9,color:"#4A6A8A"}}>Hover any cell for details</div>
           </div>
@@ -2960,13 +2960,13 @@ function SimulatorPanel({ onSaveManualTrade, simulatorPreset }) {
               style={{flex:1,cursor:"pointer"}}/>
             <button onClick={()=>setPriceRangeLevel(v=>Math.min(100,v+5))}
               style={{background:"none",border:"none",color:"#7D91AA",cursor:"pointer",fontSize:13,padding:"0 2px",lineHeight:1}}>&gt;</button>
-            <span style={{fontFamily:"DM Mono,monospace",fontSize:10,color:"#63E6BE",minWidth:92,textAlign:"right"}}>
+            <span style={{fontFamily:"IBM Plex Mono,DM Mono,monospace",fontSize:10,color:"#63E6BE",minWidth:92,textAlign:"right"}}>
               -{downsideRangePct.toFixed(0)}% / +{upsideRangePct.toFixed(0)}%
             </span>
             {priceRangeLevel!==20&&(
               <button onClick={()=>setPriceRangeLevel(20)}
                 title="Reset price range"
-                style={{fontSize:9,color:"#5B8CFF",background:"none",border:"1px solid #5B8CFF44",borderRadius:3,cursor:"pointer",padding:"1px 5px",fontFamily:"DM Mono,monospace"}}>R</button>
+                style={{fontSize:9,color:"#5B8CFF",background:"none",border:"1px solid #5B8CFF44",borderRadius:3,cursor:"pointer",padding:"1px 5px",fontFamily:"IBM Plex Mono,DM Mono,monospace"}}>R</button>
             )}
           </div>
         )}
@@ -3056,7 +3056,7 @@ function SimulatorPanel({ onSaveManualTrade, simulatorPreset }) {
           pointerEvents:"none",minWidth:150,
         }}>
           <div style={{fontSize:9,letterSpacing:1.5,textTransform:"uppercase",color:"#4A6A8A",marginBottom:5}}>{tooltip.date} · ${tooltip.price.toFixed(2)}</div>
-          <div style={{fontFamily:"Syne,sans-serif",fontSize:15,fontWeight:800,color:tooltip.dollar>=0?"#63E6BE":"#FF4D6D",marginBottom:6}}>
+          <div style={{fontFamily:"IBM Plex Mono,DM Mono,monospace",fontSize:15,fontWeight:650,color:tooltip.dollar>=0?"#63E6BE":"#FF4D6D",marginBottom:6}}>
             {tooltip.dollar>=0?"+":""}{viewMode==="dollar"?`$${tooltip.dollar}`:viewMode==="pct"?`${tooltip.pctStr}%`:`${tooltip.roi}x`}
           </div>
           <div style={{height:1,background:"#1B2A3A",margin:"5px 0"}}/>
@@ -3110,7 +3110,7 @@ function SimulatorPanel({ onSaveManualTrade, simulatorPreset }) {
                     <button onClick={()=>setQaContracts(c=>Math.max(1,c-1))}
                       style={{background:"#1B2A3A",border:"none",color:"#D6E2F0",width:22,height:22,borderRadius:4,cursor:"pointer",fontSize:14,lineHeight:"22px",textAlign:"center"}}>−</button>
                     <input value={qaContracts} onChange={e=>setQaContracts(Math.max(1,parseInt(e.target.value)||1))}
-                      style={{flex:1,background:"transparent",border:"none",outline:"none",color:"#fff",fontFamily:"DM Mono,monospace",fontSize:15,fontWeight:600,textAlign:"center"}}/>
+                      style={{flex:1,background:"transparent",border:"none",outline:"none",color:"#fff",fontFamily:"IBM Plex Mono,DM Mono,monospace",fontSize:15,fontWeight:600,textAlign:"center"}}/>
                     <button onClick={()=>setQaContracts(c=>c+1)}
                       style={{background:"#1B2A3A",border:"none",color:"#D6E2F0",width:22,height:22,borderRadius:4,cursor:"pointer",fontSize:14,lineHeight:"22px",textAlign:"center"}}>+</button>
                   </div>
@@ -3120,10 +3120,10 @@ function SimulatorPanel({ onSaveManualTrade, simulatorPreset }) {
                 <div>
                   <div style={{fontSize:9,letterSpacing:1.5,textTransform:"uppercase",color:"#4A6A8A",marginBottom:4}}>Price per Contract</div>
                   <div style={{display:"flex",alignItems:"center",gap:6,background:"#071019",border:"1px solid #1B2A3A",borderRadius:6,padding:"7px 10px"}}>
-                    <span style={{color:"#7D91AA",fontFamily:"DM Mono,monospace"}}>$</span>
+                    <span style={{color:"#7D91AA",fontFamily:"IBM Plex Mono,DM Mono,monospace"}}>$</span>
                     <input value={qaPremium} onChange={e=>setQaPremium(e.target.value)}
                       onBlur={e=>{const v=parseFloat(e.target.value);if(!isNaN(v)&&v>0)setQaPremium(v.toFixed(2));}}
-                      style={{flex:1,background:"transparent",border:"none",outline:"none",color:"#FFD84D",fontFamily:"DM Mono,monospace",fontSize:15,fontWeight:600}}/>
+                      style={{flex:1,background:"transparent",border:"none",outline:"none",color:"#FFD84D",fontFamily:"IBM Plex Mono,DM Mono,monospace",fontSize:15,fontWeight:600}}/>
                     <span style={{fontSize:9,color:"#4A6A8A"}}>×100 = ${(qaPrem*100).toFixed(0)}</span>
                   </div>
                 </div>
@@ -3157,7 +3157,7 @@ function SimulatorPanel({ onSaveManualTrade, simulatorPreset }) {
                 ].map(([l,v])=>(
                   <div key={l} style={{display:"flex",justifyContent:"space-between",marginBottom:4,fontSize:11}}>
                     <span style={{color:"#7D91AA"}}>{l}</span>
-                    <span style={{color:"#D6E2F0",fontWeight:600,fontFamily:"DM Mono,monospace"}}>{v}</span>
+                    <span style={{color:"#D6E2F0",fontWeight:600,fontFamily:"IBM Plex Mono,DM Mono,monospace"}}>{v}</span>
                   </div>
                 ))}
               </div>
@@ -3231,10 +3231,10 @@ function Home({ assets, strategies=[], onSelectAsset, onShowPositions, onSaveMan
     }),[totals,stratFilter,sortBy]);
 
   const riskLegend = [
-    ["Expiration risk","#FF4D6D","Short call vencendo em ate 3 dias."],
-    ["Manage this week","#FF7A1A","Short call vencendo em ate 7 dias."],
-    ["Near milestone","#63E6BE","LEAP com recovery entre 75% e 99%."],
-    ["Engine idle","#5B8CFF","Tem LEAP aberto, mas nao tem short call ativo gerando premium."],
+    ["Expiration risk","#FF4D6D","Short call expiring within 3 days."],
+    ["Manage this week","#FF7A1A","Short call expiring within 7 days."],
+    ["Near milestone","#63E6BE","LEAP recovery between 75% and 99%."],
+    ["Engine idle","#5B8CFF","Open LEAP with no active short call generating premium."],
   ];
   const allOpenRows = useMemo(()=>totals.flatMap(t=>{
     const recovery = t.leapCost>0 ? t.netColDollar/t.leapCost*100 : 0;
@@ -3401,15 +3401,15 @@ function Home({ assets, strategies=[], onSelectAsset, onShowPositions, onSaveMan
                 <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:10,marginTop:16,paddingTop:16,borderTop:"1px solid #1B2A3A"}}>
                   <div style={{textAlign:"center"}}>
                     <div style={{fontSize:10,letterSpacing:1.5,textTransform:"uppercase",color:"#4A6A8A",marginBottom:4}}>Theta Velocity <Tooltip text="Average weekly net theta cash since the first LEAP-backed short-call cycle, including open short-call credits."/></div>
-                    <div style={{fontFamily:"Syne,sans-serif",fontSize:18,fontWeight:700,color:"#63E6BE"}}>${fmt(weeklyVelocity)}<span style={{fontSize:11,color:"#7D91AA"}}>/wk</span></div>
+                    <div style={{fontFamily:"IBM Plex Mono,DM Mono,monospace",fontSize:18,fontWeight:650,color:"#63E6BE"}}>${fmt(weeklyVelocity)}<span style={{fontSize:11,color:"#7D91AA"}}>/wk</span></div>
                   </div>
                   <div style={{textAlign:"center",borderLeft:"1px solid #1B2A3A",borderRight:"1px solid #1B2A3A"}}>
                     <div style={{fontSize:10,letterSpacing:1.5,textTransform:"uppercase",color:"#4A6A8A",marginBottom:4}}>Days to Free LEAP <Tooltip text="Estimated days to recover the full LEAP cost at current collection velocity."/></div>
-                    <div style={{fontFamily:"Syne,sans-serif",fontSize:18,fontWeight:700,color:"#FFD84D"}}>{daysToFree?`~${daysToFree}d`:"—"}</div>
+                    <div style={{fontFamily:"IBM Plex Mono,DM Mono,monospace",fontSize:18,fontWeight:650,color:"#FFD84D"}}>{daysToFree?`~${daysToFree}d`:"—"}</div>
                   </div>
                   <div style={{textAlign:"center"}}>
                     <div style={{fontSize:10,letterSpacing:1.5,textTransform:"uppercase",color:"#4A6A8A",marginBottom:4}}>Annualized Recovery <Tooltip text="Projected annual LEAP recovery rate based on current weekly velocity."/></div>
-                    <div style={{fontFamily:"Syne,sans-serif",fontSize:18,fontWeight:700,color:"#B37CFF"}}>{fmt(annualized,1)}%<span style={{fontSize:11,color:"#7D91AA"}}>/yr</span></div>
+                    <div style={{fontFamily:"IBM Plex Mono,DM Mono,monospace",fontSize:18,fontWeight:650,color:"#B37CFF"}}>{fmt(annualized,1)}%<span style={{fontSize:11,color:"#7D91AA"}}>/yr</span></div>
                   </div>
                 </div>
               );
@@ -3427,7 +3427,7 @@ function Home({ assets, strategies=[], onSelectAsset, onShowPositions, onSaveMan
                 <div className="priority-kicker" style={{marginBottom:3}}>Priority desk</div>
                 <div className="priority-strip-title" style={{display:"flex",alignItems:"center",gap:4}}>
                   What needs attention now
-                  <Tooltip text={"Expiration risk: Short call vencendo em ate 3 dias.\nManage this week: Short call vencendo em ate 7 dias.\nNear milestone: LEAP com recovery entre 75% e 99%.\nEngine idle: Tem LEAP aberto, mas nao tem short call ativo gerando premium."}/>
+                  <Tooltip text={"Expiration risk: Short call expiring within 3 days.\nManage this week: Short call expiring within 7 days.\nNear milestone: LEAP recovery between 75% and 99%.\nEngine idle: Open LEAP with no active short call generating premium."}/>
                 </div>
               </div>
             </div>
@@ -4923,7 +4923,7 @@ function ManualTradeModal({ onClose, onSave, defaultData }) {
                             style={{padding:"9px 14px",cursor:"pointer",display:"flex",alignItems:"center",gap:10,borderBottom:"1px solid #0f1e2e",transition:"background 0.15s"}}
                             onMouseEnter={e=>e.currentTarget.style.background="#1B2A3A"}
                             onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
-                            <span style={{fontFamily:"DM Mono,monospace",fontWeight:700,fontSize:13,color:"#fff",minWidth:56}}>{s.symbol}</span>
+                            <span style={{fontFamily:"IBM Plex Mono,DM Mono,monospace",fontWeight:700,fontSize:13,color:"#fff",minWidth:56}}>{s.symbol}</span>
                             <span style={{fontSize:11,color:"#8aaac8",flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{s.description}</span>
                             <span style={{fontSize:10,color:"#4A6A8A",background:"#1B2A3A",padding:"2px 6px",borderRadius:3,flexShrink:0}}>{s.exchange}</span>
                           </div>
@@ -4954,7 +4954,7 @@ function ManualTradeModal({ onClose, onSave, defaultData }) {
                 <div style={{display:"flex",borderRadius:6,overflow:"hidden",border:"1px solid #1B2A3A"}}>
                   {[["BUY","Buy","#63E6BE","#071019"],["SELL","Sell","#FF4D6D","#fff"]].map(([val,label,col,tc])=>(
                     <button key={val} onClick={()=>setForm(p=>({...p,orderType:val}))}
-                      style={{flex:1,padding:"10px 0",border:"none",cursor:"pointer",fontFamily:"DM Mono,monospace",fontSize:13,fontWeight:700,transition:"all 0.2s",
+                      style={{flex:1,padding:"10px 0",border:"none",cursor:"pointer",fontFamily:"IBM Plex Mono,DM Mono,monospace",fontSize:13,fontWeight:700,transition:"all 0.2s",
                         background:form.orderType===val?col:"#071019",
                         color:form.orderType===val?tc:"#7D91AA",
                         letterSpacing:0.5}}>{label}</button>
@@ -4966,7 +4966,7 @@ function ManualTradeModal({ onClose, onSave, defaultData }) {
                 <div style={{display:"flex",borderRadius:6,overflow:"hidden",border:"1px solid #1B2A3A"}}>
                   {[["call","Call","#5B8CFF"],["put","Put","#B37CFF"]].map(([val,label,col])=>(
                     <button key={val} onClick={()=>setForm(p=>({...p,optionType:val}))}
-                      style={{flex:1,padding:"10px 0",border:"none",cursor:"pointer",fontFamily:"DM Mono,monospace",fontSize:13,fontWeight:700,transition:"all 0.2s",
+                      style={{flex:1,padding:"10px 0",border:"none",cursor:"pointer",fontFamily:"IBM Plex Mono,DM Mono,monospace",fontSize:13,fontWeight:700,transition:"all 0.2s",
                         background:form.optionType===val?col:"#071019",
                         color:form.optionType===val?"#fff":"#7D91AA",
                         letterSpacing:0.5}}>{label}</button>
@@ -5017,7 +5017,7 @@ function ManualTradeModal({ onClose, onSave, defaultData }) {
               {form.orderType==="BUY" ? (
                 <div style={{background:"#FF4D6D12",border:"1px solid #FF4D6D55",borderRadius:8,padding:"14px 16px"}}>
                   <div style={{fontSize:11,color:"#FF4D6D",marginBottom:6,fontWeight:600,letterSpacing:0.5}}>You will pay (debit)</div>
-                  <div style={{fontFamily:"Syne,sans-serif",fontSize:22,fontWeight:700,color:"#FF4D6D"}}>
+                  <div style={{fontFamily:"IBM Plex Mono,DM Mono,monospace",fontSize:22,fontWeight:650,color:"#FF4D6D"}}>
                     -{totalValue>0?`$${fmt(totalValue)}`:"$—"}
                   </div>
                   <div style={{fontSize:11,color:"#7D91AA",marginTop:4}}>
@@ -5028,7 +5028,7 @@ function ManualTradeModal({ onClose, onSave, defaultData }) {
               ) : (
                 <div style={{background:"#63E6BE12",border:"1px solid #63E6BE55",borderRadius:8,padding:"14px 16px"}}>
                   <div style={{fontSize:11,color:"#63E6BE",marginBottom:6,fontWeight:600,letterSpacing:0.5}}>You will receive (credit)</div>
-                  <div style={{fontFamily:"Syne,sans-serif",fontSize:22,fontWeight:700,color:"#63E6BE"}}>
+                  <div style={{fontFamily:"IBM Plex Mono,DM Mono,monospace",fontSize:22,fontWeight:650,color:"#63E6BE"}}>
                     +{totalValue>0?`$${fmt(totalValue)}`:"$—"}
                   </div>
                   <div style={{fontSize:11,color:"#7D91AA",marginTop:4}}>
@@ -5076,7 +5076,7 @@ function ManualTradeModal({ onClose, onSave, defaultData }) {
             </div>
 
             {/* Show more */}
-            <button onClick={()=>setShowMore(!showMore)} style={{display:"flex",alignItems:"center",justifyContent:"space-between",width:"100%",background:"none",border:"none",borderTop:"1px solid #1B2A3A",color:"#7D91AA",cursor:"pointer",fontFamily:"DM Mono,monospace",fontSize:12,padding:"12px 0",marginTop:14}}>
+            <button onClick={()=>setShowMore(!showMore)} style={{display:"flex",alignItems:"center",justifyContent:"space-between",width:"100%",background:"none",border:"none",borderTop:"1px solid #1B2A3A",color:"#7D91AA",cursor:"pointer",fontFamily:"IBM Plex Mono,DM Mono,monospace",fontSize:12,padding:"12px 0",marginTop:14}}>
               <span>Show more options</span>
               <span style={{fontSize:11}}>{showMore?"▲":"▼"}</span>
             </button>
@@ -5790,7 +5790,7 @@ function App() {
       {toast&&(
         <div style={{position:"fixed",bottom:24,left:"50%",transform:"translateX(-50%)",zIndex:9999,
           background:toast.ok?"#1D9E75":"#E24B4A",color:"#fff",borderRadius:8,padding:"12px 24px",
-          fontFamily:"DM Mono,monospace",fontSize:13,maxWidth:"90vw",boxShadow:"0 4px 20px rgba(0,0,0,0.5)",
+          fontFamily:"IBM Plex Mono,DM Mono,monospace",fontSize:13,maxWidth:"90vw",boxShadow:"0 4px 20px rgba(0,0,0,0.5)",
           textAlign:"center",wordBreak:"break-word"}}>
           {toast.msg}
         </div>
@@ -6108,12 +6108,12 @@ function ClaudeChat({ assets, onSaveTrade, onUpdateTrade, onSaveLeap, onAddAsset
                     <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6,marginBottom:6}}>
                       <div>
                         <div style={{fontSize:9,color:"#7D91AA",marginBottom:2}}>ASSET</div>
-                        <input style={{width:"100%",background:"#071019",border:"1px solid #1B2A3A",color:"#fff",fontFamily:"DM Mono,monospace",fontSize:11,padding:"4px 8px",borderRadius:4,outline:"none",boxSizing:"border-box"}}
+                        <input style={{width:"100%",background:"#071019",border:"1px solid #1B2A3A",color:"#fff",fontFamily:"IBM Plex Mono,DM Mono,monospace",fontSize:11,padding:"4px 8px",borderRadius:4,outline:"none",boxSizing:"border-box"}}
                           value={t.asset_id||""} onChange={e=>{const v=[...pendingTrades];v[i]={...v[i],asset_id:e.target.value.toUpperCase()};setPendingTrades(v);}}/>
                       </div>
                       <div>
                         <div style={{fontSize:9,color:"#7D91AA",marginBottom:2}}>ACTION</div>
-                        <select style={{width:"100%",background:"#071019",border:"1px solid #1B2A3A",color:t.action==="SELL"?"#63E6BE":"#FF4D6D",fontFamily:"DM Mono,monospace",fontSize:11,padding:"4px 8px",borderRadius:4,outline:"none"}}
+                        <select style={{width:"100%",background:"#071019",border:"1px solid #1B2A3A",color:t.action==="SELL"?"#63E6BE":"#FF4D6D",fontFamily:"IBM Plex Mono,DM Mono,monospace",fontSize:11,padding:"4px 8px",borderRadius:4,outline:"none"}}
                           value={t.action||"SELL"} onChange={e=>{const v=[...pendingTrades];v[i]={...v[i],action:e.target.value};setPendingTrades(v);}}>
                           <option value="SELL">SELL</option>
                           <option value="BUY">BUY</option>
@@ -6121,28 +6121,28 @@ function ClaudeChat({ assets, onSaveTrade, onUpdateTrade, onSaveLeap, onAddAsset
                       </div>
                       <div>
                         <div style={{fontSize:9,color:"#7D91AA",marginBottom:2}}>STRIKE</div>
-                        <input type="number" style={{width:"100%",background:"#071019",border:"1px solid #1B2A3A",color:"#FFD84D",fontFamily:"DM Mono,monospace",fontSize:11,padding:"4px 8px",borderRadius:4,outline:"none",boxSizing:"border-box"}}
+                        <input type="number" style={{width:"100%",background:"#071019",border:"1px solid #1B2A3A",color:"#FFD84D",fontFamily:"IBM Plex Mono,DM Mono,monospace",fontSize:11,padding:"4px 8px",borderRadius:4,outline:"none",boxSizing:"border-box"}}
                           value={t.strike||""} onChange={e=>{const v=[...pendingTrades];v[i]={...v[i],strike:e.target.value};setPendingTrades(v);}}/>
                       </div>
                       <div>
                         <div style={{fontSize:9,color:"#7D91AA",marginBottom:2}}>EXPIRATION</div>
-                        <input style={{width:"100%",background:"#071019",border:"1px solid #1B2A3A",color:"#D6E2F0",fontFamily:"DM Mono,monospace",fontSize:11,padding:"4px 8px",borderRadius:4,outline:"none",boxSizing:"border-box"}}
+                        <input style={{width:"100%",background:"#071019",border:"1px solid #1B2A3A",color:"#D6E2F0",fontFamily:"IBM Plex Mono,DM Mono,monospace",fontSize:11,padding:"4px 8px",borderRadius:4,outline:"none",boxSizing:"border-box"}}
                           placeholder="YYYY-MM-DD" value={t.expiration||""} onChange={e=>{const v=[...pendingTrades];v[i]={...v[i],expiration:e.target.value};setPendingTrades(v);}}/>
                       </div>
                       <div>
                         <div style={{fontSize:9,color:"#7D91AA",marginBottom:2}}>PRICE/SHARE ($)</div>
-                        <input type="number" style={{width:"100%",background:"#071019",border:"1px solid #1B2A3A",color:"#63E6BE",fontFamily:"DM Mono,monospace",fontSize:11,padding:"4px 8px",borderRadius:4,outline:"none",boxSizing:"border-box"}}
+                        <input type="number" style={{width:"100%",background:"#071019",border:"1px solid #1B2A3A",color:"#63E6BE",fontFamily:"IBM Plex Mono,DM Mono,monospace",fontSize:11,padding:"4px 8px",borderRadius:4,outline:"none",boxSizing:"border-box"}}
                           value={t.premium||""} onChange={e=>{const v=[...pendingTrades];v[i]={...v[i],premium:e.target.value};setPendingTrades(v);}}/>
                       </div>
                       <div>
                         <div style={{fontSize:9,color:"#7D91AA",marginBottom:2}}>CONTRACTS</div>
-                        <input type="number" style={{width:"100%",background:"#071019",border:"1px solid #1B2A3A",color:"#8aaac8",fontFamily:"DM Mono,monospace",fontSize:11,padding:"4px 8px",borderRadius:4,outline:"none",boxSizing:"border-box"}}
+                        <input type="number" style={{width:"100%",background:"#071019",border:"1px solid #1B2A3A",color:"#8aaac8",fontFamily:"IBM Plex Mono,DM Mono,monospace",fontSize:11,padding:"4px 8px",borderRadius:4,outline:"none",boxSizing:"border-box"}}
                           value={t.contracts||1} onChange={e=>{const v=[...pendingTrades];v[i]={...v[i],contracts:e.target.value};setPendingTrades(v);}}/>
                       </div>
                     </div>
                     <div style={{marginTop:6}}>
                       <div style={{fontSize:9,color:"#7D91AA",marginBottom:2}}>STRATEGY</div>
-                      <select style={{width:"100%",background:"#071019",border:"1px solid #1B2A3A",color:"#B37CFF",fontFamily:"DM Mono,monospace",fontSize:11,padding:"4px 8px",borderRadius:4,outline:"none"}}
+                      <select style={{width:"100%",background:"#071019",border:"1px solid #1B2A3A",color:"#B37CFF",fontFamily:"IBM Plex Mono,DM Mono,monospace",fontSize:11,padding:"4px 8px",borderRadius:4,outline:"none"}}
                         value={t.strategy||""} onChange={e=>{const v=[...pendingTrades];v[i]={...v[i],strategy:e.target.value};setPendingTrades(v);}}>
                         <option value="">— Auto-detect —</option>
                         {SIM_STRATEGIES.map(s=><option key={s} value={s}>{s}</option>)}
@@ -6163,7 +6163,7 @@ function ClaudeChat({ assets, onSaveTrade, onUpdateTrade, onSaveLeap, onAddAsset
               <div style={{background:"#FFD84D10",border:"1px solid #FFD84D33",borderRadius:8,padding:10}}>
                 <div style={{fontSize:11,color:"#FFD84D",marginBottom:8}}>⚠️ Missing: {missingField}</div>
                 <input
-                  style={{width:"100%",background:"#071019",border:"1px solid #1B2A3A",color:"#D6E2F0",fontFamily:"DM Mono,monospace",fontSize:12,padding:"6px 10px",borderRadius:6,outline:"none",marginBottom:8}}
+                  style={{width:"100%",background:"#071019",border:"1px solid #1B2A3A",color:"#D6E2F0",fontFamily:"IBM Plex Mono,DM Mono,monospace",fontSize:12,padding:"6px 10px",borderRadius:6,outline:"none",marginBottom:8}}
                   placeholder={missingField==="expiration"?"YYYY-MM-DD (e.g. 2027-01-15)":"Enter value..."}
                   value={missingInput}
                   onChange={e=>setMissingInput(e.target.value)}
@@ -6183,7 +6183,7 @@ function ClaudeChat({ assets, onSaveTrade, onUpdateTrade, onSaveLeap, onAddAsset
             <button className="btn bsm bneutral" onClick={handleFileClick} title="Upload photo">📸</button>
             <input ref={fileRef} type="file" accept="image/*" style={{display:"none"}} onChange={handleFile}/>
             <input
-              style={{flex:1,background:"#071019",border:"1px solid #1B2A3A",color:"#D6E2F0",fontFamily:"DM Mono,monospace",fontSize:12,padding:"6px 10px",borderRadius:6,outline:"none"}}
+              style={{flex:1,background:"#071019",border:"1px solid #1B2A3A",color:"#D6E2F0",fontFamily:"IBM Plex Mono,DM Mono,monospace",fontSize:12,padding:"6px 10px",borderRadius:6,outline:"none"}}
               placeholder="Describe a trade..."
               value={input} onChange={e=>setInput(e.target.value)}
               onKeyDown={e=>e.key==="Enter"&&!loading&&sendMessage(input)}
