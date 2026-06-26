@@ -5619,13 +5619,13 @@ function App() {
               <span className="beta-badge">Beta</span>
             </span>
           </div>
-          {active!=="home"&&<button className="home-btn" onClick={()=>navigate("home")}>← Home</button>}
+          {active!=="home"&&<button className="home-btn" onClick={()=>navigate("home")}>← HOME</button>}
         </div>
         <div style={{fontSize:11,color:"#4A6A8A"}}>{new Date().toLocaleDateString("en-US",{weekday:"long",year:"numeric",month:"long",day:"numeric"})}</div>
       </div>
 
       <div className="tabs">
-        <button className={`tab ${active==="home"?"active":""}`} onClick={()=>navigate("home")} style={{"--tc":"#63E6BE"}}>⌂ Home</button>
+        <button className={`tab ${active==="home"?"active":""}`} onClick={()=>navigate("home")} style={{"--tc":"#63E6BE"}}>⌂ HOME</button>
         {assets.filter(a=>a.active).map(a=>(
           <button key={a.id} className={`tab ${active===a.id?"active":""}`} onClick={()=>navigate(a.id)} style={{"--tc":a.color}}>{a.ticker}</button>
         ))}
