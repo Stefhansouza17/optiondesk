@@ -533,10 +533,20 @@ tr:hover td{background:#101e2c}
 .playbook-related-btn{border:1px solid #2a3a4a;background:#1B2A3A;color:#8aaac8;border-radius:4px;padding:5px 8px;font-family:'DM Mono',monospace;font-size:10px;cursor:pointer;transition:all .16s}
 .playbook-related-btn:hover{border-color:#5B8CFF66;color:#9EB9E9;background:#5B8CFF12}
 .calc-page{padding-top:28px;max-width:1180px}
+.calc-page .learn-head{align-items:flex-start;margin-bottom:18px}
+.calc-page .learn-title{font-size:clamp(23px,3vw,30px)}
 .calc-subtitle{font-size:13px;color:#8aaac8;margin-top:8px}
+.calc-hero-copy{margin-top:14px;max-width:690px}
+.calc-hero-copy .calc-cta-title{font-size:15px;margin-bottom:5px}
+.calc-hero-copy .calc-cta-copy{font-size:12px}
+.calc-hero-copy .btn{margin-top:10px}
 .calc-wrap{display:grid;grid-template-columns:minmax(320px,380px) 1fr;gap:18px;align-items:stretch}
 .calc-panel{background:#0B131D;border:1px solid #1B2A3A;border-radius:8px;padding:22px;min-width:0}
 .calc-form{display:grid;gap:14px}
+.return-field-head{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.return-toggle{display:inline-flex;align-items:center;background:#071019;border:1px solid #1B2A3A;border-radius:6px;padding:2px;flex-shrink:0}
+.return-toggle button{border:0;background:transparent;color:#7D91AA;border-radius:4px;padding:4px 7px;font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.4px;cursor:pointer;text-transform:uppercase}
+.return-toggle button.active{background:#132033;color:#D6E2F0}
 .calc-results{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-bottom:18px}
 .calc-result{background:#071019;border:1px solid #1B2A3A;border-radius:8px;padding:16px;min-width:0;overflow:hidden}
 .calc-result-label{font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:#7D91AA;margin-bottom:9px}
@@ -557,6 +567,14 @@ tr:hover td{background:#101e2c}
 .chart-toggle button.active{background:#132033;color:#D6E2F0}
 .chart-legend{display:flex;justify-content:flex-end;gap:14px;font-size:10px;color:#8aaac8}
 .chart-caption{text-align:center;font-size:10px;color:#7D91AA;letter-spacing:1.2px;margin-top:4px;font-family:'DM Mono',monospace}
+.monthly-return-table{margin-top:14px;background:#071019;border:1px solid #1B2A3A;border-radius:8px;overflow:hidden}
+.monthly-return-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px;border-bottom:1px solid #1B2A3A}
+.monthly-return-note{font-size:10px;color:#7D91AA}
+.monthly-return-scroll{max-height:300px;overflow:auto}
+.monthly-return-table th,.monthly-return-table td{text-align:right;white-space:nowrap}
+.monthly-return-table th:first-child,.monthly-return-table td:first-child{text-align:left}
+.monthly-return-table td:nth-child(2){color:#63E6BE}
+.monthly-return-table td:nth-child(4){color:#FFD84D}
 .chart-modal{width:min(90vw,1220px);max-height:88vh;background:#071019;border:1px solid #22364A;border-radius:10px;box-shadow:0 28px 90px rgba(0,0,0,.64);padding:22px;display:flex;flex-direction:column;gap:16px;overflow:hidden}
 .chart-modal-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;border-bottom:1px solid #1B2A3A;padding-bottom:14px}
 .chart-modal-title{font-family:'Syne',sans-serif;font-size:26px;font-weight:800;color:#fff;line-height:1}
@@ -654,6 +672,8 @@ tr:hover .sim-td,.sim-row-atm:hover .sim-td-price,.sim-row-atm:hover .sim-td-pct
   .calc-results{grid-template-columns:1fr}
   .investment-breakdown{grid-template-columns:1fr}
   .calc-cta{align-items:flex-start;flex-direction:column}
+  .return-field-head{align-items:flex-start;flex-direction:column}
+  .monthly-return-scroll{overflow-x:auto}
   .chart-modal{width:94vw;max-height:88vh;padding:16px}
   .chart-modal-body{grid-template-columns:1fr;overflow-y:auto}
   .expanded-chart{height:220px}
@@ -4045,9 +4065,16 @@ const integerInputValue = (value) => {
   const beforeDecimal = raw.includes(".") ? raw.slice(0, raw.indexOf(".")) : raw;
   return beforeDecimal.replace(/\D/g, "");
 };
+const decimalInputValue = (value) => {
+  const raw = String(value || "").replace(",", ".");
+  const cleaned = raw.replace(/[^\d.]/g, "");
+  const [whole, ...decimals] = cleaned.split(".");
+  return decimals.length ? `${whole}.${decimals.join("")}` : whole;
+};
 const formatWholeNumber = (value) => Math.round(Number(value || 0)).toLocaleString("en-US", { maximumFractionDigits:0 });
 const formatCurrencyWhole = (value) => `$${formatWholeNumber(value)}`;
 const formatIntegerInput = (value) => value === "" ? "" : formatWholeNumber(value);
+const formatDecimalInput = (value) => value === "" ? "" : String(value);
 const milestoneTargets = [100000,250000,500000,1000000];
 
 function ExpandedGrowthChartModal({ points, milestones, onClose }) {
@@ -4157,11 +4184,15 @@ function CalculatorsPage({ onNavigate }) {
   const [initial, setInitial] = useState("10000");
   const [monthly, setMonthly] = useState("500");
   const [annualReturn, setAnnualReturn] = useState("8");
+  const [returnPeriod, setReturnPeriod] = useState("annual");
   const [years, setYears] = useState("20");
   const [chartPeriod, setChartPeriod] = useState("month");
   const [fullChartOpen, setFullChartOpen] = useState(()=>new URLSearchParams(window.location.search).get("fullChart")==="1");
   const months = Math.max(0, Math.round((parseFloat(years)||0) * 12));
-  const monthlyRate = (parseFloat(annualReturn)||0) / 100 / 12;
+  const returnRate = (parseFloat(annualReturn)||0) / 100;
+  const monthlyRate = returnPeriod === "annual"
+    ? Math.pow(1 + returnRate, 1 / 12) - 1
+    : returnRate;
   const initialValue = parseFloat(initial)||0;
   const monthlyContribution = parseFloat(monthly)||0;
   const finalValue = useMemo(()=>{
@@ -4185,6 +4216,23 @@ function CalculatorsPage({ onNavigate }) {
       points.push({month,value,contributions,growth,growthShare:value > 0 ? growth / value : 0});
     }
     return points;
+  },[initialValue, monthlyContribution, monthlyRate, months]);
+  const monthlyRows = useMemo(()=>{
+    let value = initialValue;
+    const rows = [{month:0,interest:0,contributions:initialValue,totalInterest:0,value}];
+    for(let month=1;month<=months;month++){
+      const interest = value * monthlyRate;
+      value = value + interest + monthlyContribution;
+      const contributions = initialValue + monthlyContribution * month;
+      rows.push({
+        month,
+        interest,
+        contributions,
+        totalInterest:value - contributions,
+        value,
+      });
+    }
+    return rows;
   },[initialValue, monthlyContribution, monthlyRate, months]);
   const milestones = useMemo(()=>{
     return milestoneTargets.map(target=>{
@@ -4238,6 +4286,7 @@ function CalculatorsPage({ onNavigate }) {
   const growthDash = `${(growthShare * donutCircumference).toFixed(2)} ${donutCircumference.toFixed(2)}`;
   const contributionDash = `${(contributionShare * donutCircumference).toFixed(2)} ${donutCircumference.toFixed(2)}`;
   const updateWhole = (setter) => (e) => setter(integerInputValue(e.target.value));
+  const updateDecimal = (setter) => (e) => setter(decimalInputValue(e.target.value));
 
   return (
     <div className="main calc-page fade-in">
@@ -4246,6 +4295,13 @@ function CalculatorsPage({ onNavigate }) {
           <div className="learn-kicker">Calculators</div>
           <div className="learn-title">Compound Interest Calculator</div>
           <div className="calc-subtitle">Plan long-term portfolio growth.</div>
+          <div className="calc-hero-copy">
+            <div className="calc-cta-title">Looking for higher income strategies?</div>
+            <div className="calc-cta-copy">
+              Learn how option traders generate premium income using Covered Calls, Cash-Secured Puts, PMCCs and other income strategies.
+            </div>
+            <button className="btn" onClick={()=>onNavigate("learn-courses")}>Learn About Options</button>
+          </div>
         </div>
         <button className="btn bneutral" onClick={()=>onNavigate("learn")}>Back to Learn</button>
       </div>
@@ -4257,8 +4313,6 @@ function CalculatorsPage({ onNavigate }) {
             {[
               ["Initial Investment",initial,setInitial,"1000","compound-initial"],
               ["Monthly Contribution",monthly,setMonthly,"250","compound-monthly"],
-              ["Annual Return %",annualReturn,setAnnualReturn,"8","compound-return"],
-              ["Years",years,setYears,"10","compound-years"],
             ].map(([label,value,setter,placeholder,id])=>(
               <div className="fgrp" key={label}>
                 <label className="flbl" htmlFor={id}>{label}</label>
@@ -4273,6 +4327,38 @@ function CalculatorsPage({ onNavigate }) {
                 />
               </div>
             ))}
+            <div className="fgrp">
+              <div className="return-field-head">
+                <label className="flbl" htmlFor="compound-return">
+                  {returnPeriod==="annual" ? "Annual Return %" : "Monthly Return %"}
+                </label>
+                <div className="return-toggle" aria-label="Return period">
+                  <button type="button" className={returnPeriod==="annual"?"active":""} aria-pressed={returnPeriod==="annual"} onClick={()=>setReturnPeriod("annual")}>Annual</button>
+                  <button type="button" className={returnPeriod==="monthly"?"active":""} aria-pressed={returnPeriod==="monthly"} onClick={()=>setReturnPeriod("monthly")}>Monthly</button>
+                </div>
+              </div>
+              <input
+                id="compound-return"
+                className="finput"
+                type="text"
+                inputMode="decimal"
+                value={formatDecimalInput(annualReturn)}
+                placeholder="8"
+                onChange={updateDecimal(setAnnualReturn)}
+              />
+            </div>
+            <div className="fgrp">
+              <label className="flbl" htmlFor="compound-years">Years</label>
+              <input
+                id="compound-years"
+                className="finput"
+                type="text"
+                inputMode="numeric"
+                value={formatIntegerInput(years)}
+                placeholder={formatIntegerInput("10")}
+                onChange={updateWhole(setYears)}
+              />
+            </div>
           </div>
         </div>
 
@@ -4348,17 +4434,39 @@ function CalculatorsPage({ onNavigate }) {
               <div className="chart-caption">{chartPeriod==="year"?"Years":"Months"}</div>
             </div>
           </div>
-        </div>
-      </div>
-
-      <div className="calc-cta">
-        <div>
-          <div className="calc-cta-title">Looking for higher income strategies?</div>
-          <div className="calc-cta-copy">
-            Learn how option traders generate premium income using Covered Calls, Cash-Secured Puts, PMCCs and other income strategies.
+          <div className="monthly-return-table">
+            <div className="monthly-return-head">
+              <div className="sectitle">Monthly Returns</div>
+              <div className="monthly-return-note">
+                Rate basis: {returnPeriod==="annual" ? "annual converted to monthly" : "monthly"}
+              </div>
+            </div>
+            <div className="monthly-return-scroll">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Month</th>
+                    <th>Interest</th>
+                    <th>Total Invested</th>
+                    <th>Total Interest</th>
+                    <th>Accumulated</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {monthlyRows.map(row=>(
+                    <tr key={row.month}>
+                      <td>{row.month}</td>
+                      <td>{formatCurrencyWhole(row.interest)}</td>
+                      <td>{formatCurrencyWhole(row.contributions)}</td>
+                      <td>{formatCurrencyWhole(row.totalInterest)}</td>
+                      <td>{formatCurrencyWhole(row.value)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
-        <button className="btn" onClick={()=>onNavigate("learn-courses")}>Learn About Options</button>
       </div>
       {fullChartOpen&&(
         <ExpandedGrowthChartModal
