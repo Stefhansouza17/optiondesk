@@ -106,15 +106,21 @@ const tradeDteAtOpen = (trade) => {
 const isLeapCloseTrade = (trade) => {
   const strategy = trade?.strategy || "";
   const notes = (trade?.notes||"").toLowerCase();
-  const longDatedCall = optionType(trade)==="call" && tradeDteAtOpen(trade)>180;
+  const action = (trade?.action||"").toUpperCase();
+  const longDatedCallBuy = action==="BUY"
+    && optionType(trade)==="call"
+    && tradeDteAtOpen(trade)>180;
   return THETA_EXCLUDED_STRATEGIES.has(strategy)
     || notes.includes("leap close")
     || notes.includes("closing leap")
-    || longDatedCall;
+    || longDatedCallBuy;
 };
+const confirmedStrategyType = (trade) =>
+  trade?.strategyLink?.strategy?.strategy_type || null;
 const isThetaShortCallTrade = (trade) =>
   (trade?.action||"").toUpperCase()==="SELL"
   && optionType(trade)==="call"
+  && (!confirmedStrategyType(trade) || confirmedStrategyType(trade)==="PMCC")
   && !isLeapCloseTrade(trade);
 const sameOptionContract = (a,b) =>
   optionType(a)===optionType(b)
