@@ -234,14 +234,32 @@ const thetaEngineRealizedDollars = (trades=[], leaps=[]) =>
   realizedOptionPnLDollars(trades, t=>isThetaEngineTrade(t, trades, leaps));
 const thetaEngineCashDollars = (trades=[], leaps=[]) =>
   roundMoney(thetaEngineRealizedDollars(trades, leaps) + thetaEngineOpenCreditDollars(trades, leaps));
+const isIncomeShortSellTrade = (trade) =>
+  (trade?.action||"").toUpperCase()==="SELL"
+  && !isTechnicalLeapTrade(trade)
+  && !isLeapCloseTrade(trade);
+const isIncomeClosingBuyTrade = (trade, trades=[]) =>
+  (trade?.action||"").toUpperCase()==="BUY"
+  && trade?.status!=="open"
+  && trades.some(opening =>
+    isIncomeShortSellTrade(opening)
+    && sameOptionContract(opening, trade)
+    && new Date(opening?.date||trade?.date||0) <= new Date(trade?.date||0)
+  );
+const isIncomeCycleTrade = (trade, trades=[]) =>
+  isIncomeShortSellTrade(trade) || isIncomeClosingBuyTrade(trade, trades);
+const openIncomeCreditDollars = (trades=[]) =>
+  trades.reduce((sum,trade)=>
+    trade?.status==="open" && isIncomeShortSellTrade(trade)
+      ? sum + tradeDollarValue(trade)
+      : sum
+  ,0);
 const assetIncomeGeneratedDollars = (trades=[]) =>
-  roundMoney(trades.reduce((sum,trade)=>{
-    if(isTechnicalLeapTrade(trade) || isLeapCloseTrade(trade)) return sum;
-    const action = (trade?.action||"").toUpperCase();
-    if(action==="SELL") return sum + tradeDollarValue(trade);
-    if(action==="BUY" && trade?.status!=="open") return sum - tradeDollarValue(trade);
-    return sum;
-  },0) + realizedOptionPnLDollars(trades, isTechnicalLeapTrade));
+  roundMoney(
+    realizedOptionPnLDollars(trades, trade=>isIncomeCycleTrade(trade, trades))
+    + openIncomeCreditDollars(trades)
+    + realizedOptionPnLDollars(trades, isTechnicalLeapTrade)
+  );
 
 const strategyLabelForTrade = (trade) => {
   const action = (trade?.action||"").toUpperCase();

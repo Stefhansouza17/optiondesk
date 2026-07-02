@@ -66,7 +66,8 @@ describe("asset income", () => {
     expect(thetaEngineCashDollars([shortCall], [])).toBe(0);
   });
 
-  test("equals the signed cash value of the trades that remain registered", () => {
+  test("uses only registered short-premium cycles and removes deleted trades", () => {
+    const closedShortCall = {...shortCall,status:"closed"};
     const buy = {
       ...shortCall,
       id:2,
@@ -74,10 +75,31 @@ describe("asset income", () => {
       premium:0.4,
       status:"closed",
     };
-    expect(assetIncomeGeneratedDollars([shortCall, buy])).toBe(60);
+    expect(assetIncomeGeneratedDollars([closedShortCall, buy])).toBe(60);
     expect(assetIncomeGeneratedDollars([shortCall])).toBe(100);
     expect(assetIncomeGeneratedDollars([{...buy,status:"open"}])).toBe(0);
+    expect(assetIncomeGeneratedDollars([buy])).toBe(0);
+    expect(assetIncomeGeneratedDollars([closedShortCall])).toBe(0);
     expect(assetIncomeGeneratedDollars([])).toBe(0);
+  });
+
+  test("keeps IBIT income positive when valid cycles total $539", () => {
+    const cycleCash = [
+      [32,2],[23,44],[66,2],[30,3],[68,10],[34,4],[66,124],
+      [190,22],[52,57],[124,278],[294,534],[566,364],[386,170],[194,44],
+    ];
+    const cycles = cycleCash.flatMap(([credit,debit],index)=>{
+      const strike = 30+index;
+      const expiration = `2026-03-${String(index+1).padStart(2,"0")}`;
+      return [
+        {...shortCall,id:`sell-${index}`,date:"2026-01-01",strike,expiration,premium:credit/100,status:"closed"},
+        {...shortCall,id:`buy-${index}`,date:"2026-01-02",action:"BUY",strike,expiration,premium:debit/100,status:"closed"},
+      ];
+    });
+    const openCredit = {...shortCall,id:"open",premium:0.72,status:"open"};
+    const orphanBuy = {...shortCall,id:"orphan-buy",action:"BUY",premium:9,status:"closed",strike:99};
+    const orphanSellToClose = {...shortCall,id:"orphan-sell",premium:9,status:"closed",strike:98};
+    expect(assetIncomeGeneratedDollars([...cycles,openCredit,orphanBuy,orphanSellToClose])).toBe(539);
   });
 
   test("counts only realized LEAP profit or loss after both legs are registered", () => {
