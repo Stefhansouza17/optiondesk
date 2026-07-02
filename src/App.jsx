@@ -115,17 +115,31 @@ const isLeapCloseTrade = (trade, leaps=[]) => {
     || notes.includes("closing leap")
     || closesMatchingLeap;
 };
-const assignedStrategyType = (trade) =>
-  trade?.strategyLink?.strategy?.strategy_type || trade?.strategy || null;
-const isPmccAssignedTrade = (trade) => assignedStrategyType(trade)==="PMCC";
 const hasLeapBacking = (leaps=[]) =>
   leaps.reduce((sum,leap)=>sum+tradeContracts(leap),0)>0;
+const parsePositionDate = (value) => {
+  if(!value) return NaN;
+  return new Date(`${value}T12:00:00`).getTime();
+};
+const hasEligibleLeapForTrade = (trade, leaps=[]) => {
+  const tradeDate = parsePositionDate(trade?.date);
+  const tradeExpiration = parsePositionDate(trade?.expiration);
+  if(!Number.isFinite(tradeDate) || !Number.isFinite(tradeExpiration)) return false;
+  return leaps.some(leap=>{
+    const leapDate = parsePositionDate(leap?.date);
+    const leapExpiration = parsePositionDate(leap?.expiration);
+    return Number.isFinite(leapDate)
+      && Number.isFinite(leapExpiration)
+      && tradeDate>=leapDate
+      && tradeExpiration<leapExpiration;
+  });
+};
 const isThetaShortCallTrade = (trade, leaps=[]) =>
   hasLeapBacking(leaps)
   &&
   (trade?.action||"").toUpperCase()==="SELL"
   && optionType(trade)==="call"
-  && isPmccAssignedTrade(trade)
+  && hasEligibleLeapForTrade(trade, leaps)
   && !isLeapCloseTrade(trade, leaps);
 const sameOptionContract = (a,b) =>
   optionType(a)===optionType(b)
@@ -140,7 +154,6 @@ const isThetaClosingBuyTrade = (trade, trades=[], leaps=[]) =>
   (trade?.action||"").toUpperCase()==="BUY"
   && optionType(trade)==="call"
   && trade?.status!=="open"
-  && isPmccAssignedTrade(trade)
   && !isLeapCloseTrade(trade, leaps)
   && hasOpeningThetaShortCallMatch(trade, trades, leaps);
 const hasLeapContracts = (asset) =>
@@ -1261,9 +1274,7 @@ function AssetDashboard({ asset, strategies=[], onCreateStrategy, onChangeTradeS
   const leapContracts = leaps.reduce((s,l)=>s+l.contracts,0);
   const hasLeap = leapContracts>0;
   const primaryLeap = leaps[0] || null;
-  const hasPmccAssignedTrades = trades.some(isPmccAssignedTrade);
-  const tracksPmcc = strategy==="PMCC" || hasPmccAssignedTrades;
-  const isPmccDashboard = tracksPmcc && hasLeap;
+  const isPmccDashboard = hasLeap;
   const leapAvg = leapContracts>0 ? totalLeapCost/leapContracts : 0; // dollars per contract
   const leapAvgPerShare = leapContracts>0 ? leaps.reduce((s,l)=>s+l.cost*l.contracts,0)/leapContracts : 0;
 
@@ -1769,7 +1780,7 @@ function AssetDashboard({ asset, strategies=[], onCreateStrategy, onChangeTradeS
                         <td><div style={{display:"flex",gap:5}}>
                           <button className="btn bsm bneutral" onClick={()=>openEdit(t)}>Edit</button>
                           <button className="btn bsm bneutral" onClick={()=>setStrategyEditorTrade(t)}>Strategy</button>
-                          {(isPremium||isPmccAssignedTrade(t))&&<button className="btn bsm bwarn" onClick={()=>openCR(t)}>Close/Roll</button>}
+                          {(isPremium||isThetaShortCallTrade(t,leaps))&&<button className="btn bsm bwarn" onClick={()=>openCR(t)}>Close/Roll</button>}
                           <button className="btn bsm bdanger" title="Delete order without history" onClick={()=>removeTrade(t.id, `${asset.ticker} ${t.action} $${t.strike}`)}>✕</button>
                         </div></td>
                       </tr>);
@@ -6211,4 +6222,9 @@ function ClaudeChat({ assets, onSaveTrade, onUpdateTrade, onSaveLeap, onAddAsset
   );
 }
 
+export {
+  assetIncomeGeneratedDollars,
+  isThetaShortCallTrade,
+  thetaEngineCashDollars,
+};
 export default App;
