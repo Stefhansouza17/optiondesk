@@ -65,4 +65,43 @@ describe("asset income", () => {
     expect(assetIncomeGeneratedDollars([shortCall])).toBe(100);
     expect(thetaEngineCashDollars([shortCall], [])).toBe(0);
   });
+
+  test("equals the signed cash value of the trades that remain registered", () => {
+    const buy = {
+      ...shortCall,
+      id:2,
+      action:"BUY",
+      premium:0.4,
+      status:"closed",
+    };
+    expect(assetIncomeGeneratedDollars([shortCall, buy])).toBe(60);
+    expect(assetIncomeGeneratedDollars([shortCall])).toBe(100);
+    expect(assetIncomeGeneratedDollars([{...buy,status:"open"}])).toBe(0);
+    expect(assetIncomeGeneratedDollars([])).toBe(0);
+  });
+
+  test("counts only realized LEAP profit or loss after both legs are registered", () => {
+    const leapOpen = {
+      date:"2026-01-15",
+      action:"BUY",
+      option_type:"call",
+      strike:40,
+      expiration:"2027-12-17",
+      premium:10,
+      contracts:1,
+      status:"closed",
+      strategy:"LEAP_OPEN",
+    };
+    const leapClose = {
+      ...leapOpen,
+      date:"2026-07-02",
+      action:"SELL",
+      premium:12,
+      strategy:"LEAP_CLOSE",
+    };
+    expect(assetIncomeGeneratedDollars([leapOpen])).toBe(0);
+    expect(assetIncomeGeneratedDollars([leapClose])).toBe(0);
+    expect(assetIncomeGeneratedDollars([leapOpen, leapClose])).toBe(200);
+    expect(assetIncomeGeneratedDollars([leapOpen, {...leapClose,premium:8}])).toBe(-200);
+  });
 });

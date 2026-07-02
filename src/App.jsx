@@ -90,7 +90,9 @@ const STRATEGIES = {
 };
 
 const isPremiumStrategy = (s) => ["PMCC","Covered Call","Cash Secured Put","Iron Condor"].includes(s);
-const THETA_EXCLUDED_STRATEGIES = new Set(["LEAP_CLOSE","LEAP Close","LEAP close"]);
+const LEAP_OPEN_STRATEGIES = new Set(["LEAP_OPEN","LEAP Open","LEAP open"]);
+const LEAP_CLOSE_STRATEGIES = new Set(["LEAP_CLOSE","LEAP Close","LEAP close"]);
+const THETA_EXCLUDED_STRATEGIES = new Set([...LEAP_OPEN_STRATEGIES,...LEAP_CLOSE_STRATEGIES]);
 const STRATEGY_TYPES = ["Long Call","Long Put","Covered Call","Cash Secured Put","PMCC","Bull Call Spread","Bear Put Spread","Bull Put Spread","Bear Call Spread","Iron Condor","Straddle","Strangle"];
 const SIM_STRATEGIES = STRATEGY_TYPES;
 
@@ -102,6 +104,8 @@ const optionType = (trade) => trade?.option_type || "call";
 const sameStrikeAndExpiration = (a,b) =>
   Math.abs(parseFloat(a?.strike)-parseFloat(b?.strike))<0.01
   && a?.expiration===b?.expiration;
+const isTechnicalLeapTrade = (trade) =>
+  THETA_EXCLUDED_STRATEGIES.has(trade?.strategy || "");
 const isLeapCloseTrade = (trade, leaps=[]) => {
   const strategy = trade?.strategy || "";
   const notes = (trade?.notes||"").toLowerCase();
@@ -110,7 +114,7 @@ const isLeapCloseTrade = (trade, leaps=[]) => {
     && optionType(trade)==="call"
     && trade?.status!=="open"
     && leaps.some(leap=>sameStrikeAndExpiration(trade, leap));
-  return THETA_EXCLUDED_STRATEGIES.has(strategy)
+  return LEAP_CLOSE_STRATEGIES.has(strategy)
     || notes.includes("leap close")
     || notes.includes("closing leap")
     || closesMatchingLeap;
@@ -231,13 +235,13 @@ const thetaEngineRealizedDollars = (trades=[], leaps=[]) =>
 const thetaEngineCashDollars = (trades=[], leaps=[]) =>
   roundMoney(thetaEngineRealizedDollars(trades, leaps) + thetaEngineOpenCreditDollars(trades, leaps));
 const assetIncomeGeneratedDollars = (trades=[]) =>
-  roundMoney(realizedOptionPnLDollars(trades) + trades.reduce((sum,trade)=>
-    trade?.status==="open"
-    && (trade?.action||"").toUpperCase()==="SELL"
-    && !isLeapCloseTrade(trade)
-      ? sum + tradeDollarValue(trade)
-      : sum
-  ,0));
+  roundMoney(trades.reduce((sum,trade)=>{
+    if(isTechnicalLeapTrade(trade) || isLeapCloseTrade(trade)) return sum;
+    const action = (trade?.action||"").toUpperCase();
+    if(action==="SELL") return sum + tradeDollarValue(trade);
+    if(action==="BUY" && trade?.status!=="open") return sum - tradeDollarValue(trade);
+    return sum;
+  },0) + realizedOptionPnLDollars(trades, isTechnicalLeapTrade));
 
 const strategyLabelForTrade = (trade) => {
   const action = (trade?.action||"").toUpperCase();
@@ -1498,15 +1502,34 @@ function AssetDashboard({ asset, strategies=[], onCreateStrategy, onChangeTradeS
   async function confirmCloseLeap(){
     if(!closeLeapPrem||!closeLeap) return;
     const today = new Date().toISOString().slice(0,10);
-    const saved = await onSaveTrade({
+    const openingTrade = await onSaveTrade({
+      date:closeLeap.date, action:"BUY", strike:closeLeap.strike,
+      expiration:closeLeap.expiration, premium:closeLeap.cost,
+      contracts:closeLeap.contracts||1, status:"closed",
+      positionEffect:"technical",
+      option_type:"call", strategy:"LEAP_OPEN",
+      notes:`LEAP opening cost for ${asset.ticker}`
+    }, {skipStrategyAssignment:true, skipDuplicateCheck:true});
+    if(!openingTrade) return;
+    const closingTrade = await onSaveTrade({
       date:today, action:"SELL", strike:closeLeap.strike,
       expiration:closeLeap.expiration, premium:parseFloat(closeLeapPrem),
       contracts:closeLeap.contracts||1, status:"closed",
+      positionEffect:"technical",
       option_type:"call", strategy:"LEAP_CLOSE",
       notes:`LEAP close for ${asset.ticker}`
     }, {skipStrategyAssignment:true, skipDuplicateCheck:true});
-    if(!saved) return;
-    await onDeleteLeap(closeLeap.id);
+    if(!closingTrade){
+      await onDeleteTrade(openingTrade.id);
+      return;
+    }
+    try {
+      await onDeleteLeap(closeLeap.id);
+    } catch(e) {
+      await onDeleteTrade(openingTrade.id);
+      await onDeleteTrade(closingTrade.id);
+      throw e;
+    }
     setCloseLeap(null);
     setCloseLeapPrem("");
   }
@@ -3238,9 +3261,9 @@ function Home({ assets, strategies=[], onSelectAsset, onShowPositions, onSaveMan
     const nearestExp=[...openSells].sort((a,b)=>new Date(a.expiration)-new Date(b.expiration))[0];
     const daysLeft=nearestExp?Math.ceil((new Date(nearestExp.expiration)-new Date())/(1000*60*60*24)):null;
     const premiumPerLeap = leapContracts>0 ? netColDollar/leapContracts : 0;
-    const hasOpenPosition = leapContracts>0 || openTrades.length>0;
-    return {...a,leaps,leapCost,leapContracts,leapAvg,netColDollar,realizedPnLDollar,incomeGeneratedDollar,basis:leapAvg-premiumPerLeap,openTrades,openSells,openPremium,nearestExp,daysLeft,hasOpenPosition};
-  }).filter(a=>a.hasOpenPosition),[assets]);
+    const hasTrackedActivity = leapContracts>0 || a.trades.length>0;
+    return {...a,leaps,leapCost,leapContracts,leapAvg,netColDollar,realizedPnLDollar,incomeGeneratedDollar,basis:leapAvg-premiumPerLeap,openTrades,openSells,openPremium,nearestExp,daysLeft,hasTrackedActivity};
+  }).filter(a=>a.hasTrackedActivity),[assets]);
   const grandCost=useMemo(()=>totals.reduce((a,t)=>a+t.leapCost,0),[totals]);
   const openPositions=useMemo(()=>totals.reduce((a,t)=>a+t.openTrades.length,0)+totals.reduce((a,t)=>a+t.leapContracts,0),[totals]);
   const grandNetCol=useMemo(()=>totals.reduce((a,t)=>a+t.netColDollar,0),[totals]);
