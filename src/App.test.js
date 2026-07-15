@@ -1,6 +1,7 @@
 import {
   assetIncomeGeneratedDollars,
   isThetaShortCallTrade,
+  realizedOptionPnLDollars,
   thetaEngineCashDollars,
 } from "./App";
 
@@ -125,5 +126,39 @@ describe("asset income", () => {
     expect(assetIncomeGeneratedDollars([leapClose])).toBe(0);
     expect(assetIncomeGeneratedDollars([leapOpen, leapClose])).toBe(200);
     expect(assetIncomeGeneratedDollars([leapOpen, {...leapClose,premium:8}])).toBe(-200);
+  });
+});
+
+describe("one-for-one lifecycle accounting", () => {
+  const contract = {
+    option_type:"call",
+    strike:60,
+    expiration:"2026-08-21",
+    contracts:1,
+  };
+
+  test("BUY closes an open SELL and realizes the short-call P/L", () => {
+    const trades = [
+      {...contract,date:"2026-07-01",action:"SELL",premium:2,status:"closed"},
+      {...contract,date:"2026-07-02",action:"BUY",premium:0.75,status:"closed"},
+    ];
+    expect(realizedOptionPnLDollars(trades)).toBe(125);
+  });
+
+  test("SELL closes an open BUY and realizes the long-call P/L", () => {
+    const trades = [
+      {...contract,date:"2026-07-01",action:"BUY",premium:1.25,status:"closed"},
+      {...contract,date:"2026-07-02",action:"SELL",premium:2,status:"closed"},
+    ];
+    expect(realizedOptionPnLDollars(trades)).toBe(75);
+  });
+
+  test("an oversized close realizes only the matched contract and keeps excess open", () => {
+    const trades = [
+      {...contract,date:"2026-07-01",action:"SELL",premium:2,status:"closed"},
+      {...contract,date:"2026-07-02",action:"BUY",premium:0.75,status:"closed"},
+      {...contract,date:"2026-07-02",action:"BUY",premium:0.75,status:"open"},
+    ];
+    expect(realizedOptionPnLDollars(trades)).toBe(125);
   });
 });

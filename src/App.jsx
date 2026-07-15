@@ -5508,11 +5508,21 @@ function App() {
       .filter(Boolean);
   };
 
-  const saveTradeLifecycle = async (assetId, trade) => {
+  const saveTradeLifecycle = async (assetId, trade, options={}) => {
     const normalized = normalizeTradeForLifecycle(trade);
     const asset = assets.find(a=>a.id===assetId);
     const closingPlan = getClosingPlan(asset, normalized);
-    const saved = await addTrade(assetId, normalized);
+    const closedContracts = closingPlan.reduce((sum,p)=>sum+p.consumed,0);
+    const openContracts = options.splitExcess
+      ? Math.max(normalized.contracts-closedContracts,0)
+      : 0;
+    const closingTrade = options.splitExcess && closedContracts>0
+      ? {...normalized,contracts:closedContracts,status:"closed",positionEffect:"close"}
+      : normalized;
+    const saved = await addTrade(assetId, closingTrade);
+    const savedRemainder = openContracts>0
+      ? await addTrade(assetId, {...normalized,contracts:openContracts,status:"open",positionEffect:"open"})
+      : null;
     if(closingPlan.length) {
       try {
         await Promise.all(closingPlan.map(p=>updateTrade(p.trade.id,p.changes)));
@@ -5529,9 +5539,9 @@ function App() {
         const planned = closingPlan.find(p=>p.trade.id===t.id);
         return planned ? {...t,...planned.changes} : t;
       });
-      return {...a,trades:[...updatedTrades,saved]};
+      return {...a,trades:[...updatedTrades,saved,...(savedRemainder?[savedRemainder]:[])]};
     }));
-    return {saved, closingPlan};
+    return {saved, savedRemainder, closingPlan};
   };
 
   const handleSaveTrade = async (assetId, trade, options={}) => {
@@ -5541,7 +5551,16 @@ function App() {
       const preserveTechnicalStrategy = THETA_EXCLUDED_STRATEGIES.has(normalized.strategy || "");
       normalized = {...normalized, strategy:preserveTechnicalStrategy ? normalized.strategy : null};
       const technicalLeapClose = isLeapCloseTrade(normalized, asset?.leaps||[]);
-      if(normalized.positionEffect==="auto" && normalized.action==="BUY") {
+      if(options.autoCloseOpposite && normalized.positionEffect==="auto") {
+        const closeMatches = getOppositeOpenMatches(asset, normalized);
+        if(closeMatches.length) {
+          normalized = normalizeTradeForLifecycle({
+            ...normalized,
+            positionEffect: "close",
+            status: "closed",
+          });
+        }
+      } else if(normalized.positionEffect==="auto" && normalized.action==="BUY") {
         const closeMatches = getOppositeOpenMatches(asset, normalized);
         if(closeMatches.length) {
           const choice = await requestCloseApproval({asset, trade:normalized, matches:closeMatches});
@@ -5566,7 +5585,9 @@ function App() {
           }
         }
       }
-      const result = await saveTradeLifecycle(assetId, normalized);
+      const result = await saveTradeLifecycle(assetId, normalized, {
+        splitExcess:options.autoCloseOpposite,
+      });
       const closedContracts = result?.closingPlan.reduce((sum,p)=>sum+p.consumed,0) || 0;
       if(result?.saved && !options.skipStrategyAssignment && !technicalLeapClose) {
         const assignmentAsset = options.assignmentAsset || asset || {id:assetId,ticker:assetId,trades:[],leaps:[]};
@@ -5622,7 +5643,7 @@ function App() {
   const handleSaveManualTrade = async (symbol, trade) => {
     const ticker = symbol.toUpperCase();
     try {
-      const existing = assets.find(a=>a.ticker===ticker);
+      const existing = assets.find(a=>normalizeTicker(a.ticker)===normalizeTicker(ticker));
       let assetId;
       const detectedStrategy = trade.strategy || autoStrategy(trade.action, trade.option_type);
       if (!existing) {
@@ -5641,7 +5662,10 @@ function App() {
         assetId = existing.id;
       }
       const assignmentAsset = existing || {id:ticker,ticker,color:"#63E6BE",leaps:[],trades:[],strategy:detectedStrategy};
-      const saved = await handleSaveTrade(assetId, {...trade, strategy: detectedStrategy}, {assignmentAsset});
+      const saved = await handleSaveTrade(assetId, {...trade, strategy: detectedStrategy}, {
+        assignmentAsset,
+        autoCloseOpposite:true,
+      });
       if(saved) {
         showToast(`Trade saved: ${ticker} ${trade.action} $${trade.strike}`);
         await reloadAssets();
@@ -6266,6 +6290,7 @@ function ClaudeChat({ assets, onSaveTrade, onUpdateTrade, onSaveLeap, onAddAsset
 export {
   assetIncomeGeneratedDollars,
   isThetaShortCallTrade,
+  realizedOptionPnLDollars,
   thetaEngineCashDollars,
 };
 export default App;
