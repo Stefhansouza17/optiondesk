@@ -154,10 +154,12 @@ const netLongContractsBeforeTrade = (trade, trades=[]) => {
   }
   return Math.max(netContracts,0);
 };
+const assignedStrategyType = (trade) =>
+  trade?.strategyLink?.strategy?.strategy_type || trade?.strategy || "";
 const closesPriorLongCall = (trade, trades=[]) =>
   (trade?.action||"").toUpperCase()==="SELL"
   && optionType(trade)==="call"
-  && trade?.strategy!=="PMCC"
+  && assignedStrategyType(trade)!=="PMCC"
   && netLongContractsBeforeTrade(trade, trades)>0;
 const isThetaShortCallTrade = (trade, leaps=[], trades=[]) =>
   hasLeapBacking(leaps)

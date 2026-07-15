@@ -94,7 +94,8 @@ describe("Theta Engine eligibility", () => {
       expiration:"2026-06-19",
       premium:1.39,
       status:"closed",
-      strategy:"PMCC",
+      strategy:null,
+      strategyLink:{strategy:{strategy_type:"PMCC"}},
     };
     const pmccSell = {
       ...backfilledBuy,
