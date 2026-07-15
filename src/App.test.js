@@ -83,6 +83,35 @@ describe("Theta Engine eligibility", () => {
     expect(thetaEngineCashDollars(trades, ibitLeaps)).toBe(0);
     expect(realizedOptionPnLDollars(trades)).toBe(2);
   });
+
+  test("keeps an explicitly assigned PMCC sell in Theta despite a backfilled earlier BUY", () => {
+    const backfilledBuy = {
+      ...shortCall,
+      id:"backfilled-buy",
+      date:"2026-06-12",
+      action:"BUY",
+      strike:35,
+      expiration:"2026-06-19",
+      premium:1.39,
+      status:"closed",
+      strategy:"PMCC",
+    };
+    const pmccSell = {
+      ...backfilledBuy,
+      id:"pmcc-sell",
+      date:"2026-06-15",
+      action:"SELL",
+      premium:1.47,
+    };
+    const closingBuy = {
+      ...backfilledBuy,
+      id:"closing-buy",
+      date:"2026-06-18",
+      premium:2.67,
+    };
+    const trades = [backfilledBuy,pmccSell,closingBuy];
+    expect(isThetaShortCallTrade(pmccSell, ibitLeaps, trades)).toBe(true);
+  });
 });
 
 describe("asset income", () => {

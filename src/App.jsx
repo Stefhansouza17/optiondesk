@@ -157,6 +157,7 @@ const netLongContractsBeforeTrade = (trade, trades=[]) => {
 const closesPriorLongCall = (trade, trades=[]) =>
   (trade?.action||"").toUpperCase()==="SELL"
   && optionType(trade)==="call"
+  && trade?.strategy!=="PMCC"
   && netLongContractsBeforeTrade(trade, trades)>0;
 const isThetaShortCallTrade = (trade, leaps=[], trades=[]) =>
   hasLeapBacking(leaps)
