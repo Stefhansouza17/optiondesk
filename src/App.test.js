@@ -59,6 +59,30 @@ describe("Theta Engine eligibility", () => {
     };
     expect(isThetaShortCallTrade(leapClose, ibitLeaps)).toBe(false);
   });
+
+  test("excludes a SELL that closes an earlier long call even when a LEAP exists", () => {
+    const longBuy = {
+      ...shortCall,
+      id:"long-buy",
+      date:"2026-05-28",
+      action:"BUY",
+      strike:42,
+      expiration:"2026-05-29",
+      premium:0.13,
+      status:"closed",
+    };
+    const longClose = {
+      ...longBuy,
+      id:"long-close",
+      date:"2026-05-29",
+      action:"SELL",
+      premium:0.15,
+    };
+    const trades = [longBuy,longClose];
+    expect(isThetaShortCallTrade(longClose, ibitLeaps, trades)).toBe(false);
+    expect(thetaEngineCashDollars(trades, ibitLeaps)).toBe(0);
+    expect(realizedOptionPnLDollars(trades)).toBe(2);
+  });
 });
 
 describe("asset income", () => {

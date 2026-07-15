@@ -138,19 +138,40 @@ const hasEligibleLeapForTrade = (trade, leaps=[]) => {
       && tradeExpiration<leapExpiration;
   });
 };
-const isThetaShortCallTrade = (trade, leaps=[]) =>
+const netLongContractsBeforeTrade = (trade, trades=[]) => {
+  if(!trades.length) return 0;
+  const ordered = trades
+    .map((candidate,index)=>({candidate,index}))
+    .filter(({candidate})=>sameOptionContract(candidate, trade))
+    .sort((a,b)=>new Date(a.candidate?.date||0)-new Date(b.candidate?.date||0) || a.index-b.index);
+  let netContracts = 0;
+  for(const {candidate} of ordered) {
+    const isTarget = candidate===trade || (trade?.id!=null && candidate?.id===trade.id);
+    if(isTarget) break;
+    netContracts += (candidate?.action||"").toUpperCase()==="BUY"
+      ? tradeContracts(candidate)
+      : -tradeContracts(candidate);
+  }
+  return Math.max(netContracts,0);
+};
+const closesPriorLongCall = (trade, trades=[]) =>
+  (trade?.action||"").toUpperCase()==="SELL"
+  && optionType(trade)==="call"
+  && netLongContractsBeforeTrade(trade, trades)>0;
+const isThetaShortCallTrade = (trade, leaps=[], trades=[]) =>
   hasLeapBacking(leaps)
   &&
   (trade?.action||"").toUpperCase()==="SELL"
   && optionType(trade)==="call"
   && hasEligibleLeapForTrade(trade, leaps)
+  && !closesPriorLongCall(trade, trades)
   && !isLeapCloseTrade(trade, leaps);
 const sameOptionContract = (a,b) =>
   optionType(a)===optionType(b)
   && sameStrikeAndExpiration(a,b);
 const hasOpeningThetaShortCallMatch = (buy, trades=[], leaps=[]) =>
   trades.some(t =>
-    isThetaShortCallTrade(t, leaps)
+    isThetaShortCallTrade(t, leaps, trades)
     && sameOptionContract(t, buy)
     && new Date(t?.date||buy?.date||0) <= new Date(buy?.date||0)
   );
@@ -163,11 +184,11 @@ const isThetaClosingBuyTrade = (trade, trades=[], leaps=[]) =>
 const hasLeapContracts = (asset) =>
   (asset?.leaps||[]).reduce((sum,l)=>sum+tradeContracts(l),0)>0;
 const isThetaEngineTrade = (trade, trades=[], leaps=[]) =>
-  isThetaShortCallTrade(trade, leaps)
+  isThetaShortCallTrade(trade, leaps, trades)
   || isThetaClosingBuyTrade(trade, trades, leaps);
 const thetaEngineOpenCreditDollars = (trades=[], leaps=[]) =>
   trades.reduce((sum,t)=>
-    t?.status==="open" && isThetaShortCallTrade(t, leaps) ? sum + tradeDollarValue(t) : sum
+    t?.status==="open" && isThetaShortCallTrade(t, leaps, trades) ? sum + tradeDollarValue(t) : sum
   ,0);
 
 function closeTradeLots(lots, contracts, closePremium, multiplier, onClose) {
@@ -1339,7 +1360,7 @@ function AssetDashboard({ asset, strategies=[], onCreateStrategy, onChangeTradeS
     .sort((a,b)=>new Date(b.date||0)-new Date(a.date||0));
   const assetStrategies = strategies.filter(s=>normalizeTicker(s.ticker)===normalizeTicker(asset.ticker));
   const pmccShortCalls = trades
-    .filter(t=>isThetaShortCallTrade(t, leaps))
+    .filter(t=>isThetaShortCallTrade(t, leaps, trades))
     .sort((a,b)=>new Date(a.date||0)-new Date(b.date||0));
   const pmccClosingBuys = trades
     .filter(t=>isThetaEngineTrade(t,trades,leaps)&&isThetaClosingBuyTrade(t,trades,leaps))
@@ -1368,9 +1389,6 @@ function AssetDashboard({ asset, strategies=[], onCreateStrategy, onChangeTradeS
       return matches;
     };
     let closeMatches = consumeCloseMatches(true);
-    if(closeMatches.length===0 && sell.status==="closed") {
-      closeMatches = consumeCloseMatches(false);
-    }
     const close = closeMatches[0]?.trade || null;
     const isExpired = sell.status==="expired";
     const isOpen = sell.status==="open";
@@ -1821,7 +1839,7 @@ function AssetDashboard({ asset, strategies=[], onCreateStrategy, onChangeTradeS
                         <td><div style={{display:"flex",gap:5}}>
                           <button className="btn bsm bneutral" onClick={()=>openEdit(t)}>Edit</button>
                           <button className="btn bsm bneutral" onClick={()=>setStrategyEditorTrade(t)}>Strategy</button>
-                          {(isPremium||isThetaShortCallTrade(t,leaps))&&<button className="btn bsm bwarn" onClick={()=>openCR(t)}>Close/Roll</button>}
+                          {(isPremium||isThetaShortCallTrade(t,leaps,trades))&&<button className="btn bsm bwarn" onClick={()=>openCR(t)}>Close/Roll</button>}
                           <button className="btn bsm bdanger" title="Delete order without history" onClick={()=>removeTrade(t.id, `${asset.ticker} ${t.action} $${t.strike}`)}>✕</button>
                         </div></td>
                       </tr>);
@@ -3274,7 +3292,7 @@ function Home({ assets, strategies=[], onSelectAsset, onShowPositions, onSaveMan
     const realizedPnLDollar = realizedOptionPnLDollars(a.trades);
     const incomeGeneratedDollar = assetIncomeGeneratedDollars(a.trades);
     const openTrades=a.trades.filter(t=>t.status==="open");
-    const openSells=openTrades.filter(t=>isThetaShortCallTrade(t, leaps));
+    const openSells=openTrades.filter(t=>isThetaShortCallTrade(t, leaps, a.trades));
     const openPremium=openSells.reduce((acc,t)=>acc+tradePremium(t)*tradeContracts(t),0);
     const nearestExp=[...openSells].sort((a,b)=>new Date(a.expiration)-new Date(b.expiration))[0];
     const daysLeft=nearestExp?Math.ceil((new Date(nearestExp.expiration)-new Date())/(1000*60*60*24)):null;
