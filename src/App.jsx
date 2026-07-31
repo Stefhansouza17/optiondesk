@@ -438,6 +438,30 @@ html,body{font-family:'IBM Plex Mono','DM Mono',monospace;background:#050A0F;col
 .learn-nav:hover .learn-menu,.learn-nav.open .learn-menu,.learn-menu:hover{display:block}
 .learn-menu button{display:block;width:100%;background:none;border:none;border-radius:5px;color:#8aaac8;padding:8px 10px;text-align:left;cursor:pointer;font-family:'IBM Plex Mono','DM Mono',monospace;font-size:11px;transition:all .15s}
 .learn-menu button:hover,.learn-menu button.active{background:#071019;color:#D6E2F0}
+.evolution-page{max-width:1420px}
+.evolution-heading{display:flex;align-items:flex-end;justify-content:space-between;gap:24px;margin-bottom:22px}
+.evolution-heading h1{font-family:'Syne',sans-serif;font-size:28px;line-height:1.2;color:#fff;margin:5px 0 7px}
+.evolution-heading p{font-size:11px;color:#7D91AA;line-height:1.6}
+.evolution-filters{display:flex;gap:10px;min-width:330px}
+.evolution-filters .fsel{min-width:160px;padding:9px 34px 9px 12px}
+.evolution-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:18px}
+.evolution-kpi{position:relative;background:linear-gradient(145deg,#0B1623,#0B131D);border:1px solid #1B2A3A;border-radius:9px;padding:18px 20px;overflow:hidden}
+.evolution-kpi::before{content:'';position:absolute;left:0;right:0;top:0;height:2px;background:var(--accent)}
+.evolution-kpi-value{font-family:'IBM Plex Mono','DM Mono',monospace;font-size:26px;font-weight:700;margin:10px 0 5px;letter-spacing:-.8px}
+.evolution-chart-card{background:#0B131D;border:1px solid #1B2A3A;border-radius:9px;margin-bottom:18px;overflow:hidden}
+.evolution-chart-head{display:flex;justify-content:space-between;align-items:center;gap:20px;padding:15px 18px;border-bottom:1px solid #1B2A3A}
+.evolution-chart-copy{font-size:10px;color:#4A6A8A;margin-top:4px}
+.evolution-legend{display:flex;align-items:center;gap:18px;flex-wrap:wrap;font-size:10px;color:#8aaac8}
+.evolution-legend span{display:flex;align-items:center;gap:7px;white-space:nowrap}
+.evolution-legend i{display:inline-block;width:14px;height:8px;border-radius:2px}
+.evolution-legend i.legend-line{height:3px;border-radius:4px}
+.evolution-chart-scroll{overflow-x:auto;padding:8px 12px 0}
+.evolution-chart{display:block;width:100%;min-width:760px;height:auto}
+.evolution-point rect{transition:opacity .15s}.evolution-point:hover rect{opacity:.72}
+.evolution-footnote{border-top:1px solid #1B2A3A;padding:10px 18px;font-size:9px;color:#4A6A8A;letter-spacing:.3px}
+.evolution-table-card{margin-bottom:24px}.evolution-table-wrap{max-height:330px;overflow:auto}
+@media(max-width:900px){.evolution-heading{align-items:stretch;flex-direction:column}.evolution-filters{min-width:0;width:100%}.evolution-filters .fsel{flex:1;min-width:0}.evolution-kpis{grid-template-columns:repeat(2,1fr)}.evolution-chart-head{align-items:flex-start;flex-direction:column}}
+@media(max-width:560px){.evolution-kpis{grid-template-columns:1fr}.evolution-filters{flex-direction:column}.evolution-kpi-value{font-size:23px}}
 .subnav{display:flex;gap:4px;padding:12px 24px 0}
 .snbtn{background:none;border:none;color:#7D91AA;padding:7px 12px;cursor:pointer;font-family:'IBM Plex Mono','DM Mono',monospace;font-size:11px;letter-spacing:0.5px;border-radius:4px;transition:all 0.2s;text-transform:uppercase}
 .snbtn:hover{color:#D6E2F0;background:#1B2A3A}
@@ -3581,6 +3605,183 @@ function Home({ assets, strategies=[], onSelectAsset, onShowPositions, onSaveMan
   );
 }
 
+// ── Portfolio Evolution ─────────────────────────────────────────────────────
+const monthKey = (date) => `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,"0")}`;
+const monthLabel = (date) => date.toLocaleDateString("en-US",{month:"short",year:"2-digit"});
+const endOfMonth = (date) => new Date(date.getFullYear(),date.getMonth()+1,0,23,59,59,999);
+const signedMoney = (value) => `${value>=0?"+":"-"}$${fmt(Math.abs(value))}`;
+
+function buildPortfolioHistory(assets, months) {
+  return months.map(month=>{
+    const cutoff=endOfMonth(month);
+    const included=assets.map(asset=>{
+      const leaps=(asset.leaps||[]).filter(leap=>new Date(`${leap.date}T12:00:00`)<=cutoff);
+      const trades=(asset.trades||[]).filter(trade=>new Date(`${trade.date}T12:00:00`)<=cutoff);
+      const capital=leaps.reduce((sum,leap)=>sum+(Number(leap.cost)||0)*tradeContracts(leap)*100,0);
+      return {
+        capital,
+        income:assetIncomeGeneratedDollars(trades),
+      };
+    });
+    const capital=roundMoney(included.reduce((sum,item)=>sum+item.capital,0));
+    const income=roundMoney(included.reduce((sum,item)=>sum+item.income,0));
+    return {
+      key:monthKey(month),
+      label:monthLabel(month),
+      capital,
+      income,
+      value:roundMoney(capital+income),
+      roc:capital>0?income/capital*100:0,
+    };
+  });
+}
+
+function PortfolioEvolution({assets}) {
+  const [period,setPeriod]=useState("12");
+  const [scope,setScope]=useState("all");
+  const activeAssets=useMemo(()=>assets.filter(asset=>asset.active),[assets]);
+  const scopes=useMemo(()=>[
+    {value:"all",label:"All Strategies"},
+    ...activeAssets.map(asset=>({value:asset.id,label:asset.ticker})),
+  ],[activeAssets]);
+  const scopedAssets=useMemo(()=>scope==="all"
+    ? activeAssets
+    : activeAssets.filter(asset=>asset.id===scope),[activeAssets,scope]);
+  const earliestDate=useMemo(()=>{
+    const dates=scopedAssets.flatMap(asset=>[
+      ...(asset.leaps||[]).map(item=>item.date),
+      ...(asset.trades||[]).map(item=>item.date),
+    ]).filter(Boolean).map(value=>new Date(`${value}T12:00:00`)).filter(date=>!isNaN(date));
+    return dates.length?new Date(Math.min(...dates.map(date=>date.getTime()))):new Date();
+  },[scopedAssets]);
+  const months=useMemo(()=>{
+    const now=new Date();
+    const available=Math.max(1,(now.getFullYear()-earliestDate.getFullYear())*12+now.getMonth()-earliestDate.getMonth()+1);
+    const count=period==="all"?available:Math.min(Number(period),available);
+    return Array.from({length:count},(_,index)=>new Date(now.getFullYear(),now.getMonth()-(count-1-index),1));
+  },[period,earliestDate]);
+  const history=useMemo(()=>buildPortfolioHistory(scopedAssets,months),[scopedAssets,months]);
+  const current=history[history.length-1]||{capital:0,income:0,value:0,roc:0};
+  const previous=history[history.length-2]||current;
+  const monthlyChange=roundMoney(current.value-previous.value);
+
+  const width=1120,height=390;
+  const pad={left:72,right:66,top:34,bottom:48};
+  const chartW=width-pad.left-pad.right,chartH=height-pad.top-pad.bottom;
+  const maxValue=Math.max(100,...history.flatMap(point=>[point.capital,point.value]));
+  const minIncome=Math.min(0,...history.map(point=>point.income));
+  const maxIncome=Math.max(100,...history.map(point=>point.income));
+  const valueTop=Math.ceil(maxValue/500)*500||500;
+  const incomeAbs=Math.max(Math.abs(minIncome),Math.abs(maxIncome),100);
+  const xFor=index=>history.length===1?pad.left+chartW/2:pad.left+(index/(history.length-1))*chartW;
+  const yValue=value=>pad.top+chartH-(Math.max(0,value)/valueTop)*chartH;
+  const yIncome=value=>pad.top+chartH/2-(value/incomeAbs)*(chartH*.42);
+  const linePath=(field,yFn)=>history.map((point,index)=>`${index?"L":"M"} ${xFor(index)} ${yFn(point[field])}`).join(" ");
+  const gridValues=[0,.25,.5,.75,1].map(ratio=>valueTop*ratio);
+  const barWidth=Math.max(18,Math.min(52,chartW/Math.max(history.length,1)*.5));
+
+  return (
+    <div className="main fade-in evolution-page">
+      <div className="evolution-heading">
+        <div>
+          <div className="learn-kicker">Portfolio analytics</div>
+          <h1>Portfolio Evolution</h1>
+          <p>Capital deployed, tracked value and cumulative return from your recorded activity.</p>
+        </div>
+        <div className="evolution-filters">
+          <select className="fsel" value={period} onChange={event=>setPeriod(event.target.value)} aria-label="History period">
+            <option value="3">3 Months</option>
+            <option value="6">6 Months</option>
+            <option value="12">12 Months</option>
+            <option value="all">All Time</option>
+          </select>
+          <select className="fsel" value={scope} onChange={event=>setScope(event.target.value)} aria-label="Portfolio scope">
+            {scopes.map(item=><option key={item.value} value={item.value}>{item.label}</option>)}
+          </select>
+        </div>
+      </div>
+
+      <div className="evolution-kpis">
+        {[
+          {label:"Tracked Value",value:`$${fmt(current.value)}`,sub:`${signedMoney(monthlyChange)} this month`,color:"#63E6BE",tip:"Capital recorded plus cumulative option income. This is not yet a live mark-to-market portfolio value."},
+          {label:"Capital at Risk",value:`$${fmt(current.capital)}`,sub:`${scopedAssets.length} active asset${scopedAssets.length===1?"":"s"}`,color:"#5B8CFF",tip:"Recorded cost of active LEAP positions in the selected scope."},
+          {label:"Total Return",value:signedMoney(current.income),sub:"recorded option income",color:current.income>=0?"#63E6BE":"#FF4D6D",tip:"Cumulative realized option results plus currently open income credits."},
+          {label:"Return on Capital",value:`${current.roc>=0?"+":""}${fmt(current.roc,1)}%`,sub:"return ÷ capital at risk",color:current.roc>=0?"#FFD84D":"#FF4D6D",tip:"Recorded total return divided by capital at risk for the selected scope."},
+        ].map(card=>(
+          <div className="evolution-kpi" key={card.label} style={{"--accent":card.color}}>
+            <div className="clbl">{card.label} <Tooltip text={card.tip}/></div>
+            <div className="evolution-kpi-value" style={{color:card.color}}>{card.value}</div>
+            <div className="csub">{card.sub}</div>
+          </div>
+        ))}
+      </div>
+
+      <section className="evolution-chart-card">
+        <div className="evolution-chart-head">
+          <div>
+            <div className="sectitle">Recorded Portfolio History</div>
+            <div className="evolution-chart-copy">Monthly view reconstructed from saved trades and LEAP entries.</div>
+          </div>
+          <div className="evolution-legend">
+            <span><i style={{background:"#5B8CFF"}}/>Capital at Risk</span>
+            <span><i className="legend-line" style={{background:"#63E6BE"}}/>Tracked Value</span>
+            <span><i className="legend-line" style={{background:"#FFD84D"}}/>Cumulative Return</span>
+          </div>
+        </div>
+        {history.some(point=>point.capital||point.income)?(
+          <div className="evolution-chart-scroll">
+            <svg className="evolution-chart" viewBox={`0 0 ${width} ${height}`} role="img" aria-label="Portfolio evolution chart">
+              <defs>
+                <linearGradient id="evolutionBars" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0" stopColor="#5B8CFF" stopOpacity=".88"/>
+                  <stop offset="1" stopColor="#2756A8" stopOpacity=".52"/>
+                </linearGradient>
+                <filter id="evolutionGlow"><feGaussianBlur stdDeviation="3" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+              </defs>
+              {gridValues.map(value=>{
+                const y=yValue(value);
+                return <g key={value}><line x1={pad.left} x2={width-pad.right} y1={y} y2={y} stroke="#1B2A3A" strokeDasharray="3 5"/><text x={pad.left-12} y={y+4} textAnchor="end" fill="#4A6A8A" fontSize="11">${Math.round(value).toLocaleString("en-US")}</text></g>;
+              })}
+              <line x1={pad.left} x2={width-pad.right} y1={yIncome(0)} y2={yIncome(0)} stroke="#FFD84D" strokeOpacity=".16" strokeDasharray="4 5"/>
+              {history.map((point,index)=>{
+                const x=xFor(index),barY=yValue(point.capital);
+                return <g key={point.key} className="evolution-point">
+                  <rect x={x-barWidth/2} y={barY} width={barWidth} height={pad.top+chartH-barY} rx="4" fill="url(#evolutionBars)"/>
+                  <text x={x} y={height-18} textAnchor="middle" fill="#7D91AA" fontSize="11">{point.label}</text>
+                  <title>{`${point.label} · Capital $${fmt(point.capital)} · Value $${fmt(point.value)} · Return ${signedMoney(point.income)} · ROC ${fmt(point.roc,1)}%`}</title>
+                </g>;
+              })}
+              <path d={linePath("value",yValue)} fill="none" stroke="#63E6BE" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" filter="url(#evolutionGlow)"/>
+              <path d={linePath("income",yIncome)} fill="none" stroke="#FFD84D" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"/>
+              {history.map((point,index)=><g key={`dots-${point.key}`}>
+                <circle cx={xFor(index)} cy={yValue(point.value)} r="4.5" fill="#071019" stroke="#63E6BE" strokeWidth="2.5"/>
+                <circle cx={xFor(index)} cy={yIncome(point.income)} r="3.5" fill="#071019" stroke="#FFD84D" strokeWidth="2"/>
+              </g>)}
+            </svg>
+          </div>
+        ):<EmptyState title="No portfolio history yet" copy="Add a LEAP or record a trade to start building your portfolio evolution."/>}
+        <div className="evolution-footnote">◇ Historical values are reconstructed from recorded activity. Daily mark-to-market snapshots will begin in a future phase.</div>
+      </section>
+
+      <section className="sec evolution-table-card">
+        <div className="sechdr"><div className="sectitle">Monthly Summary</div><div className="evolution-chart-copy">Hover the chart or review exact values below.</div></div>
+        <div className="evolution-table-wrap">
+          <table>
+            <thead><tr><th>Month</th><th>Capital at Risk</th><th>Tracked Value</th><th>Total Return</th><th>ROC</th></tr></thead>
+            <tbody>{[...history].reverse().map(point=><tr key={point.key}>
+              <td style={{color:"#D6E2F0",fontWeight:650}}>{point.label}</td>
+              <td style={{color:"#5B8CFF"}}>${fmt(point.capital)}</td>
+              <td style={{color:"#63E6BE"}}>${fmt(point.value)}</td>
+              <td style={{color:point.income>=0?"#63E6BE":"#FF4D6D"}}>{signedMoney(point.income)}</td>
+              <td style={{color:point.roc>=0?"#FFD84D":"#FF4D6D"}}>{point.roc>=0?"+":""}{fmt(point.roc,1)}%</td>
+            </tr>)}</tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+  );
+}
+
 // ── Learn ───────────────────────────────────────────────────────────────────
 const LEARN_SECTIONS = [
   { id:"learn-courses", title:"Courses", icon:"01", accent:"#63E6BE", copy:"Video lessons and strategy education." },
@@ -5732,6 +5933,7 @@ function App() {
 
       <div className="tabs">
         <button className={`tab ${active==="home"?"active":""}`} onClick={()=>navigate("home")} style={{"--tc":"#63E6BE"}}>⌂ HOME</button>
+        <button className={`tab ${active==="portfolio-evolution"?"active":""}`} onClick={()=>navigate("portfolio-evolution")} style={{"--tc":"#63E6BE"}}>Portfolio Evolution</button>
         {assets.filter(a=>a.active).map(a=>(
           <button key={a.id} className={`tab ${active===a.id?"active":""}`} onClick={()=>navigate(a.id)} style={{"--tc":a.color}}>{a.ticker}</button>
         ))}
@@ -5766,6 +5968,7 @@ function App() {
       </div>
 
       {active==="home"&&<Home assets={assetsWithStrategyLinks} strategies={strategies} onSelectAsset={id=>navigate(id)} onShowPositions={()=>setShowPositions(true)} onSaveManualTrade={handleSaveManualTrade} onEditTrade={r=>{const a=assetsWithStrategyLinks.find(x=>x.id===r.assetId);setEditTrade({r,asset:a});}} onDeleteTrade={handleDeleteTrade} onDeleteLeap={handleDeleteLeap} onOpenLearn={()=>navigate("learn-calculators")} onStartAdd={()=>setShowAdd(true)} simulatorPreset={simulatorPreset}/>}
+      {active==="portfolio-evolution"&&<PortfolioEvolution assets={assetsWithStrategyLinks}/>}
       {active==="learn"&&<LearnPage onNavigate={navigate}/>}
       {active==="learn-courses"&&<LearnPlaceholderPage title="Courses" onNavigate={navigate}/>}
       {(active==="learn-playbooks"||active==="learn-playbook")&&<PlaybooksPage onNavigate={navigate} onOpenSimulator={openSimulatorFromPlaybook}/>}
