@@ -3641,7 +3641,7 @@ function PortfolioEvolution({assets}) {
   const [scope,setScope]=useState("all");
   const activeAssets=useMemo(()=>assets.filter(asset=>asset.active),[assets]);
   const scopes=useMemo(()=>[
-    {value:"all",label:"All Strategies"},
+    {value:"all",label:"All Assets"},
     ...activeAssets.map(asset=>({value:asset.id,label:asset.ticker})),
   ],[activeAssets]);
   const scopedAssets=useMemo(()=>scope==="all"
