@@ -17,34 +17,28 @@ import {
 } from "./supabase";
 
 // ── API ───────────────────────────────────────────────────────────────────────
-async function fetchQuote(symbol) {
-  const res = await fetch(`/api/tradier?endpoint=markets/quotes&symbols=${symbol}&greeks=true`);
+async function fetchYahoo(action, params = {}) {
+  const query = new URLSearchParams({ action, ...params });
+  const res = await fetch(`/api/yahoo?${query}`);
   const data = await res.json();
-  return data?.quotes?.quote;
+  if (!res.ok) throw new Error(data?.error || "Market data request failed");
+  return data;
+}
+async function fetchQuote(symbol) {
+  const data = await fetchYahoo("quote", { symbol });
+  return data?.quote;
 }
 async function fetchOptionChain(symbol, expiration) {
-  const res = await fetch(`/api/tradier?endpoint=markets/options/chains&symbol=${symbol}&expiration=${expiration}&greeks=true`);
-  const data = await res.json();
-  return data?.options?.option || [];
+  const data = await fetchYahoo("chain", { symbol, expiration });
+  return data?.options || [];
 }
 async function fetchExpirations(symbol) {
-  const res = await fetch(`/api/tradier?endpoint=markets/options/expirations&symbol=${symbol}`);
-  const data = await res.json();
-  return data?.expirations?.date || [];
+  const data = await fetchYahoo("expirations", { symbol });
+  return data?.expirations || [];
 }
 async function fetchSymbolSearch(query) {
-  const res = await fetch(`/api/tradier?endpoint=markets/search&q=${encodeURIComponent(query)}&indexes=false`);
-  const data = await res.json();
-  const raw = data?.securities?.security;
-  if (!raw) return [];
-  return (Array.isArray(raw) ? raw : [raw])
-    .map((item) => ({
-      ...item,
-      symbol: String(item?.symbol || item?.root_symbol || "").toUpperCase(),
-      description: item?.description || item?.name || "",
-    }))
-    .filter((item) => item.symbol)
-    .slice(0, 8);
+  const data = await fetchYahoo("search", { q: query });
+  return (data?.results || []).slice(0, 8);
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -4981,7 +4975,7 @@ function ManualTradeModal({ onClose, onSave, defaultData }) {
             {/* Asset */}
             <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:"#4A6A8A",marginBottom:10}}>Asset</div>
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:20}}>
-              {/* Symbol — autocomplete from Tradier search */}
+              {/* Symbol autocomplete from the active market-data provider */}
               <div className="fgrp">
                 <label className="flbl">Symbol *</label>
                 <div style={{position:"relative"}}>
